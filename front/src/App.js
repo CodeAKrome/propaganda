@@ -31,7 +31,7 @@ function useSources() {
   });
 }
 
-/* ---------- ARTICLE PAGE ---------- */
+/* ---------- FULL ARTICLE VIEW ---------- */
 function ArticlePage() {
   const { id } = useParams();
   const { data: article, isFetching } = useQuery({
@@ -55,7 +55,7 @@ function ArticlePage() {
   );
 }
 
-/* ---------- LIST PAGE ---------- */
+/* ---------- LIST VIEW (title only) ---------- */
 function ListPage() {
   const [page, setPage] = useState(0);
   const [size] = useState(20);
@@ -73,6 +73,7 @@ function ListPage() {
     <div className="App">
       <h1>RSS Reader</h1>
 
+      {/* Filters */}
       <div style={{ marginBottom: 16 }}>
         <input
           placeholder="Search…"
@@ -111,19 +112,21 @@ function ListPage() {
 
       {isFetching && <p>Loading…</p>}
 
+      {/* Title-only list */}
       <ul>
         {data?.rows.map((a) => (
           <li key={a._id}>
-            <strong>{a.title}</strong>
-            <div>
-              {a.source} – {new Date(a.published).toLocaleString()}
-            </div>
-            <p>{a.description}</p>
-            <Link to={`/article/${a._id}`}>Read more…</Link>
+            <Link
+              to={`/article/${a._id}`}
+              style={{ fontWeight: 'bold', color: '#1a0dab', textDecoration: 'none' }}
+            >
+              {a.title}
+            </Link>
           </li>
         ))}
       </ul>
 
+      {/* Pagination */}
       <div>
         {Array.from({ length: totalPages }, (_, i) => (
           <button
@@ -139,7 +142,7 @@ function ListPage() {
   );
 }
 
-/* ---------- ROOT COMPONENT ---------- */
+/* ---------- ROOT ---------- */
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
