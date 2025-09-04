@@ -9,6 +9,8 @@ import {
   Navigate,
 } from 'react-router-dom';
 import { useQuery, QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import CalendarHeatmap from 'react-calendar-heatmap';
+import 'react-calendar-heatmap/dist/styles.css';
 import axios from 'axios';
 import './App.css';
 
@@ -19,14 +21,6 @@ const queryClient = new QueryClient();
 const toISODate = (d) => new Date(d).toISOString().slice(0, 10);
 
 /* ---------- HOOKS ---------- */
-function useGlobalDateRange() {
-  return useQuery({
-    queryKey: ['global-date-range'],
-    queryFn: () => api.get('/articles/date-range').then(r => r.data),
-    staleTime: 5 * 60 * 1000, // 5 min
-  });
-}
-
 function useArticles(params) {
   return useQuery({
     queryKey: ['articles', params],
@@ -38,6 +32,20 @@ function useSources() {
   return useQuery({
     queryKey: ['sources'],
     queryFn: () => api('/sources').then(r => r.data),
+  });
+}
+function useGlobalDateRange() {
+  return useQuery({
+    queryKey: ['global-date-range'],
+    queryFn: () => api.get('/articles/date-range').then(r => r.data),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+function useDailyCounts() {
+  return useQuery({
+    queryKey: ['daily-counts'],
+    queryFn: () => api.get('/articles/daily-counts').then(r => r.data),
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -82,8 +90,6 @@ function ListPage() {
   const [query, setQuery] = useState('');
   const [source, setSource] = useState('');
   const [failed, setFailed] = useState(false);
-
-  /* date range state */
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
 
@@ -96,18 +102,10 @@ function ListPage() {
 
   const { data, isFetching } = useArticles(params);
   const { data: sources } = useSources();
+  const { data: globalRange } = useGlobalDateRange();
+  const { data: daily } = useDailyCounts();
 
   const totalPages = data?.pages || 1;
-
-  /* min / max visible dates for header */
-  // const dateRange = useMemo(() => {
-  //   if (!data?.rows?.length) return null;
-  //   const dates = data.rows.map((r) => new Date(r.published));
-  //   const min = new Date(Math.min(...dates));
-  //   const max = new Date(Math.max(...dates));
-  //   return `${toISODate(min)} – ${toISODate(max)}`;
-  // }, [data]);
-  const { data: globalRange } = useGlobalDateRange();
   const dateRange = globalRange
     ? `${globalRange.min} – ${globalRange.max}`
     : null;
@@ -116,101 +114,58 @@ function ListPage() {
     <div className="App">
       <h1>RSS Reader</h1>
 
-      {/* DATE RANGE in header */}
+      {/* Calendar heat-map */}
+      {daily && (
+        <div style={{ marginBottom: 24 }}>
+          <CalendarHeatmap
+            startDate={new Date(new Date().setFullYear(new Date().getFullYear() - 1))}
+            endDate={new Date()}
+            values={daily}
+            classForValue={(v) =>
+              v ? `color-github-${Math.min(v.count, 4)}` : 'color-github-0'
+            }
+            titleForValue={(v) => (v ? `${v.date}: ${v.count} articles` : '')}
+            showWeekdayLabels
+          />
+          <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
+            Articles per day (last 365 days)
+          </div>
+        </div>
+      )}
+
       {dateRange && <h3 style={{ marginTop: 0 }}>Articles: {dateRange}</h3>}
 
       {/* Controls */}
       <div style={{ marginBottom: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <input
-          placeholder="Search…"
-          value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            setPage(0);
-          }}
-        />
-
-        <select
-          value={source}
-          onChange={(e) => {
-            setSource(e.target.value);
-            setPage(0);
-          }}
-        >
+        <input placeholder="Search…" value={query} onChange={(e) => { setQuery(e.target.value); setPage(0); }} />
+        <select value={source} onChange={(e) => { setSource(e.target.value); setPage(0); }}>
           <option value="">All sources</option>
-          {sources?.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
+          {sources?.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
-
         <label>
-          <input
-            type="checkbox"
-            checked={failed}
-            onChange={(e) => {
-              setFailed(e.target.checked);
-              setPage(0);
-            }}
-          />
+          <input type="checkbox" checked={failed} onChange={(e) => { setFailed(e.target.checked); setPage(0); }} />
           Failed only
         </label>
-
         <label>
-          From:
-          <input
-            type="date"
-            value={from}
-            onChange={(e) => {
-              setFrom(e.target.value);
-              setPage(0);
-            }}
-          />
+          From:<input type="date" value={from} onChange={(e) => { setFrom(e.target.value); setPage(0); }} />
         </label>
-
         <label>
-          To:
-          <input
-            type="date"
-            value={to}
-            onChange={(e) => {
-              setTo(e.target.value);
-              setPage(0);
-            }}
-          />
+          To:<input type="date" value={to} onChange={(e) => { setTo(e.target.value); setPage(0); }} />
         </label>
-
         <label>
-          Per page:
-          <input
-            type="number"
-            min="1"
-            max="100"
-            value={size}
-            onChange={(e) => {
-              setSize(Math.max(1, Math.min(100, Number(e.target.value) || 50)));
-              setPage(0);
-            }}
-            style={{ width: 50 }}
-          />
+          Per page:<input type="number" min="1" max="100" value={size} onChange={(e) => {
+            setSize(Math.max(1, Math.min(100, Number(e.target.value) || 50))); setPage(0);
+          }} style={{ width: 50 }} />
         </label>
       </div>
 
       {isFetching && <p>Loading…</p>}
 
-      {/* LEFT-ALIGNED titles with YYYY-MM-DD */}
+      {/* LEFT-ALIGNED titles */}
       <ul style={{ listStyle: 'none', padding: 0 }}>
         {data?.rows.map((a) => (
           <li key={a._id} style={{ marginBottom: 8, textAlign: 'left' }}>
-            <Link
-              to={`/article/${a._id}`}
-              style={{
-                fontWeight: 'bold',
-                color: '#1a0dab',
-                textDecoration: 'none',
-              }}
-            >
+            <Link to={`/article/${a._id}`} style={{ fontWeight: 'bold', color: '#1a0dab', textDecoration: 'none' }}>
               {toISODate(a.published)} – {a.title}
             </Link>
           </li>
