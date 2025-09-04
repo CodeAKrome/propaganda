@@ -45,20 +45,32 @@ function ArticlePage() {
   return (
     <div className="article">
       <h2>{article.title}</h2>
-      <p>
+
+      <p style={{ marginBottom: 4 }}>
         <em>{article.source}</em> – {new Date(article.published).toLocaleString()}
       </p>
+
+      {/* NEW: description block */}
+      {article.description && (
+        <>
+          <h4 style={{ margin: '16px 0 4px' }}>Description</h4>
+          <p style={{ marginTop: 0 }}>{article.description}</p>
+        </>
+      )}
+
+      <h4 style={{ margin: '24px 0 4px' }}>Article</h4>
       <div dangerouslySetInnerHTML={{ __html: article.article }} />
-      <hr />
+
+      <hr style={{ margin: '24px 0' }} />
       <Link to="/">← back to list</Link>
     </div>
   );
 }
 
-/* ---------- LIST VIEW (title only) ---------- */
+/* ---------- LIST VIEW ---------- */
 function ListPage() {
   const [page, setPage] = useState(0);
-  const [size] = useState(20);
+  const [size, setSize] = useState(50);           // ← now editable, default 50
   const [query, setQuery] = useState('');
   const [source, setSource] = useState('');
   const [failed, setFailed] = useState(false);
@@ -73,7 +85,7 @@ function ListPage() {
     <div className="App">
       <h1>RSS Reader</h1>
 
-      {/* Filters */}
+      {/* Filters & sizing */}
       <div style={{ marginBottom: 16 }}>
         <input
           placeholder="Search…"
@@ -108,17 +120,39 @@ function ListPage() {
           />
           Failed only
         </label>
+
+        {/* items-per-page box */}
+        <label style={{ marginLeft: 12 }}>
+          Per page:
+          <input
+            type="number"
+            min="1"
+            max="100"
+            value={size}
+            onChange={(e) => {
+              setSize(Math.max(1, Math.min(100, Number(e.target.value) || 50)));
+              setPage(0);
+            }}
+            style={{ width: 50, marginLeft: 4 }}
+          />
+        </label>
       </div>
 
       {isFetching && <p>Loading…</p>}
 
-      {/* Title-only list */}
-      <ul>
+      {/* left-aligned title links */}
+      <ul style={{ listStyle: 'none', padding: 0 }}>
         {data?.rows.map((a) => (
-          <li key={a._id}>
+          <li key={a._id} style={{ marginBottom: 8 }}>
             <Link
               to={`/article/${a._id}`}
-              style={{ fontWeight: 'bold', color: '#1a0dab', textDecoration: 'none' }}
+              style={{
+                fontWeight: 'bold',
+                color: '#1a0dab',
+                textDecoration: 'none',
+                textAlign: 'left',
+                display: 'block',
+              }}
             >
               {a.title}
             </Link>
