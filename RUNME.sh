@@ -1,1 +1,1 @@
-go run main.go big.tsv
+go run main.go big.tsv 

@@ -1,13 +1,16 @@
+// main.go  (complete, modified as requested)
 package main
 
 import (
 	"bufio"
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -34,7 +37,8 @@ type Article struct {
 	Description string    `bson:"description"`
 	Link        string    `bson:"link"`
 	Published   time.Time `bson:"published"`
-	Article     *string   `bson:"article,omitempty"`
+	Raw         *string   `bson:"raw,omitempty"`     // original scraped text
+	Article     *string   `bson:"article,omitempty"` // cleaned text
 	FetchError  *string   `bson:"fetch_error,omitempty"`
 }
 
@@ -44,15 +48,21 @@ type Stats struct {
 	Updated      time.Time      `bson:"updated"`
 }
 
+// source-specific regex cleaners
+var sourceRegex = make(map[string]*regexp.Regexp)
+
 func main() {
-	if len(os.Args) != 2 {
-		log.Fatalf("usage: %s <config.tsv>", os.Args[0])
+	flag.Parse()
+	args := flag.Args()
+	if len(args) != 2 {
+		log.Fatalf("usage: %s <feeds.tsv> <clean-rules.tsv>", os.Args[0])
 	}
-	cfgPath := os.Args[1]
+	cfgPath := args[0]
+	rulesPath := args[1]
 
 	ctx := context.Background()
-	// client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://"+os.Getenv("MONGO_USER")+":"+os.Getenv("MONGO_PASS")+"@localhost:27017"))
+	uri := "mongodb://" + os.Getenv("MONGO_USER") + ":" + os.Getenv("MONGO_PASS") + "@localhost:27017"
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	if err != nil {
 		log.Fatalf("mongo connect: %v", err)
 	}
@@ -61,29 +71,34 @@ func main() {
 	articlesColl := client.Database(dbName).Collection(collName)
 	statsColl := client.Database(dbName).Collection(statsCollName)
 
-	// 1. read configuration file
+	// 1. read feeds config
 	sources, err := readConfig(cfgPath)
 	if err != nil {
 		log.Fatalf("read config: %v", err)
 	}
 
-	// 2. read RSS feeds
+	// 2. load regex rules
+	if err := loadRegexRules(rulesPath); err != nil {
+		log.Fatalf("load rules: %v", err)
+	}
+
+	// 3. fetch RSS
 	feeds, err := fetchAllFeeds(sources)
 	if err != nil {
 		log.Fatalf("fetch feeds: %v", err)
 	}
 
-	// 3. store in MongoDB
+	// 4. store articles (raw + cleaned)
 	if err := storeArticles(ctx, articlesColl, feeds); err != nil {
 		log.Fatalf("store articles: %v", err)
 	}
 
-	// 4 & 5. backfill missing article text
+	// 5. backfill raw & article if missing
 	if err := backfillArticles(ctx, articlesColl); err != nil {
 		log.Fatalf("backfill: %v", err)
 	}
 
-	// 6. update stats document
+	// 6. update stats
 	if err := updateStats(ctx, articlesColl, statsColl); err != nil {
 		log.Fatalf("update stats: %v", err)
 	}
@@ -114,6 +129,41 @@ func readConfig(path string) (map[string]string, error) {
 		out[name] = url
 	}
 	return out, sc.Err()
+}
+
+func loadRegexRules(path string) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	sc := bufio.NewScanner(f)
+	for sc.Scan() {
+		line := strings.TrimSpace(sc.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		parts := strings.SplitN(line, "\t", 2)
+		if len(parts) != 2 {
+			return fmt.Errorf("invalid rule line: %q", line)
+		}
+		src, pat := strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1])
+		re, err := regexp.Compile(pat)
+		if err != nil {
+			return fmt.Errorf("bad regex for %s: %w", src, err)
+		}
+		sourceRegex[src] = re
+	}
+	return sc.Err()
+}
+
+func cleanText(src, raw string) string {
+	re, ok := sourceRegex[src]
+	if !ok {
+		return raw
+	}
+	return re.ReplaceAllString(raw, "")
 }
 
 func fetchAllFeeds(src map[string]string) ([]Article, error) {
@@ -150,8 +200,6 @@ func fetchAllFeeds(src map[string]string) ([]Article, error) {
 				out = append(out, a)
 			}
 			mu.Unlock()
-
-			// 🎯 announce completion
 			fmt.Printf("✅ %s\n", n)
 		}(name, url)
 	}
@@ -165,10 +213,22 @@ func fetchAllFeeds(src map[string]string) ([]Article, error) {
 
 func storeArticles(ctx context.Context, coll *mongo.Collection, arts []Article) error {
 	for _, a := range arts {
-		// try to insert; if link or title already exists, mongo will raise E11000
-		_, err := coll.InsertOne(ctx, a)
+		body, err := fetchArticle(a.Link)
+		var raw, article *string
+		if err != nil {
+			msg := err.Error()
+			a.FetchError = &msg
+		} else {
+			raw = &body
+			cleaned := cleanText(a.Source, body)
+			article = &cleaned
+		}
+		a.Raw = raw
+		a.Article = article
+
+		_, err = coll.InsertOne(ctx, a)
 		if mongo.IsDuplicateKeyError(err) {
-			continue // title or link already in table → ignore
+			continue
 		}
 		if err != nil {
 			return err
@@ -178,15 +238,16 @@ func storeArticles(ctx context.Context, coll *mongo.Collection, arts []Article) 
 }
 
 func backfillArticles(ctx context.Context, coll *mongo.Collection) error {
-	cur, err := coll.Find(ctx, bson.M{"article": bson.M{"$exists": false}})
+	cur, err := coll.Find(ctx, bson.M{"raw": bson.M{"$exists": false}})
 	if err != nil {
 		return err
 	}
 	defer cur.Close(ctx)
 
 	type job struct {
-		id  interface{}
-		url string
+		id     interface{}
+		url    string
+		source string
 	}
 	jobs := make(chan job, 100)
 	var wg sync.WaitGroup
@@ -202,7 +263,13 @@ func backfillArticles(ctx context.Context, coll *mongo.Collection) error {
 					msg := err.Error()
 					update = bson.M{"$set": bson.M{"fetch_error": msg}}
 				} else {
-					update = bson.M{"$set": bson.M{"article": body, "fetch_error": nil}}
+					raw := body
+					article := cleanText(j.source, body)
+					update = bson.M{"$set": bson.M{
+						"raw":         raw,
+						"article":     article,
+						"fetch_error": nil,
+					}}
 				}
 				_, _ = coll.UpdateOne(ctx, bson.M{"_id": j.id}, update)
 			}
@@ -210,15 +277,15 @@ func backfillArticles(ctx context.Context, coll *mongo.Collection) error {
 	}
 
 	for cur.Next(ctx) {
-		var doc bson.M
+		var doc struct {
+			ID     interface{} `bson:"_id"`
+			Link   string      `bson:"link"`
+			Source string      `bson:"source"`
+		}
 		if err := cur.Decode(&doc); err != nil {
 			continue
 		}
-		link, _ := doc["link"].(string)
-		if link == "" {
-			continue
-		}
-		jobs <- job{id: doc["_id"], url: link}
+		jobs <- job{id: doc.ID, url: doc.Link, source: doc.Source}
 	}
 	close(jobs)
 	wg.Wait()
