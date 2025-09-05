@@ -1,4 +1,4 @@
-// src/App.js
+// src/App.js  (complete, back-link preserves source filter via query-string)
 import React, { useState, useMemo } from 'react';
 import {
   BrowserRouter as Router,
@@ -7,6 +7,7 @@ import {
   Link,
   useParams,
   Navigate,
+  useSearchParams,
 } from 'react-router-dom';
 import { useQuery, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import CalendarHeatmap from 'react-calendar-heatmap';
@@ -52,6 +53,8 @@ function useDailyCounts() {
 /* ---------- FULL ARTICLE VIEW ---------- */
 function ArticlePage() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();          // ← read current filter
+  const source = searchParams.get('source') || '';
   const { data: article, isFetching } = useQuery({
     queryKey: ['article', id],
     queryFn: () => api.get(`/article/${id}`).then(r => r.data),
@@ -78,17 +81,19 @@ function ArticlePage() {
       <div dangerouslySetInnerHTML={{ __html: article.article }} />
 
       <hr style={{ margin: '24px 0' }} />
-      <Link to="/">← back to list</Link>
+      {/* source-aware back link */}
+      <Link to={`/?source=${encodeURIComponent(source)}`}>← back to list</Link>
     </div>
   );
 }
 
 /* ---------- LIST VIEW ---------- */
 function ListPage() {
+  const [searchParams, setSearchParams] = useSearchParams(); // ← URL state
+  const source = searchParams.get('source') || '';           // ← read filter
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(50);
   const [query, setQuery] = useState('');
-  const [source, setSource] = useState('');
   const [failed, setFailed] = useState(false);
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
@@ -109,6 +114,16 @@ function ListPage() {
   const dateRange = globalRange
     ? `${globalRange.min} – ${globalRange.max}`
     : null;
+
+  // keep URL in sync when user changes source
+  const handleSourceChange = (e) => {
+    const newSrc = e.target.value;
+    setSearchParams(prev => {
+      prev.set('source', newSrc);
+      return prev;
+    });
+    setPage(0);
+  };
 
   return (
     <div className="App">
@@ -138,7 +153,7 @@ function ListPage() {
       {/* Controls */}
       <div style={{ marginBottom: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <input placeholder="Search…" value={query} onChange={(e) => { setQuery(e.target.value); setPage(0); }} />
-        <select value={source} onChange={(e) => { setSource(e.target.value); setPage(0); }}>
+        <select value={source} onChange={handleSourceChange}>
           <option value="">All sources</option>
           {sources?.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
@@ -165,7 +180,10 @@ function ListPage() {
       <ul style={{ listStyle: 'none', padding: 0 }}>
         {data?.rows.map((a) => (
           <li key={a._id} style={{ marginBottom: 8, textAlign: 'left' }}>
-            <Link to={`/article/${a._id}`} style={{ fontWeight: 'bold', color: '#1a0dab', textDecoration: 'none' }}>
+            <Link
+              to={`/article/${a._id}?source=${encodeURIComponent(source)}`} // pass filter forward
+              style={{ fontWeight: 'bold', color: '#1a0dab', textDecoration: 'none' }}
+            >
               {toISODate(a.published)} – {a.title}
             </Link>
           </li>
