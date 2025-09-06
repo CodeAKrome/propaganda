@@ -1,2 +1,9 @@
 abc-int	24\/7 coverage.*
 syrian-obs	This article was translated and edited by The Syrian Observer.*
+abc-pol	___.*
+abc-pol	24\/7 coverage.*
+abc-top	24\/7 coverage.*
+abc-us	24\/7 coverage.*
+africa-intel	^.*free trial before subscribing\?\s+
+africa-intel	From Monday to Friday .*
+africa-news	^.*OTHER WIDGETS\s+
