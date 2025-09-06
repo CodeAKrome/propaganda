@@ -1,4 +1,4 @@
-// src/App.js  (complete, back-link preserves source filter via query-string)
+// src/App.js  (newest / alphabetical sort + every earlier feature)
 import React, { useState, useMemo } from 'react';
 import {
   BrowserRouter as Router,
@@ -53,7 +53,7 @@ function useDailyCounts() {
 /* ---------- FULL ARTICLE VIEW ---------- */
 function ArticlePage() {
   const { id } = useParams();
-  const [searchParams] = useSearchParams();          // ← read current filter
+  const [searchParams] = useSearchParams();
   const source = searchParams.get('source') || '';
   const { data: article, isFetching } = useQuery({
     queryKey: ['article', id],
@@ -81,7 +81,6 @@ function ArticlePage() {
       <div dangerouslySetInnerHTML={{ __html: article.article }} />
 
       <hr style={{ margin: '24px 0' }} />
-      {/* source-aware back link */}
       <Link to={`/?source=${encodeURIComponent(source)}`}>← back to list</Link>
     </div>
   );
@@ -89,21 +88,22 @@ function ArticlePage() {
 
 /* ---------- LIST VIEW ---------- */
 function ListPage() {
-  const [searchParams, setSearchParams] = useSearchParams(); // ← URL state
-  const source = searchParams.get('source') || '';           // ← read filter
+  const [searchParams, setSearchParams] = useSearchParams();
+  const source = searchParams.get('source') || '';
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(50);
   const [query, setQuery] = useState('');
   const [failed, setFailed] = useState(false);
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
+  const [sort, setSort] = useState('published');          // newest first | title
 
   const params = useMemo(() => {
-    const p = { page, size, q: query, source, failed };
+    const p = { page, size, q: query, source, failed, sort };
     if (from) p.from = from;
     if (to) p.to = to;
     return p;
-  }, [page, size, query, source, failed, from, to]);
+  }, [page, size, query, source, failed, from, to, sort]);
 
   const { data, isFetching } = useArticles(params);
   const { data: sources } = useSources();
@@ -115,13 +115,16 @@ function ListPage() {
     ? `${globalRange.min} – ${globalRange.max}`
     : null;
 
-  // keep URL in sync when user changes source
   const handleSourceChange = (e) => {
     const newSrc = e.target.value;
     setSearchParams(prev => {
       prev.set('source', newSrc);
       return prev;
     });
+    setPage(0);
+  };
+  const handleSortChange = (e) => {
+    setSort(e.target.value);
     setPage(0);
   };
 
@@ -172,6 +175,13 @@ function ListPage() {
             setSize(Math.max(1, Math.min(100, Number(e.target.value) || 50))); setPage(0);
           }} style={{ width: 50 }} />
         </label>
+        <label>
+          Sort:
+          <select value={sort} onChange={handleSortChange} style={{ marginLeft: 4 }}>
+            <option value="published">Newest first</option>
+            <option value="title">Title A-Z</option>
+          </select>
+        </label>
       </div>
 
       {isFetching && <p>Loading…</p>}
@@ -181,7 +191,7 @@ function ListPage() {
         {data?.rows.map((a) => (
           <li key={a._id} style={{ marginBottom: 8, textAlign: 'left' }}>
             <Link
-              to={`/article/${a._id}?source=${encodeURIComponent(source)}`} // pass filter forward
+              to={`/article/${a._id}?source=${encodeURIComponent(source)}`}
               style={{ fontWeight: 'bold', color: '#1a0dab', textDecoration: 'none' }}
             >
               {toISODate(a.published)} – {a.title}

@@ -26,6 +26,8 @@ app.get('/api/articles', async (req, res) => {
   const failed = req.query.failed === 'true';
   const from   = req.query.from;
   const to     = req.query.to;
+  const sortField = req.query.sort === 'title' ? 'title' : 'published';
+  const sortDir   = sortField === 'title' ? 1 : -1;   // A-Z  vs  newest first
 
   const match = {};
   if (q) match.$text = { $search: q };
@@ -44,7 +46,7 @@ app.get('/api/articles', async (req, res) => {
   const [rows, total] = await Promise.all([
     coll
       .find(match, { projection: { article: 0 } })
-      .sort({ published: -1 })
+      .sort({ [sortField]: sortDir })
       .skip(page * size)
       .limit(size)
       .toArray(),
