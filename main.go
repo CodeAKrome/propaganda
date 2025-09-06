@@ -1,4 +1,4 @@
-// main.go  (complete, modified as requested)
+// main.go  (dot-all flag added → deletions cross new-lines)
 package main
 
 import (
@@ -149,7 +149,8 @@ func loadRegexRules(path string) error {
 			return fmt.Errorf("invalid rule line: %q", line)
 		}
 		src, pat := strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1])
-		re, err := regexp.Compile(pat)
+		// (?s) = single-line mode → dot matches newline
+		re, err := regexp.Compile("(?s)" + pat)
 		if err != nil {
 			return fmt.Errorf("bad regex for %s: %w", src, err)
 		}
