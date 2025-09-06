@@ -1,4 +1,4 @@
-// server.js  (complete, with date-range support)
+// server.js  (complete – hides articles < 128 chars unless failed=true)
 require('dotenv').config();
 const express = require('express');
 const { MongoClient, ObjectId } = require('mongodb');
@@ -11,6 +11,12 @@ const client = new MongoClient(process.env.MONGO_URI);
 client.connect().then(() => console.log('Mongo connected'));
 const coll = client.db('rssnews').collection('articles');
 
+// ---------- helper: flag short articles ----------
+function flagShortArticle(doc) {
+  if (doc.article && doc.article.length < 128) doc.too_short = true;
+  else delete doc.too_short;                 // remove flag if now long enough
+}
+
 // GET /api/articles
 app.get('/api/articles', async (req, res) => {
   const page   = Math.max(0, parseInt(req.query.page) || 0);
@@ -18,22 +24,21 @@ app.get('/api/articles', async (req, res) => {
   const q      = (req.query.q || '').trim();
   const src    = req.query.source;
   const failed = req.query.failed === 'true';
-
-  // --- date range ---
-  const from = req.query.from;
-  const to   = req.query.to;
+  const from   = req.query.from;
+  const to     = req.query.to;
 
   const match = {};
   if (q) match.$text = { $search: q };
   if (src) match.source = src;
-  if (failed) match.fetch_error = { $exists: true };
-  else        match.article      = { $exists: true };
+  if (from || to) match.published = {};
+  if (from) match.published.$gte = new Date(from);
+  if (to)   match.published.$lte = new Date(to);
 
-  // add date filters
-  if (from || to) {
-    match.published = {};
-    if (from) match.published.$gte = new Date(from);
-    if (to)   match.published.$lte = new Date(to);
+  if (failed) {
+    // user explicitly wants failures – no extra filtering
+  } else {
+    match.article = { $exists: true };
+    match.too_short = { $ne: true }; // <-- hide short articles by default
   }
 
   const [rows, total] = await Promise.all([
@@ -49,6 +54,26 @@ app.get('/api/articles', async (req, res) => {
   res.json({ rows, total, page, pages: Math.ceil(total / size) });
 });
 
+// GET /api/articles/date-range  (global min/max)
+app.get('/api/articles/date-range', async (_req, res) => {
+  const pipeline = [
+    { $group: { _id: null, min: { $min: '$published' }, max: { $max: '$published' } } },
+  ];
+  const [result] = await coll.aggregate(pipeline).toArray();
+  if (!result) return res.json({ min: null, max: null });
+  res.json({ min: result.min.toISOString().slice(0, 10), max: result.max.toISOString().slice(0, 10) });
+});
+
+// GET /api/articles/daily-counts  (heatmap)
+app.get('/api/articles/daily-counts', async (_req, res) => {
+  const pipeline = [
+    { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$published' } }, count: { $sum: 1 } } },
+    { $sort: { _id: 1 } },
+  ];
+  const raw = await coll.aggregate(pipeline).toArray();
+  res.json(raw.map(d => ({ date: d._id, count: d.count })));
+});
+
 // GET /api/sources
 app.get('/api/sources', async (_req, res) => {
   const data = await coll.distinct('source');
@@ -62,33 +87,13 @@ app.get('/api/article/:id', async (req, res) => {
   res.json(doc);
 });
 
-// GET /api/articles/date-range
-app.get('/api/articles/date-range', async (req, res) => {
-  const pipeline = [
-    { $group: { _id: null, min: { $min: '$published' }, max: { $max: '$published' } } }
-  ];
-  const [result] = await coll.aggregate(pipeline).toArray();
-  if (!result) return res.json({ min: null, max: null });
-  res.json({ min: result.min.toISOString().slice(0, 10),
-             max: result.max.toISOString().slice(0, 10) });
-});
-
-// GET /api/articles/daily-counts
-app.get('/api/articles/daily-counts', async (_req, res) => {
-  const pipeline = [
-    {
-      $group: {
-        _id: {
-          $dateToString: { format: '%Y-%m-%d', date: '$published' }
-        },
-        count: { $sum: 1 }
-      }
-    },
-    { $sort: { _id: 1 } }
-  ];
-  const raw = await coll.aggregate(pipeline).toArray();
-  const counts = raw.map(d => ({ date: d._id, count: d.count }));
-  res.json(counts);
+// POST /api/article/:id  (optional) re-clean after editing raw
+app.post('/api/article/:id', async (req, res) => {
+  const doc = await coll.findOne({ _id: new ObjectId(req.params.id) });
+  if (!doc) return res.status(404).send('not found');
+  flagShortArticle(doc);
+  await coll.replaceOne({ _id: doc._id }, doc);
+  res.json(doc);
 });
 
 app.listen(process.env.PORT, () =>
