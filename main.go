@@ -51,6 +51,7 @@ type Stats struct {
 // source-specific regex cleaners
 var sourceRegex = make(map[string]*regexp.Regexp)
 
+// --- 2.  main collects the counters and prints them ------------------
 func main() {
 	flag.Parse()
 	args := flag.Args()
@@ -88,9 +89,30 @@ func main() {
 		log.Fatalf("fetch feeds: %v", err)
 	}
 
-	// 4. store articles (raw + cleaned)
-	if err := storeArticles(ctx, articlesColl, feeds); err != nil {
-		log.Fatalf("store articles: %v", err)
+	// 4. store articles (raw + cleaned)  +  print per-source summary
+	type sum struct{ added, errs int }
+	perSource := make(map[string]sum)
+
+	for _, a := range feeds {
+		perSource[a.Source] = sum{} // ensure every source is listed
+	}
+
+	for src := range perSource {
+		var arts []Article
+		for _, a := range feeds {
+			if a.Source == src {
+				arts = append(arts, a)
+			}
+		}
+		add, errn, err := storeArticles(ctx, articlesColl, arts)
+		if err != nil {
+			log.Fatalf("store articles for %s: %v", src, err)
+		}
+		perSource[src] = sum{added: add, errs: errn}
+	}
+
+	for src, s := range perSource {
+		fmt.Printf("✅ %-20s  added=%-4d  fetch-errors=%d\n", src, s.added, s.errs)
 	}
 
 	// 5. backfill raw & article if missing
@@ -104,6 +126,60 @@ func main() {
 	}
 	log.Println("all done")
 }
+
+// func main() {
+// 	flag.Parse()
+// 	args := flag.Args()
+// 	if len(args) != 2 {
+// 		log.Fatalf("usage: %s <feeds.tsv> <clean-rules.tsv>", os.Args[0])
+// 	}
+// 	cfgPath := args[0]
+// 	rulesPath := args[1]
+
+// 	ctx := context.Background()
+// 	uri := "mongodb://" + os.Getenv("MONGO_USER") + ":" + os.Getenv("MONGO_PASS") + "@localhost:27017"
+// 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+// 	if err != nil {
+// 		log.Fatalf("mongo connect: %v", err)
+// 	}
+// 	defer client.Disconnect(ctx)
+
+// 	articlesColl := client.Database(dbName).Collection(collName)
+// 	statsColl := client.Database(dbName).Collection(statsCollName)
+
+// 	// 1. read feeds config
+// 	sources, err := readConfig(cfgPath)
+// 	if err != nil {
+// 		log.Fatalf("read config: %v", err)
+// 	}
+
+// 	// 2. load regex rules
+// 	if err := loadRegexRules(rulesPath); err != nil {
+// 		log.Fatalf("load rules: %v", err)
+// 	}
+
+// 	// 3. fetch RSS
+// 	feeds, err := fetchAllFeeds(sources)
+// 	if err != nil {
+// 		log.Fatalf("fetch feeds: %v", err)
+// 	}
+
+// 	// 4. store articles (raw + cleaned)
+// 	if err := storeArticles(ctx, articlesColl, feeds); err != nil {
+// 		log.Fatalf("store articles: %v", err)
+// 	}
+
+// 	// 5. backfill raw & article if missing
+// 	if err := backfillArticles(ctx, articlesColl); err != nil {
+// 		log.Fatalf("backfill: %v", err)
+// 	}
+
+// 	// 6. update stats
+// 	if err := updateStats(ctx, articlesColl, statsColl); err != nil {
+// 		log.Fatalf("update stats: %v", err)
+// 	}
+// 	log.Println("all done")
+// }
 
 /* ---------- helpers ---------- */
 
@@ -212,13 +288,16 @@ func fetchAllFeeds(src map[string]string) ([]Article, error) {
 	return out, nil
 }
 
-func storeArticles(ctx context.Context, coll *mongo.Collection, arts []Article) error {
+// --- 1.  storeArticles now returns (added, errs int) -----------------
+func storeArticles(ctx context.Context, coll *mongo.Collection, arts []Article) (int, int, error) {
+	var added, errs int
 	for _, a := range arts {
 		body, err := fetchArticle(a.Link)
 		var raw, article *string
 		if err != nil {
 			msg := err.Error()
 			a.FetchError = &msg
+			errs++
 		} else {
 			raw = &body
 			cleaned := cleanText(a.Source, body)
@@ -229,14 +308,41 @@ func storeArticles(ctx context.Context, coll *mongo.Collection, arts []Article) 
 
 		_, err = coll.InsertOne(ctx, a)
 		if mongo.IsDuplicateKeyError(err) {
-			continue
+			continue // nothing inserted
 		}
 		if err != nil {
-			return err
+			return added, errs, err
 		}
+		added++
 	}
-	return nil
+	return added, errs, nil
 }
+
+// func storeArticles(ctx context.Context, coll *mongo.Collection, arts []Article) error {
+// 	for _, a := range arts {
+// 		body, err := fetchArticle(a.Link)
+// 		var raw, article *string
+// 		if err != nil {
+// 			msg := err.Error()
+// 			a.FetchError = &msg
+// 		} else {
+// 			raw = &body
+// 			cleaned := cleanText(a.Source, body)
+// 			article = &cleaned
+// 		}
+// 		a.Raw = raw
+// 		a.Article = article
+
+// 		_, err = coll.InsertOne(ctx, a)
+// 		if mongo.IsDuplicateKeyError(err) {
+// 			continue
+// 		}
+// 		if err != nil {
+// 			return err
+// 		}
+// 	}
+// 	return nil
+// }
 
 func backfillArticles(ctx context.Context, coll *mongo.Collection) error {
 	cur, err := coll.Find(ctx, bson.M{"raw": bson.M{"$exists": false}})
