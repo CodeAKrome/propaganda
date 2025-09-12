@@ -8,6 +8,7 @@ import {
   useParams,
   Navigate,
   useSearchParams,
+  useLocation,                // ← added
 } from 'react-router-dom';
 import { useQuery, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import CalendarHeatmap from 'react-calendar-heatmap';
@@ -53,8 +54,7 @@ function useDailyCounts() {
 /* ---------- FULL ARTICLE VIEW ---------- */
 function ArticlePage() {
   const { id } = useParams();
-  const [searchParams] = useSearchParams();
-  const source = searchParams.get('source') || '';
+  const { search } = useLocation();   // ← preserves every filter (q, source, page…)
   const { data: article, isFetching } = useQuery({
     queryKey: ['article', id],
     queryFn: () => api.get(`/article/${id}`).then(r => r.data),
@@ -81,7 +81,7 @@ function ArticlePage() {
       <div dangerouslySetInnerHTML={{ __html: article.article }} />
 
       <hr style={{ margin: '24px 0' }} />
-      <Link to={`/?source=${encodeURIComponent(source)}`}>← back to list</Link>
+      <Link to={`/${search}`}>← back to list</Link>
     </div>
   );
 }
