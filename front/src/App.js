@@ -1,5 +1,5 @@
-// src/App.js  (newest / alphabetical sort + every earlier feature)
-import React, { useState, useMemo } from 'react';
+// src/App.js  (filters now live in the URL so “back to list” keeps them)
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
@@ -8,7 +8,7 @@ import {
   useParams,
   Navigate,
   useSearchParams,
-  useLocation,                // ← added
+  useLocation,
 } from 'react-router-dom';
 import { useQuery, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import CalendarHeatmap from 'react-calendar-heatmap';
@@ -54,7 +54,7 @@ function useDailyCounts() {
 /* ---------- FULL ARTICLE VIEW ---------- */
 function ArticlePage() {
   const { id } = useParams();
-  const { search } = useLocation();   // ← preserves every filter (q, source, page…)
+  const { search } = useLocation();          // ← carries every filter now
   const { data: article, isFetching } = useQuery({
     queryKey: ['article', id],
     queryFn: () => api.get(`/article/${id}`).then(r => r.data),
@@ -89,14 +89,30 @@ function ArticlePage() {
 /* ---------- LIST VIEW ---------- */
 function ListPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const source = searchParams.get('source') || '';
-  const [page, setPage] = useState(0);
-  const [size, setSize] = useState(50);
-  const [query, setQuery] = useState('');
-  const [failed, setFailed] = useState(false);
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
-  const [sort, setSort] = useState('published');          // newest first | title
+
+  // read values from URL on first render (or whenever URL changes)
+  const [query, setQuery]       = useState(searchParams.get('q') || '');
+  const [source, setSource]     = useState(searchParams.get('source') || '');
+  const [failed, setFailed]     = useState(searchParams.get('failed') === 'true');
+  const [from, setFrom]         = useState(searchParams.get('from') || '');
+  const [to, setTo]             = useState(searchParams.get('to') || '');
+  const [sort, setSort]         = useState(searchParams.get('sort') || 'published');
+  const [page, setPage]         = useState(Number(searchParams.get('page') || 0));
+  const [size, setSize]         = useState(Number(searchParams.get('size') || 50));
+
+  // push current state into URL whenever any filter changes
+  useEffect(() => {
+    const next = new URLSearchParams();
+    if (query)              next.set('q', query);
+    if (source)             next.set('source', source);
+    if (failed)             next.set('failed', 'true');
+    if (from)               next.set('from', from);
+    if (to)                 next.set('to', to);
+    if (sort !== 'published') next.set('sort', sort);
+    if (page > 0)           next.set('page', page);
+    if (size !== 50)        next.set('size', size);
+    setSearchParams(next, { replace: true });
+  }, [query, source, failed, from, to, sort, page, size, setSearchParams]);
 
   const params = useMemo(() => {
     const p = { page, size, q: query, source, failed, sort };
@@ -114,19 +130,6 @@ function ListPage() {
   const dateRange = globalRange
     ? `${globalRange.min} – ${globalRange.max}`
     : null;
-
-  const handleSourceChange = (e) => {
-    const newSrc = e.target.value;
-    setSearchParams(prev => {
-      prev.set('source', newSrc);
-      return prev;
-    });
-    setPage(0);
-  };
-  const handleSortChange = (e) => {
-    setSort(e.target.value);
-    setPage(0);
-  };
 
   return (
     <div className="App">
@@ -156,7 +159,7 @@ function ListPage() {
       {/* Controls */}
       <div style={{ marginBottom: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <input placeholder="Search…" value={query} onChange={(e) => { setQuery(e.target.value); setPage(0); }} />
-        <select value={source} onChange={handleSourceChange}>
+        <select value={source} onChange={(e) => { setSource(e.target.value); setPage(0); }}>
           <option value="">All sources</option>
           {sources?.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
@@ -177,7 +180,7 @@ function ListPage() {
         </label>
         <label>
           Sort:
-          <select value={sort} onChange={handleSortChange} style={{ marginLeft: 4 }}>
+          <select value={sort} onChange={(e) => { setSort(e.target.value); setPage(0); }} style={{ marginLeft: 4 }}>
             <option value="published">Newest first</option>
             <option value="title">Title A-Z</option>
           </select>
@@ -191,7 +194,7 @@ function ListPage() {
         {data?.rows.map((a) => (
           <li key={a._id} style={{ marginBottom: 8, textAlign: 'left' }}>
             <Link
-              to={`/article/${a._id}?source=${encodeURIComponent(source)}`}
+              to={`/article/${a._id}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`}
               style={{ fontWeight: 'bold', color: '#1a0dab', textDecoration: 'none' }}
             >
               {toISODate(a.published)} – {a.title}
