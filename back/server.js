@@ -1,11 +1,13 @@
 // server.js  (complete – hides articles < 128 chars unless failed=true)
 require('dotenv').config();
 const express = require('express');
+const bodyParser = require('body-parser');
 const { MongoClient, ObjectId } = require('mongodb');
 const cors = require('cors');
 
 const app = express();
 app.use(cors());
+app.use(bodyParser.json());
 
 const client = new MongoClient(process.env.MONGO_URI);
 client.connect().then(() => console.log('Mongo connected'));
@@ -26,6 +28,7 @@ app.get('/api/articles', async (req, res) => {
   const failed = req.query.failed === 'true';
   const from   = req.query.from;
   const to     = req.query.to;
+  const tags   = req.query.tags;                // ← comma-separated list
   const sortField = req.query.sort === 'title' ? 'title' : 'published';
   const sortDir   = sortField === 'title' ? 1 : -1;   // A-Z  vs  newest first
 
@@ -35,6 +38,7 @@ app.get('/api/articles', async (req, res) => {
   if (from || to) match.published = {};
   if (from) match.published.$gte = new Date(from);
   if (to)   match.published.$lte = new Date(to);
+  if (tags) match.tags = { $in: tags.split(',').map(t => t.trim()) };
 
   if (failed) {
     // user explicitly wants failures – no extra filtering
@@ -82,6 +86,12 @@ app.get('/api/sources', async (_req, res) => {
   res.json(data);
 });
 
+// GET /api/tags
+app.get('/api/tags', async (_req, res) => {
+  const data = await coll.distinct('tags');
+  res.json(data);
+});
+
 // GET /api/article/:id
 app.get('/api/article/:id', async (req, res) => {
   const doc = await coll.findOne({ _id: new ObjectId(req.params.id) });
@@ -96,6 +106,19 @@ app.post('/api/article/:id', async (req, res) => {
   flagShortArticle(doc);
   await coll.replaceOne({ _id: doc._id }, doc);
   res.json(doc);
+});
+
+// POST /api/article/:id/tags  { tags: ['politics','asia'] }
+app.post('/api/article/:id/tags', async (req, res) => {
+  const { tags } = req.body;
+  if (!Array.isArray(tags)) return res.status(400).json({ error: 'tags must be an array' });
+
+  const result = await coll.updateOne(
+    { _id: new ObjectId(req.params.id) },
+    { $set: { tags } }
+  );
+  if (result.matchedCount === 0) return res.status(404).send('not found');
+  res.json({ ok: true });
 });
 
 app.listen(process.env.PORT, () =>
