@@ -121,6 +121,31 @@ app.post('/api/article/:id/tags', async (req, res) => {
   res.json({ ok: true });
 });
 
+// GET /api/tags  (already existed – returns distinct tags)
+// POST /api/articles/bulk-tag  { ids: [...], tags: ['x','y'] }
+app.post('/api/articles/bulk-tag', async (req, res) => {
+  const { ids, tags } = req.body;
+  if (!Array.isArray(ids) || !Array.isArray(tags))
+    return res.status(400).json({ error: 'ids and tags must be arrays' });
+
+  const objIds = ids.map(id => new ObjectId(id));
+  const result = await coll.updateMany(
+    { _id: { $in: objIds } },
+    { $set: { tags } }
+  );
+  res.json({ matched: result.matchedCount, modified: result.modifiedCount });
+});
+
+// DELETE /api/tags/:tag  (removes tag from ALL articles)
+app.delete('/api/tags/:tag', async (req, res) => {
+  const { tag } = req.params;
+  const result = await coll.updateMany(
+    { tags: tag },
+    { $pull: { tags: tag } }
+  );
+  res.json({ matched: result.matchedCount, modified: result.modifiedCount });
+});
+
 app.listen(process.env.PORT, () =>
   console.log(`API listening on :${process.env.PORT}`)
 );

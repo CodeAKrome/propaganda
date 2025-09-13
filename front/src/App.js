@@ -50,6 +50,12 @@ function useDailyCounts() {
     staleTime: 5 * 60 * 1000,
   });
 }
+function useTags() {
+  return useQuery({
+    queryKey: ['tags'],
+    queryFn: () => api.get('/tags').then(r => r.data),
+  });
+}
 
 /* ---------- FULL ARTICLE VIEW ---------- */
 function ArticlePage() {
@@ -98,6 +104,9 @@ function ListPage() {
   const [sort, setSort]         = useState(searchParams.get('sort') || 'published');
   const [page, setPage]         = useState(Number(searchParams.get('page') || 0));
   const [size, setSize]         = useState(Number(searchParams.get('size') || 50));
+  const [selectedTag, setSelectedTag] = useState(searchParams.get('tag') || '');
+  const [checkedIds, setCheckedIds] = useState([]);
+  const [bulkTagInput, setBulkTagInput] = useState('');
 
   useEffect(() => {
     const next = new URLSearchParams();
@@ -109,31 +118,34 @@ function ListPage() {
     if (sort !== 'published') next.set('sort', sort);
     if (page > 0)           next.set('page', page);
     if (size !== 50)        next.set('size', size);
+    if (selectedTag)        next.set('tag', selectedTag);
     setSearchParams(next, { replace: true });
-  }, [query, source, failed, from, to, sort, page, size, setSearchParams]);
+  }, [query, source, failed, from, to, sort, page, size, selectedTag, setSearchParams]);
 
   const params = useMemo(() => {
     const p = { page, size, q: query, source, failed, sort };
     if (from) p.from = from;
     if (to) p.to = to;
+    if (selectedTag) p.tags = selectedTag;
     return p;
-  }, [page, size, query, source, failed, from, to, sort]);
+  }, [page, size, query, source, failed, from, to, sort, selectedTag]);
 
   const { data, isFetching } = useArticles(params);
   const { data: sources } = useSources();
   const { data: globalRange } = useGlobalDateRange();
   const { data: daily } = useDailyCounts();
+  const { data: allTags } = useTags();
 
   const totalPages = data?.pages || 1;
-
-  /* ---------- NEW PAGER ---------- */
-  const pagesAround = 5; // 5 before + 5 after = 10
+  const pagesAround = 5;
   const start = Math.max(0, page - pagesAround);
   const end   = Math.min(totalPages - 1, page + pagesAround);
 
   const dateRange = globalRange
     ? `${globalRange.min} – ${globalRange.max}`
     : null;
+
+  const toTags = (str) => [...new Set(str.split(',').map(s => s.trim()).filter(Boolean))];
 
   return (
     <div className="App">
@@ -189,6 +201,59 @@ function ListPage() {
             <option value="title">Title A-Z</option>
           </select>
         </label>
+
+        {/* Tag dropdown */}
+        <select
+          value={selectedTag}
+          onChange={(e) => { setSelectedTag(e.target.value); setPage(0); }}
+        >
+          <option value="">All tags</option>
+          {allTags?.map((t) => (
+            <option key={t} value={t}>{t}</option>
+          ))}
+        </select>
+
+        {selectedTag && (
+          <button
+            onClick={async () => {
+              if (!window.confirm(`Delete tag “${selectedTag}” globally?`)) return;
+              await api.delete(`/tags/${selectedTag}`);
+              queryClient.invalidateQueries(['tags']);
+              queryClient.invalidateQueries(['articles']);
+              setSelectedTag('');
+            }}
+            style={{ marginLeft: 8, color: '#d33' }}
+          >
+            Delete tag
+          </button>
+        )}
+      </div>
+
+      {/* Bulk-tag bar */}
+      <div style={{ marginBottom: 16, display: 'flex', gap: 8 }}>
+        <input
+          placeholder="Tag checked articles (comma sep)"
+          value={bulkTagInput}
+          onChange={(e) => setBulkTagInput(e.target.value)}
+          style={{ width: 220 }}
+        />
+        <button
+          disabled={!checkedIds.length || !bulkTagInput}
+          onClick={async () => {
+            await api.post('/articles/bulk-tag', {
+              ids: checkedIds,
+              tags: toTags(bulkTagInput),
+            });
+            queryClient.invalidateQueries(['articles']);
+            setCheckedIds([]);
+            setBulkTagInput('');
+          }}
+        >
+          Apply tags
+        </button>
+        <span style={{ marginLeft: 8, fontSize: 12, color: '#666' }}>
+          {checkedIds.length} selected
+        </span>
       </div>
 
       {isFetching && <p>Loading…</p>}
@@ -197,12 +262,29 @@ function ListPage() {
       <ul style={{ listStyle: 'none', padding: 0 }}>
         {data?.rows.map((a) => (
           <li key={a._id} style={{ marginBottom: 8, textAlign: 'left' }}>
+            <input
+              type="checkbox"
+              checked={checkedIds.includes(a._id)}
+              onChange={(e) => {
+                setCheckedIds(prev =>
+                  e.target.checked
+                    ? [...prev, a._id]
+                    : prev.filter(id => id !== a._id)
+                );
+              }}
+              style={{ marginRight: 6 }}
+            />
             <Link
               to={`/article/${a._id}?${searchParams.toString()}`}
               style={{ fontWeight: 'bold', color: '#1a0dab', textDecoration: 'none' }}
             >
               {toISODate(a.published)} – {a.title}
             </Link>
+            {a.tags?.length > 0 && (
+              <span style={{ marginLeft: 8, fontSize: 12, color: '#555' }}>
+                [{a.tags.join(', ')}]
+              </span>
+            )}
           </li>
         ))}
       </ul>
