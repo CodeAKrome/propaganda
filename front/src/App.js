@@ -1,4 +1,4 @@
-// src/App.js  (filters now live in the URL so “back to list” keeps them)
+// src/App.js  (pager window: first / last + up to 10 prev & next)
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   BrowserRouter as Router,
@@ -54,7 +54,7 @@ function useDailyCounts() {
 /* ---------- FULL ARTICLE VIEW ---------- */
 function ArticlePage() {
   const { id } = useParams();
-  const { search } = useLocation();          // ← carries every filter now
+  const { search } = useLocation();
   const { data: article, isFetching } = useQuery({
     queryKey: ['article', id],
     queryFn: () => api.get(`/article/${id}`).then(r => r.data),
@@ -90,7 +90,6 @@ function ArticlePage() {
 function ListPage() {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // read values from URL on first render (or whenever URL changes)
   const [query, setQuery]       = useState(searchParams.get('q') || '');
   const [source, setSource]     = useState(searchParams.get('source') || '');
   const [failed, setFailed]     = useState(searchParams.get('failed') === 'true');
@@ -100,7 +99,6 @@ function ListPage() {
   const [page, setPage]         = useState(Number(searchParams.get('page') || 0));
   const [size, setSize]         = useState(Number(searchParams.get('size') || 50));
 
-  // push current state into URL whenever any filter changes
   useEffect(() => {
     const next = new URLSearchParams();
     if (query)              next.set('q', query);
@@ -127,6 +125,12 @@ function ListPage() {
   const { data: daily } = useDailyCounts();
 
   const totalPages = data?.pages || 1;
+
+  /* ---------- NEW PAGER ---------- */
+  const pagesAround = 5; // 5 before + 5 after = 10
+  const start = Math.max(0, page - pagesAround);
+  const end   = Math.min(totalPages - 1, page + pagesAround);
+
   const dateRange = globalRange
     ? `${globalRange.min} – ${globalRange.max}`
     : null;
@@ -194,7 +198,7 @@ function ListPage() {
         {data?.rows.map((a) => (
           <li key={a._id} style={{ marginBottom: 8, textAlign: 'left' }}>
             <Link
-              to={`/article/${a._id}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`}
+              to={`/article/${a._id}?${searchParams.toString()}`}
               style={{ fontWeight: 'bold', color: '#1a0dab', textDecoration: 'none' }}
             >
               {toISODate(a.published)} – {a.title}
@@ -203,13 +207,22 @@ function ListPage() {
         ))}
       </ul>
 
-      {/* Pagination */}
-      <div>
-        {Array.from({ length: totalPages }, (_, i) => (
-          <button key={i} disabled={i === page} onClick={() => setPage(i)}>
-            {i + 1}
+      {/* ---------- NEW PAGER ---------- */}
+      <div style={{ marginTop: 16 }}>
+        <button disabled={page === 0} onClick={() => setPage(0)}>First</button>
+
+        {Array.from({ length: end - start + 1 }, (_, i) => start + i).map((n) => (
+          <button
+            key={n}
+            disabled={n === page}
+            onClick={() => setPage(n)}
+            style={{ margin: '0 2px' }}
+          >
+            {n + 1}
           </button>
         ))}
+
+        <button disabled={page === totalPages - 1} onClick={() => setPage(totalPages - 1)}>Last</button>
       </div>
     </div>
   );
