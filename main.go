@@ -85,10 +85,12 @@ func main() {
 	}
 
 	// 3. fetch RSS
-	feeds, err := fetchAllFeeds(sources)
-	if err != nil {
-		log.Fatalf("fetch feeds: %v", err)
-	}
+	// feeds, err := fetchAllFeeds(sources)
+	// if err != nil {
+	// 	log.Fatalf("fetch feeds: %v", err)
+	// }
+
+	feeds := fetchAllFeeds(sources)
 
 	// 4. store articles (raw + cleaned)  +  print per-source summary
 	type sum struct{ added, errs int }
@@ -190,12 +192,56 @@ func cleanText(src, raw string) string {
 	return re.ReplaceAllString(raw, "")
 }
 
-func fetchAllFeeds(src map[string]string) ([]Article, error) {
+// func fetchAllFeeds(src map[string]string) ([]Article, error) {
+// 	var (
+// 		mu   sync.Mutex
+// 		out  []Article
+// 		wg   sync.WaitGroup
+// 		errs []error
+// 	)
+
+// 	for name, url := range src {
+// 		wg.Add(1)
+// 		go func(n, u string) {
+// 			defer wg.Done()
+// 			fp := gofeed.NewParser()
+// 			feed, err := fp.ParseURL(u)
+// 			if err != nil {
+// 				mu.Lock()
+// 				errs = append(errs, fmt.Errorf("%s: %w", n, err))
+// 				mu.Unlock()
+// 				return
+// 			}
+// 			mu.Lock()
+// 			for _, item := range feed.Items {
+// 				a := Article{
+// 					Source:      n,
+// 					Title:       item.Title,
+// 					Description: item.Description,
+// 					Link:        item.Link,
+// 				}
+// 				if item.PublishedParsed != nil {
+// 					a.Published = *item.PublishedParsed
+// 				}
+// 				out = append(out, a)
+// 			}
+// 			mu.Unlock()
+// 			fmt.Printf("✅ %s\n", n)
+// 		}(name, url)
+// 	}
+// 	wg.Wait()
+
+// 	if len(errs) > 0 {
+// 		return out, fmt.Errorf("some feeds failed: %v", errs)
+// 	}
+// 	return out, nil
+// }
+
+func fetchAllFeeds(src map[string]string) []Article {
 	var (
-		mu   sync.Mutex
-		out  []Article
-		wg   sync.WaitGroup
-		errs []error
+		mu  sync.Mutex
+		out []Article
+		wg  sync.WaitGroup
 	)
 
 	for name, url := range src {
@@ -205,9 +251,7 @@ func fetchAllFeeds(src map[string]string) ([]Article, error) {
 			fp := gofeed.NewParser()
 			feed, err := fp.ParseURL(u)
 			if err != nil {
-				mu.Lock()
-				errs = append(errs, fmt.Errorf("%s: %w", n, err))
-				mu.Unlock()
+				log.Printf("⚠️  feed failed: %s → %v", n, err) // keep calm and carry on
 				return
 			}
 			mu.Lock()
@@ -228,11 +272,7 @@ func fetchAllFeeds(src map[string]string) ([]Article, error) {
 		}(name, url)
 	}
 	wg.Wait()
-
-	if len(errs) > 0 {
-		return out, fmt.Errorf("some feeds failed: %v", errs)
-	}
-	return out, nil
+	return out // always succeeds from the caller’s point of view
 }
 
 func storeArticles(ctx context.Context, coll *mongo.Collection, arts []Article) (int, int, error) {
