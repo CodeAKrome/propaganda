@@ -92,7 +92,7 @@ app.get('/api/tags', async (_req, res) => {
   res.json(data);
 });
 
-// GET /api/article/:id
+// GET /api/article/:id   ← REMOVED PROJECTION – entire doc returned
 app.get('/api/article/:id', async (req, res) => {
   const doc = await coll.findOne({ _id: new ObjectId(req.params.id) });
   if (!doc) return res.status(404).send('not found');
@@ -121,7 +121,6 @@ app.post('/api/article/:id/tags', async (req, res) => {
   res.json({ ok: true });
 });
 
-// GET /api/tags  (already existed – returns distinct tags)
 // POST /api/articles/bulk-tag  { ids: [...], tags: ['x','y'] }
 app.post('/api/articles/bulk-tag', async (req, res) => {
   const { ids, tags } = req.body;

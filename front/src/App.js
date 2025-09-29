@@ -58,6 +58,41 @@ function useTags() {
 }
 
 /* ---------- FULL ARTICLE VIEW ---------- */
+// function ArticlePage() {
+//   const { id } = useParams();
+//   const { search } = useLocation();
+//   const { data: article, isFetching } = useQuery({
+//     queryKey: ['article', id],
+//     queryFn: () => api.get(`/article/${id}`).then(r => r.data),
+//   });
+
+//   if (isFetching) return <p>Loading…</p>;
+//   if (!article) return <p>Not found</p>;
+
+//   return (
+//     <div className="article">
+//       <h2>{article.title}</h2>
+//       <p style={{ marginBottom: 4 }}>
+//         <em>{article.source}</em> – {toISODate(article.published)}
+//       </p>
+
+//       {article.description && (
+//         <>
+//           <h4 style={{ margin: '16px 0 4px' }}>Description</h4>
+//           <p style={{ marginTop: 0 }}>{article.description}</p>
+//         </>
+//       )}
+
+//       <h4 style={{ margin: '24px 0 4px' }}>Article</h4>
+//       <div dangerouslySetInnerHTML={{ __html: article.article }} />
+
+//       <hr style={{ margin: '24px 0' }} />
+//       <Link to={`/${search}`}>← back to list</Link>
+//     </div>
+//   );
+// }
+
+/* ---------- FULL ARTICLE VIEW ---------- */
 function ArticlePage() {
   const { id } = useParams();
   const { search } = useLocation();
@@ -72,6 +107,16 @@ function ArticlePage() {
   return (
     <div className="article">
       <h2>{article.title}</h2>
+
+      {/* NEW: link to the original story */}
+      {article.link && (
+        <p style={{ margin: '0 0 8px' }}>
+          <a href={article.link} target="_blank" rel="noreferrer">
+            🔗 Original story
+          </a>
+        </p>
+      )}
+
       <p style={{ marginBottom: 4 }}>
         <em>{article.source}</em> – {toISODate(article.published)}
       </p>
