@@ -6,7 +6,8 @@ load:
 	./propaganda config/big.tsv config/kill.tsv
 #	go run main.go config/big.tsv config/kill.tsv
 testload:
-	go run main.go config/test.tsv config/kill.tsv
+	./propaganda config/test.tsv config/kill.tsv
+#	go run main.go config/test.tsv config/kill.tsv
 back:
 	cd back; node server.js
 front:

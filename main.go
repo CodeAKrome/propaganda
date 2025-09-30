@@ -305,6 +305,39 @@ func fetchAllFeeds(src map[string]string) []Article {
 // 	return added, errs, nil
 // }
 
+// func storeArticles(ctx context.Context, coll *mongo.Collection, arts []Article) (int, int, error) {
+// 	var added, errs int
+// 	for _, a := range arts {
+// 		body, err := fetchArticle(a.Link)
+// 		var raw, article *string
+// 		if err != nil {
+// 			msg := err.Error()
+// 			a.FetchError = &msg
+// 			errs++
+// 		} else {
+// 			raw = &body
+// 			cleaned := cleanText(a.Source, body)
+// 			article = &cleaned
+// 		}
+// 		a.Raw = raw
+// 		a.Article = article
+// 		a.Tags = []string{} // always init to []
+
+// 		// --- keep existing record if it is already there ---
+// 		_, err = coll.ReplaceOne(
+// 			ctx,
+// 			bson.M{"link": a.Link},            // unique key
+// 			a,                                 // new document
+// 			options.Replace().SetUpsert(true), // insert if not found
+// 		)
+// 		if err != nil {
+// 			return added, errs, err
+// 		}
+// 		added++ // we count it as “added” even if it was only an upsert
+// 	}
+// 	return added, errs, nil
+// }
+
 func storeArticles(ctx context.Context, coll *mongo.Collection, arts []Article) (int, int, error) {
 	var added, errs int
 	for _, a := range arts {
@@ -330,10 +363,16 @@ func storeArticles(ctx context.Context, coll *mongo.Collection, arts []Article) 
 			a,                                 // new document
 			options.Replace().SetUpsert(true), // insert if not found
 		)
+
+		// Handle duplicate key errors gracefully (e.g., duplicate title)
 		if err != nil {
+			if mongo.IsDuplicateKeyError(err) {
+				// Skip duplicates silently - article already exists
+				continue
+			}
 			return added, errs, err
 		}
-		added++ // we count it as “added” even if it was only an upsert
+		added++ // we count it as "added" even if it was only an upsert
 	}
 	return added, errs, nil
 }
