@@ -29,6 +29,8 @@ const (
 	statsDocID     = "stats"
 	workerCount    = 8
 	requestTimeout = 15 * time.Second
+	maxRetries     = 3
+	initialBackoff = 2 * time.Second
 )
 
 type Article struct {
@@ -85,11 +87,6 @@ func main() {
 	}
 
 	// 3. fetch RSS
-	// feeds, err := fetchAllFeeds(sources)
-	// if err != nil {
-	// 	log.Fatalf("fetch feeds: %v", err)
-	// }
-
 	feeds := fetchAllFeeds(sources)
 
 	// 4. store articles (raw + cleaned)  +  print per-source summary
@@ -192,50 +189,34 @@ func cleanText(src, raw string) string {
 	return re.ReplaceAllString(raw, "")
 }
 
-// func fetchAllFeeds(src map[string]string) ([]Article, error) {
-// 	var (
-// 		mu   sync.Mutex
-// 		out  []Article
-// 		wg   sync.WaitGroup
-// 		errs []error
-// 	)
+// Helper function to parse feeds with retry logic
+func parseFeedWithRetry(fp *gofeed.Parser, url string, maxRetries int) (*gofeed.Feed, error) {
+	var feed *gofeed.Feed
+	var err error
+	backoff := initialBackoff
 
-// 	for name, url := range src {
-// 		wg.Add(1)
-// 		go func(n, u string) {
-// 			defer wg.Done()
-// 			fp := gofeed.NewParser()
-// 			feed, err := fp.ParseURL(u)
-// 			if err != nil {
-// 				mu.Lock()
-// 				errs = append(errs, fmt.Errorf("%s: %w", n, err))
-// 				mu.Unlock()
-// 				return
-// 			}
-// 			mu.Lock()
-// 			for _, item := range feed.Items {
-// 				a := Article{
-// 					Source:      n,
-// 					Title:       item.Title,
-// 					Description: item.Description,
-// 					Link:        item.Link,
-// 				}
-// 				if item.PublishedParsed != nil {
-// 					a.Published = *item.PublishedParsed
-// 				}
-// 				out = append(out, a)
-// 			}
-// 			mu.Unlock()
-// 			fmt.Printf("✅ %s\n", n)
-// 		}(name, url)
-// 	}
-// 	wg.Wait()
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		feed, err = fp.ParseURL(url)
+		if err == nil {
+			return feed, nil
+		}
 
-// 	if len(errs) > 0 {
-// 		return out, fmt.Errorf("some feeds failed: %v", errs)
-// 	}
-// 	return out, nil
-// }
+		// Check if it's a 429 error
+		if strings.Contains(err.Error(), "429") || strings.Contains(err.Error(), "Too Many Requests") {
+			if attempt < maxRetries {
+				log.Printf("   ⏳ rate limited, waiting %v before retry %d/%d", backoff, attempt+1, maxRetries)
+				time.Sleep(backoff)
+				backoff *= 2 // exponential backoff
+				continue
+			}
+		}
+
+		// For non-429 errors or final attempt, return the error
+		return nil, err
+	}
+
+	return nil, err
+}
 
 func fetchAllFeeds(src map[string]string) []Article {
 	var (
@@ -249,9 +230,9 @@ func fetchAllFeeds(src map[string]string) []Article {
 		go func(n, u string) {
 			defer wg.Done()
 			fp := gofeed.NewParser()
-			feed, err := fp.ParseURL(u)
+			feed, err := parseFeedWithRetry(fp, u, maxRetries)
 			if err != nil {
-				log.Printf("⚠️  feed failed: %s → %v", n, err) // keep calm and carry on
+				log.Printf("⚠️  feed failed: %s → %v", n, err)
 				return
 			}
 			mu.Lock()
@@ -272,76 +253,41 @@ func fetchAllFeeds(src map[string]string) []Article {
 		}(name, url)
 	}
 	wg.Wait()
-	return out // always succeeds from the caller’s point of view
+	return out // always succeeds from the caller's point of view
 }
 
-// func storeArticles(ctx context.Context, coll *mongo.Collection, arts []Article) (int, int, error) {
-// 	var added, errs int
-// 	for _, a := range arts {
-// 		body, err := fetchArticle(a.Link)
-// 		var raw, article *string
-// 		if err != nil {
-// 			msg := err.Error()
-// 			a.FetchError = &msg
-// 			errs++
-// 		} else {
-// 			raw = &body
-// 			cleaned := cleanText(a.Source, body)
-// 			article = &cleaned
-// 		}
-// 		a.Raw = raw
-// 		a.Article = article
-// 		a.Tags = []string{} // <-- NEW: always init to []
+// Helper function to fetch articles with retry logic
+func fetchArticleWithRetry(url string, maxRetries int) (string, error) {
+	var body string
+	var err error
+	backoff := initialBackoff
 
-// 		_, err = coll.InsertOne(ctx, a)
-// 		if mongo.IsDuplicateKeyError(err) {
-// 			continue // nothing inserted
-// 		}
-// 		if err != nil {
-// 			return added, errs, err
-// 		}
-// 		added++
-// 	}
-// 	return added, errs, nil
-// }
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		body, err = fetchArticle(url)
+		if err == nil {
+			return body, nil
+		}
 
-// func storeArticles(ctx context.Context, coll *mongo.Collection, arts []Article) (int, int, error) {
-// 	var added, errs int
-// 	for _, a := range arts {
-// 		body, err := fetchArticle(a.Link)
-// 		var raw, article *string
-// 		if err != nil {
-// 			msg := err.Error()
-// 			a.FetchError = &msg
-// 			errs++
-// 		} else {
-// 			raw = &body
-// 			cleaned := cleanText(a.Source, body)
-// 			article = &cleaned
-// 		}
-// 		a.Raw = raw
-// 		a.Article = article
-// 		a.Tags = []string{} // always init to []
+		// Check if it's a 429 error
+		if strings.Contains(err.Error(), "429") || strings.Contains(err.Error(), "Too Many Requests") {
+			if attempt < maxRetries {
+				time.Sleep(backoff)
+				backoff *= 2 // exponential backoff
+				continue
+			}
+		}
 
-// 		// --- keep existing record if it is already there ---
-// 		_, err = coll.ReplaceOne(
-// 			ctx,
-// 			bson.M{"link": a.Link},            // unique key
-// 			a,                                 // new document
-// 			options.Replace().SetUpsert(true), // insert if not found
-// 		)
-// 		if err != nil {
-// 			return added, errs, err
-// 		}
-// 		added++ // we count it as “added” even if it was only an upsert
-// 	}
-// 	return added, errs, nil
-// }
+		// For non-429 errors or final attempt, return the error
+		return "", err
+	}
+
+	return "", err
+}
 
 func storeArticles(ctx context.Context, coll *mongo.Collection, arts []Article) (int, int, error) {
 	var added, errs int
 	for _, a := range arts {
-		body, err := fetchArticle(a.Link)
+		body, err := fetchArticleWithRetry(a.Link, maxRetries)
 		var raw, article *string
 		if err != nil {
 			msg := err.Error()
@@ -397,7 +343,7 @@ func backfillArticles(ctx context.Context, coll *mongo.Collection) error {
 		go func() {
 			defer wg.Done()
 			for j := range jobs {
-				body, err := fetchArticle(j.url)
+				body, err := fetchArticleWithRetry(j.url, maxRetries)
 				var update bson.M
 				if err != nil {
 					msg := err.Error()
