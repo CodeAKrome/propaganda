@@ -284,6 +284,19 @@ func fetchArticleWithRetry(url string, maxRetries int) (string, error) {
 	return "", err
 }
 
+// isDuplicateKeyError checks if an error is a MongoDB duplicate key error (E11000)
+func isDuplicateKeyError(err error) bool {
+	if err == nil {
+		return false
+	}
+	// Check for MongoDB duplicate key error code
+	if mongo.IsDuplicateKeyError(err) {
+		return true
+	}
+	// Also check error message as fallback
+	return strings.Contains(err.Error(), "E11000") || strings.Contains(err.Error(), "duplicate key")
+}
+
 func storeArticles(ctx context.Context, coll *mongo.Collection, arts []Article) (int, int, int, error) {
 	// Build list of all links to check
 	links := make([]string, len(arts))
@@ -332,9 +345,15 @@ func storeArticles(ctx context.Context, coll *mongo.Collection, arts []Article) 
 		// Initialize tags to empty slice
 		a.Tags = []string{}
 
-		// Insert the article
+		// Insert the article, handling duplicate key errors gracefully
 		_, err = coll.InsertOne(ctx, a)
 		if err != nil {
+			if isDuplicateKeyError(err) {
+				// This is a duplicate - just skip it and continue
+				skipped++
+				continue
+			}
+			// For other errors, return them
 			return added, errs, skipped, err
 		}
 		added++
