@@ -90,7 +90,7 @@ func main() {
 	feeds := fetchAllFeeds(sources)
 
 	// 4. store articles (raw + cleaned)  +  print per-source summary
-	type sum struct{ added, errs int }
+	type sum struct{ added, errs, skipped int }
 	perSource := make(map[string]sum)
 
 	for _, a := range feeds {
@@ -104,15 +104,15 @@ func main() {
 				arts = append(arts, a)
 			}
 		}
-		add, errn, err := storeArticles(ctx, articlesColl, arts)
+		add, errn, skip, err := storeArticles(ctx, articlesColl, arts)
 		if err != nil {
 			log.Fatalf("store articles for %s: %v", src, err)
 		}
-		perSource[src] = sum{added: add, errs: errn}
+		perSource[src] = sum{added: add, errs: errn, skipped: skip}
 	}
 
 	for src, s := range perSource {
-		fmt.Printf("✅ %-20s  added=%-4d  fetch-errors=%d\n", src, s.added, s.errs)
+		fmt.Printf("✅ %-20s  added=%-4d  fetch-errors=%-4d  skipped=%d\n", src, s.added, s.errs, s.skipped)
 	}
 
 	// 5. backfill raw & article if missing
@@ -284,7 +284,7 @@ func fetchArticleWithRetry(url string, maxRetries int) (string, error) {
 	return "", err
 }
 
-func storeArticles(ctx context.Context, coll *mongo.Collection, arts []Article) (int, int, error) {
+func storeArticles(ctx context.Context, coll *mongo.Collection, arts []Article) (int, int, int, error) {
 	// Build list of all links to check
 	links := make([]string, len(arts))
 	for i, a := range arts {
@@ -294,7 +294,7 @@ func storeArticles(ctx context.Context, coll *mongo.Collection, arts []Article) 
 	// Find existing links in one query
 	cur, err := coll.Find(ctx, bson.M{"link": bson.M{"$in": links}}, options.Find().SetProjection(bson.M{"link": 1}))
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, 0, err
 	}
 
 	existing := make(map[string]bool)
@@ -309,14 +309,38 @@ func storeArticles(ctx context.Context, coll *mongo.Collection, arts []Article) 
 	cur.Close(ctx)
 
 	// Process only new articles
-	var added, errs int
+	var added, errs, skipped int
 	for _, a := range arts {
 		if existing[a.Link] {
+			skipped++
 			continue // Skip existing article
 		}
-		// ... rest of the processing
+
+		// Fetch and process new article
+		body, err := fetchArticleWithRetry(a.Link, maxRetries)
+		if err != nil {
+			msg := err.Error()
+			a.FetchError = &msg
+			errs++
+		} else {
+			raw := body
+			article := cleanText(a.Source, body)
+			a.Raw = &raw
+			a.Article = &article
+		}
+
+		// Initialize tags to empty slice
+		a.Tags = []string{}
+
+		// Insert the article
+		_, err = coll.InsertOne(ctx, a)
+		if err != nil {
+			return added, errs, skipped, err
+		}
+		added++
 	}
-	return added, errs, nil
+
+	return added, errs, skipped, nil
 }
 
 func backfillArticles(ctx context.Context, coll *mongo.Collection) error {
