@@ -25,9 +25,11 @@ vector:
 	$(DB_ENV)/bin/python db/mongo2chroma.py load
 # runseries of queries to generate db/output/*.md
 query:
+	rm db/output/*.md
 	source $(DB_ENV)/bin/activate && cd db && ./runbatch.sh
 # generate mp3 files into mp3/mp3 using files in db/output/*.md
 mp3:
+	rm mp3/mp3/*.mp3
 	cd mp3 && ./mkmkbatch.sh
 	source $$(conda info --base)/etc/profile.d/conda.sh && \
 	conda activate $(CONDA_MP3_ENV) && \
