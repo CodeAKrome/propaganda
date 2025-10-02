@@ -68,13 +68,22 @@ def parse_date_arg(date_str: str) -> datetime:
 # ------------------------------------------------------------------
 def load_into_chroma(limit: int = None) -> int:
     """
-    Embed every article that has `article` text and add into Chroma.
-    Already-existing IDs are kept (not overwritten).
+    Embed every article that has `article` text **and no fetch_error**
+    and add into Chroma. Already-existing IDs are kept (not overwritten).
     Returns number of vectors stored.
     """
-    q = {"article": {"$exists": True, "$ne": None}}
+    # --- FILTER: ignore any doc that has a non-empty fetch_error ---
+    q = {
+        "article": {"$exists": True, "$ne": None},
+        "$or": [
+            {"fetch_error": {"$exists": False}},   # field missing
+            {"fetch_error": {"$in": [None, ""]}}   # field nil or empty string
+        ]
+    }
+    # ---------------------------------------------------------------------
 
-    cursor = mongo_coll.find(q, {"_id": 1, "article": 1}).limit(limit) if limit else mongo_coll.find(q, {"_id": 1, "article": 1})
+    cursor = mongo_coll.find(q, {"_id": 1, "article": 1}).limit(limit) if limit \
+        else mongo_coll.find(q, {"_id": 1, "article": 1})
 
     docs, ids = [], []
     stored = 0
@@ -96,11 +105,7 @@ def load_into_chroma(limit: int = None) -> int:
         # Batch-encode for speed
         if len(docs) >= BATCH_SIZE:
             embs = encoder.encode(docs, convert_to_tensor=True).cpu().numpy().tolist()
-            collection.add(
-                documents=docs,
-                embeddings=embs,
-                ids=ids
-            )
+            collection.add(documents=docs, embeddings=embs, ids=ids)
             stored += len(ids)
             docs, ids = [], []
 
@@ -125,7 +130,13 @@ def query_chroma(text: str,
     - Negative integers for relative days (e.g., '-7' = 7 days ago)
     """
     # 1. Build the Mongo-side filter for the candidate set
-    q = {"article": {"$exists": True, "$ne": None}}
+    q = {
+        "article": {"$exists": True, "$ne": None},
+        "$or": [
+            {"fetch_error": {"$exists": False}},
+            {"fetch_error": {"$in": [None, ""]}}
+        ]
+    }
 
     if start_date or end_date:
         date_filter = {}
@@ -163,7 +174,12 @@ def export_titles(start_date: str = None, end_date: str = None) -> None:
     - Negative integers for relative days (e.g., '-7' = 7 days ago)
     """
     # Build the query filter
-    q = {}
+    q = {
+        "$or": [
+            {"fetch_error": {"$exists": False}},
+            {"fetch_error": {"$in": [None, ""]}}
+        ]
+    }
     
     if start_date or end_date:
         date_filter = {}
