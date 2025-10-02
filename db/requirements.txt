@@ -3,3 +3,5 @@ pymongo
 sentence-transformers
 chromadb
 tqdm
+mlx-lm
+sentencepiece
