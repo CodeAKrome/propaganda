@@ -31,6 +31,7 @@ const (
 	requestTimeout = 15 * time.Second
 	maxRetries     = 3
 	initialBackoff = 2 * time.Second
+	MINLINE        = 128
 )
 
 type Article struct {
@@ -338,6 +339,14 @@ func storeArticles(ctx context.Context, coll *mongo.Collection, arts []Article) 
 		} else {
 			raw := body
 			article := cleanText(a.Source, body)
+
+			// Check if article length is less than MINLINE
+			if len(article) < MINLINE {
+				// Skip this article entirely - don't insert it
+				skipped++
+				continue
+			}
+
 			a.Raw = &raw
 			a.Article = &article
 		}
@@ -390,11 +399,19 @@ func backfillArticles(ctx context.Context, coll *mongo.Collection) error {
 				} else {
 					raw := body
 					article := cleanText(j.source, body)
-					update = bson.M{"$set": bson.M{
-						"raw":         raw,
-						"article":     article,
-						"fetch_error": nil,
-					}}
+
+					// Check if article length is less than MINLINE
+					if len(article) < MINLINE {
+						// Mark as too short so it won't come up in queries
+						msg := fmt.Sprintf("article too short: %d chars (minimum %d)", len(article), MINLINE)
+						update = bson.M{"$set": bson.M{"fetch_error": msg}}
+					} else {
+						update = bson.M{"$set": bson.M{
+							"raw":         raw,
+							"article":     article,
+							"fetch_error": nil,
+						}}
+					}
 				}
 				_, _ = coll.UpdateOne(ctx, bson.M{"_id": j.id}, update)
 			}
