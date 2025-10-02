@@ -155,6 +155,47 @@ def query_chroma(text: str,
     return filtered[:n]
 
 
+def export_titles(start_date: str = None, end_date: str = None) -> None:
+    """
+    Export tab-delimited published date, source, MongoDB ID, and article title to stdout.
+    Optional date window:
+    - ISO-8601 strings (e.g., '2025-09-06T08:00:58+00:00')
+    - Negative integers for relative days (e.g., '-7' = 7 days ago)
+    """
+    # Build the query filter
+    q = {}
+    
+    if start_date or end_date:
+        date_filter = {}
+        if start_date:
+            date_filter["$gte"] = parse_date_arg(start_date)
+        if end_date:
+            date_filter["$lte"] = parse_date_arg(end_date)
+        q["published"] = date_filter
+    
+    # Fetch documents with _id, title, published, and source
+    cursor = mongo_coll.find(q, {"_id": 1, "title": 1, "published": 1, "source": 1})
+    
+    # Write tab-delimited output
+    for doc in cursor:
+        _id = str(doc["_id"])
+        title = doc.get("title", "")
+        source = doc.get("source", "")
+        published = doc.get("published")
+        
+        # Format published date as YYYY-MM-DD
+        if published and isinstance(published, datetime):
+            published_str = published.strftime("%Y-%m-%d")
+        else:
+            published_str = ""
+        
+        # Escape tabs and newlines in title and source
+        title = title.replace("\t", " ").replace("\n", " ").replace("\r", " ")
+        source = source.replace("\t", " ").replace("\n", " ").replace("\r", " ")
+        
+        print(f"{published_str}\t{source}\t{_id}\t{title}")
+
+
 # ------------------------------------------------------------------
 # CLI
 # ------------------------------------------------------------------
@@ -170,6 +211,10 @@ def main(argv=None):
     p_query.add_argument("-n", "--top", type=int, default=13, help="How many results to return")
     p_query.add_argument("--start-date", help="Start date: ISO format or negative days (e.g., '-7' for 7 days ago)")
     p_query.add_argument("--end-date",   help="End date: ISO format or negative days (e.g., '-1' for 1 day ago)")
+
+    p_title = sub.add_parser("title", help="Export tab-delimited MongoDB ID and article title")
+    p_title.add_argument("--start-date", help="Start date: ISO format or negative days (e.g., '-7' for 7 days ago)")
+    p_title.add_argument("--end-date",   help="End date: ISO format or negative days (e.g., '-1' for 1 day ago)")
 
     args = parser.parse_args(argv)
 
@@ -187,6 +232,11 @@ def main(argv=None):
             print("---")
             print(f"ID: {h['id']}")
             print(f"Text: {h['text']}")
+        return
+
+    if args.cmd == "title":
+        export_titles(start_date=args.start_date,
+                     end_date=args.end_date)
         return
 
 
