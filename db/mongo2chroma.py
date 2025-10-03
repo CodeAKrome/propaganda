@@ -26,8 +26,8 @@ MONGO_COLL     = "articles"
 
 CHROMA_PATH    = "./chroma_db"          # persisted to disk
 CHROMA_COLL    = "articles"
-EMBED_MODEL    = "all-MiniLM-L6-v2"     # 384-dim, ~50 MB
-BATCH_SIZE     = 64
+EMBED_MODEL    = "BAAI/bge-large-en-v1.5"  # 1024-dim, excellent retrieval model
+BATCH_SIZE     = 32
 # ------------------------------------------------------------------
 
 mongo_client = pymongo.MongoClient(MONGO_URI)
@@ -44,6 +44,7 @@ collection = chroma_client.get_or_create_collection(
     metadata={"hnsw:space": "cosine"}
 )
 
+# Load BGE encoder
 encoder = SentenceTransformer(EMBED_MODEL)
 
 
@@ -150,7 +151,9 @@ def query_chroma(text: str,
     allowed_ids = {str(d["_id"]) for d in mongo_coll.find(q, {"_id": 1})}
 
     # 3. Run the vector search
-    emb = encoder.encode(text, convert_to_tensor=True).cpu().numpy().tolist()
+    # BGE models benefit from query instruction prefix
+    query_text = f"Represent this sentence for searching relevant passages: {text}"
+    emb = encoder.encode(query_text, convert_to_tensor=True).cpu().numpy().tolist()
     res = collection.query(
         query_embeddings=[emb],
         n_results=n * 3,               # over-fetch in case many fall outside the date window
