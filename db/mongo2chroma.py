@@ -24,7 +24,7 @@ MONGO_URI      = os.getenv("MONGO_URI", "mongodb://root:example@localhost:27017"
 MONGO_DB       = "rssnews"
 MONGO_COLL     = "articles"
 
-CHROMA_PATH    = "./chroma_db"          # persisted to disk
+CHROMA_PATH    = "./chroma"          # persisted to disk
 CHROMA_COLL    = "articles"
 EMBED_MODEL    = "BAAI/bge-large-en-v1.5"  # 1024-dim, excellent retrieval model
 BATCH_SIZE     = 32
