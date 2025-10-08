@@ -6,7 +6,12 @@ MLX_MODEL = mlx-community/Llama-4-Scout-17B-16E-Instruct-4bit
 .PHONY: build load back front vector query mp3 mgconsole testload thingsthatgo fini
 
 thingsthatgo: load vector query mp3 fini
-allquery: query mp3 fini
+
+fload: load vector fini
+fquerymp3: query mp3 fini
+fquery: query fini
+fmp3: mp3 fini
+
 # build propaganda go binary
 build:
 	go build
@@ -26,6 +31,8 @@ vector:
 # runseries of queries to generate db/output/*.md
 query:
 	find db/output -name "*.md" -delete
+	find db/output -name "*.txt" -delete
+	find db/output -name "*.vec" -delete
 	source $(DB_ENV)/bin/activate && cd db && ./runbatch.sh
 # generate mp3 files into mp3/mp3 using files in db/output/*.md
 mp3:
