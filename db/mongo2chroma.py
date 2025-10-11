@@ -311,8 +311,8 @@ def query_chroma(text: str,
     else:
         filtered_docs = all_docs
     
-    # 4. If text is blank and entity filters exist, return filtered docs directly
-    if not text.strip() and (and_entities or or_entities):
+    # 4. If text is blank and any entity parameters exist, return filtered docs directly
+    if not text.strip() and (and_entities or or_entities or show_entities):
         results = []
         for doc in filtered_docs[:n]:
             _id = str(doc["_id"])
