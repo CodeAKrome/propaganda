@@ -270,6 +270,9 @@ def query_chroma(text: str,
     - and_entities: must have ALL of these entities
     - or_entities: must have AT LEAST ONE of these entities
     - show_entities: display these entities in results (empty list = show all)
+    
+    If text is blank and entity filters are specified, returns all matching documents
+    without vector similarity scoring.
     """
     and_entities = and_entities or []
     or_entities = or_entities or []
@@ -293,7 +296,7 @@ def query_chroma(text: str,
         q["published"] = date_filter
 
     # 2. Pull docs with IDs and NER data for entity filtering
-    projection = {"_id": 1}
+    projection = {"_id": 1, "article": 1}
     if and_entities or or_entities or show_entities:
         projection["ner"] = 1
     
@@ -308,12 +311,30 @@ def query_chroma(text: str,
     else:
         filtered_docs = all_docs
     
+    # 4. If text is blank and entity filters exist, return filtered docs directly
+    if not text.strip() and (and_entities or or_entities):
+        results = []
+        for doc in filtered_docs[:n]:
+            _id = str(doc["_id"])
+            doc_text = doc.get("article", "")
+            
+            result = {"id": _id, "text": doc_text}
+            
+            # Add entities if show_entities is specified
+            if show_entities is not None:
+                entities = extract_entities_from_doc(doc, show_entities)
+                result["entities"] = format_entities(entities)
+            
+            results.append(result)
+        
+        return results
+    
+    # 5. Otherwise, perform vector search
     allowed_ids = {str(d["_id"]) for d in filtered_docs}
     
     # Store full docs for entity extraction later
     docs_by_id = {str(d["_id"]): d for d in filtered_docs}
 
-    # 4. Run the vector search
     # BGE models benefit from query instruction prefix
     query_text = f"Represent this sentence for searching relevant passages: {text}"
     emb = encoder.encode(query_text, convert_to_tensor=True).cpu().numpy().tolist()
@@ -323,7 +344,7 @@ def query_chroma(text: str,
         include=["documents", "distances"]
     )
 
-    # 5. Keep only hits that respect all filters and extract entities
+    # 6. Keep only hits that respect all filters and extract entities
     filtered = []
     for _id, doc_text in zip(res["ids"][0], res["documents"][0]):
         if _id in allowed_ids:
@@ -400,7 +421,7 @@ def main(argv=None):
     p_load.add_argument("-l", "--limit", type=int, help="Only process N articles")
 
     p_query = sub.add_parser("query", help="Search articles by text")
-    p_query.add_argument("text", help="Query string")
+    p_query.add_argument("text", nargs='?', default='', help="Query string (optional if using entity filters)")
     p_query.add_argument("-n", "--top", type=int, default=13, help="How many results to return")
     p_query.add_argument("--start-date", help="Start date: ISO format or negative days (e.g., '-7' for 7 days ago)")
     p_query.add_argument("--end-date",   help="End date: ISO format or negative days (e.g., '-1' for 1 day ago)")
