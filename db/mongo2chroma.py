@@ -198,6 +198,11 @@ def format_entities(entities_by_type: Dict[str, Set[str]]) -> str:
     return '\n'.join(lines)
 
 
+def _iso_or_empty(dt):
+    """Return ISO-8601 string or empty string for missing/invalid dates."""
+    return dt.isoformat() if isinstance(dt, datetime) else ""
+
+
 # ------------------------------------------------------------------
 # Public API
 # ------------------------------------------------------------------
@@ -262,7 +267,7 @@ def query_chroma(text: str,
                  show_entities: List[Tuple[str, str]] = None) -> List[Dict[str, str]]:
     """
     Return the `n` most similar articles as:
-        [{"id": <mongo _id>, "text": <article body>, "entities": <formatted entities>}, ...]
+        [{"id": <mongo _id>, "title": <title>, "published": <ISO date>, "source": <source>, "text": <article body>, "entities": <formatted entities>}, ...]
     Optional date window:
     - ISO-8601 strings (e.g., '2025-09-06T08:00:58+00:00')
     - Negative integers for relative days (e.g., '-7' = 7 days ago)
@@ -296,7 +301,7 @@ def query_chroma(text: str,
         q["published"] = date_filter
 
     # 2. Pull docs with IDs and NER data for entity filtering
-    projection = {"_id": 1, "article": 1}
+    projection = {"_id": 1, "article": 1, "title": 1, "published": 1, "source": 1}
     if and_entities or or_entities or show_entities:
         projection["ner"] = 1
     
@@ -316,23 +321,19 @@ def query_chroma(text: str,
         results = []
         for doc in filtered_docs[:n]:
             _id = str(doc["_id"])
-            doc_text = doc.get("article", "")
-            
-            result = {"id": _id, "text": doc_text}
-            
-            # Add entities if show_entities is specified
-            if show_entities is not None:
-                entities = extract_entities_from_doc(doc, show_entities)
-                result["entities"] = format_entities(entities)
-            
-            results.append(result)
-        
+            results.append({
+                "id":        _id,
+                "title":     doc.get("title", ""),
+                "published": _iso_or_empty(doc.get("published")),
+                "source":    doc.get("source", ""),
+                "text":      doc.get("article", ""),
+                "entities":  format_entities(extract_entities_from_doc(doc, show_entities))
+                             if show_entities is not None else None
+            })
         return results
     
     # 5. Otherwise, perform vector search
     allowed_ids = {str(d["_id"]) for d in filtered_docs}
-    
-    # Store full docs for entity extraction later
     docs_by_id = {str(d["_id"]): d for d in filtered_docs}
 
     # BGE models benefit from query instruction prefix
@@ -348,16 +349,16 @@ def query_chroma(text: str,
     filtered = []
     for _id, doc_text in zip(res["ids"][0], res["documents"][0]):
         if _id in allowed_ids:
-            result = {"id": _id, "text": doc_text}
-            
-            # Add entities if show_entities is specified
-            if show_entities is not None:
-                mongo_doc = docs_by_id.get(_id, {})
-                entities = extract_entities_from_doc(mongo_doc, show_entities)
-                result["entities"] = format_entities(entities)
-            
-            filtered.append(result)
-            
+            mongo_doc = docs_by_id[_id]
+            filtered.append({
+                "id":        _id,
+                "title":     mongo_doc.get("title", ""),
+                "published": _iso_or_empty(mongo_doc.get("published")),
+                "source":    mongo_doc.get("source", ""),
+                "text":      doc_text,
+                "entities":  format_entities(extract_entities_from_doc(mongo_doc, show_entities))
+                             if show_entities is not None else None
+            })
             if len(filtered) >= n:
                 break
     
@@ -455,7 +456,10 @@ def main(argv=None):
         for h in hits:
             print("---")
             print(f"ID: {h['id']}")
-            if 'entities' in h:
+            print(f"Title: {h['title']}")
+            print(f"Published: {h['published']}")
+            print(f"Source: {h['source']}")
+            if 'entities' in h and h['entities']:
                 print(h['entities'])
             print(f"Text: {h['text']}")
         return
