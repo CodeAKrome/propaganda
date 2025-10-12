@@ -3,11 +3,11 @@ DB_ENV = db/.venv
 SHELL := /bin/bash
 MLX_MODEL = mlx-community/Llama-4-Scout-17B-16E-Instruct-4bit
 
-.PHONY: build load back front vector query mp3 mgconsole testload thingsthatgo fini
+.PHONY: build load back front vector query mp3 mgconsole testload thingsthatgo fini ner
 
-thingsthatgo: load vector query mp3 fini
+thingsthatgo: load ner vector query mp3 fini
 
-fload: load vector fini
+fload: load ner vector fini
 fquerymp3: query mp3 fini
 fquery: query fini
 fmp3: mp3 fini
@@ -28,6 +28,9 @@ front:
 # read data from mongodb and create vectors in chroma
 vector:
 	$(DB_ENV)/bin/python db/mongo2chroma.py load
+# Do NER
+ner:
+	cd ../ner && ./RUNME.sh -7
 # runseries of queries to generate db/output/*.md
 query:
 	find db/output -name "*.md" -delete

@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 from collections import defaultdict
 
 import pymongo
+from bson import ObjectId
 import chromadb
 from chromadb.config import Settings
 from sentence_transformers import SentenceTransformer
@@ -89,130 +90,50 @@ def parse_entity_list(entity_str: str) -> List[Tuple[str, str]]:
     return [parse_entity_spec(e.strip()) for e in entity_str.split(',')]
 
 
-def doc_has_entity(doc: Dict, label: str, text: str) -> bool:
+def _entity_where(and_list: List[Tuple[str, str]],
+                  or_list:  List[Tuple[str, str]]) -> Dict:
     """
-    Check if document has the specified entity.
-    If label is None, match on text only across all entity types.
-    If label is specified, match on both label and text.
+    Convert (label,text) lists into Chroma where-clause.
+    Each entity becomes  ENT_<LABEL>_<TEXT> : {"$in": [True]}
     """
-    if 'ner' not in doc or 'entities' not in doc['ner']:
-        return False
-    
-    for entity in doc['ner']['entities']:
-        entity_text = entity.get('text', '')
-        entity_label = entity.get('label', '')
-        
-        if label is None:
-            # Match on text only
-            if entity_text == text:
-                return True
-        else:
-            # Match on both label and text
-            if entity_label == label and entity_text == text:
-                return True
-    
-    return False
+    clauses = []
+
+    # AND block – all must be present
+    for label, text in and_list:
+        key = f"ENT_{label.upper()}_{text}"
+        clauses.append({key: {"$in": [True]}})
+
+    # OR block – at least one must be present
+    if or_list:
+        or_clauses = []
+        for label, text in or_list:
+            key = f"ENT_{label.upper()}_{text}"
+            or_clauses.append({key: {"$in": [True]}})
+        clauses.append({"$or": or_clauses})
+
+    if not clauses:
+        return {}
+    if len(clauses) == 1:
+        return clauses[0]
+    return {"$and": clauses}
 
 
-def doc_matches_entity_filters(doc: Dict, and_entities: List[Tuple[str, str]], 
-                                or_entities: List[Tuple[str, str]]) -> bool:
-    """
-    Check if document matches entity filters.
-    - Must have ALL entities in and_entities
-    - Must have AT LEAST ONE entity in or_entities (if or_entities is not empty)
-    """
-    # Check AND entities - must have all
-    if and_entities:
-        for label, text in and_entities:
-            if not doc_has_entity(doc, label, text):
-                return False
-    
-    # Check OR entities - must have at least one
-    if or_entities:
-        has_any = False
-        for label, text in or_entities:
-            if doc_has_entity(doc, label, text):
-                has_any = True
-                break
-        if not has_any:
-            return False
-    
-    return True
-
-
-def extract_entities_from_doc(doc: Dict, show_entities: List[Tuple[str, str]]) -> Dict[str, Set[str]]:
-    """
-    Extract entities from document that match the show_entities filter.
-    Returns dict mapping entity labels to sets of entity texts.
-    If show_entities is empty, returns all entities.
-    
-    Filter rules:
-    - (None, "text"): Match entity with text="text" across all types
-    - ("LABEL", "text"): Match entity with label="LABEL" and text="text"
-    - ("LABEL", ""): Match all entities with label="LABEL"
-    """
-    result = defaultdict(set)
-    
-    if 'ner' not in doc or 'entities' not in doc['ner']:
-        return result
-    
-    for entity in doc['ner']['entities']:
-        entity_text = entity.get('text', '')
-        entity_label = entity.get('label', '')
-        
-        if not show_entities:
-            # Show all entities
-            result[entity_label].add(entity_text)
-        else:
-            # Check if this entity matches any in show_entities
-            for show_label, show_text in show_entities:
-                if show_label is None:
-                    # Match on text only
-                    if entity_text == show_text:
-                        result[entity_label].add(entity_text)
-                elif show_text == "":
-                    # Match all entities of this type (e.g., "LOC/")
-                    if entity_label == show_label:
-                        result[entity_label].add(entity_text)
-                else:
-                    # Match on both label and text
-                    if entity_label == show_label and entity_text == show_text:
-                        result[entity_label].add(entity_text)
-    
-    return result
-
-
-def format_entities(entities_by_type: Dict[str, Set[str]]) -> str:
-    """
-    Format entities for display.
-    """
-    if not entities_by_type:
-        return "<entities>\n(none)\n</entities>"
-    
-    lines = ["<entities>"]
-    for label in sorted(entities_by_type.keys()):
-        entity_list = sorted(entities_by_type[label])
-        lines.append(f"{label}: {', '.join(entity_list)}")
-    lines.append("</entities>")
-    
-    return '\n'.join(lines)
-
-
-def _iso_or_empty(dt):
-    """Return ISO-8601 string or empty string for missing/invalid dates."""
-    return dt.isoformat() if isinstance(dt, datetime) else ""
+def _timestamp_or_none(dt):
+    """Return Unix timestamp or None for missing/invalid dates."""
+    return dt.timestamp() if isinstance(dt, datetime) else None
 
 
 # ------------------------------------------------------------------
 # Public API
 # ------------------------------------------------------------------
-def load_into_chroma(limit: int = None) -> int:
+def load_into_chroma(limit: int = None,
+                     start_date: str = None,
+                     end_date: str = None) -> int:
     """
     Embed every article that has `article` text **and no fetch_error**
     and add into Chroma. Already-existing IDs are kept (not overwritten).
     Returns number of vectors stored.
     """
-    # --- FILTER: ignore any doc that has a non-empty fetch_error ---
     q = {
         "article": {"$exists": True, "$ne": None},
         "$or": [
@@ -220,39 +141,68 @@ def load_into_chroma(limit: int = None) -> int:
             {"fetch_error": {"$in": [None, ""]}}   # field nil or empty string
         ]
     }
-    # ---------------------------------------------------------------------
 
-    cursor = mongo_coll.find(q, {"_id": 1, "article": 1}).limit(limit) if limit \
-        else mongo_coll.find(q, {"_id": 1, "article": 1})
+    # apply date window to Mongo query
+    if start_date or end_date:
+        date_filter = {}
+        if start_date:
+            date_filter["$gte"] = parse_date_arg(start_date)
+        if end_date:
+            date_filter["$lte"] = parse_date_arg(end_date)
+        q["published"] = date_filter
 
-    docs, ids = [], []
+    # Get total count for tqdm progress bar
+    print("Counting documents to load...")
+    total_docs = mongo_coll.count_documents(q)
+    if limit:
+        total_docs = min(total_docs, limit)
+
+    cursor = mongo_coll.find(q, {"_id": 1, "article": 1, "published": 1, "ner": 1}).limit(limit) \
+        if limit else mongo_coll.find(q, {"_id": 1, "article": 1, "published": 1, "ner": 1})
+
+    docs, ids, metas = [], [], []
     stored = 0
 
-    for doc in tqdm(cursor, desc="Loading articles"):
-        _id  = str(doc["_id"])
-        text = doc["article"]
-        if not text.strip():
+    # Iterate with a progress bar that shows the total
+    for doc in tqdm(cursor, total=total_docs, desc="Loading articles"):
+        _id = str(doc["_id"])
+        text = doc.get("article", "").strip()
+        if not text:
             continue
 
         # Skip if ID already exists in Chroma
-        existing = collection.get(ids=[_id])
-        if existing["ids"]:
+        if collection.get(ids=[_id])["ids"]:
             continue
+
+        # --- build metadata: every entity + published date ---
+        meta = {}
+        published_ts = _timestamp_or_none(doc.get("published"))
+        if published_ts is not None:
+            meta["published"] = published_ts
+
+        for ent in doc.get("ner", {}).get("entities", []):
+            label = ent.get("label", "").upper()
+            ent_text = ent.get("text", "").strip()
+            if label and ent_text:
+                key = f"ENT_{label}_{ent_text}"
+                meta[key] = True
+        # -------------------------------------------------------
 
         docs.append(text)
         ids.append(_id)
+        metas.append(meta)
 
         # Batch-encode for speed
         if len(docs) >= BATCH_SIZE:
             embs = encoder.encode(docs, convert_to_tensor=True).cpu().numpy().tolist()
-            collection.add(documents=docs, embeddings=embs, ids=ids)
+            collection.add(documents=docs, embeddings=embs, ids=ids, metadatas=metas)
             stored += len(ids)
-            docs, ids = [], []
+            docs, ids, metas = [], [], []
 
     # Final leftovers
     if docs:
         embs = encoder.encode(docs, convert_to_tensor=True).cpu().numpy().tolist()
-        collection.add(documents=docs, embeddings=embs, ids=ids)
+        collection.add(documents=docs, embeddings=embs, ids=ids, metadatas=metas)
         stored += len(ids)
 
     return stored
@@ -275,94 +225,147 @@ def query_chroma(text: str,
     - and_entities: must have ALL of these entities
     - or_entities: must have AT LEAST ONE of these entities
     - show_entities: display these entities in results (empty list = show all)
-    
+
     If text is blank and entity filters are specified, returns all matching documents
     without vector similarity scoring.
     """
     and_entities = and_entities or []
     or_entities = or_entities or []
     show_entities = show_entities or []
-    
-    # 1. Build the Mongo-side filter for the candidate set
-    q = {
-        "article": {"$exists": True, "$ne": None},
-        "$or": [
-            {"fetch_error": {"$exists": False}},
-            {"fetch_error": {"$in": [None, ""]}}
-        ]
-    }
 
+    # 1. Build Chroma where-clause
+    where_parts = []
+
+    # date window
     if start_date or end_date:
-        date_filter = {}
+        date_part = {}
         if start_date:
-            date_filter["$gte"] = parse_date_arg(start_date)
+            date_part["$gte"] = parse_date_arg(start_date).timestamp()
         if end_date:
-            date_filter["$lte"] = parse_date_arg(end_date)
-        q["published"] = date_filter
+            date_part["$lte"] = parse_date_arg(end_date).timestamp()
+        where_parts.append({"published": date_part})
 
-    # 2. Pull docs with IDs and NER data for entity filtering
-    projection = {"_id": 1, "article": 1, "title": 1, "published": 1, "source": 1}
-    if and_entities or or_entities or show_entities:
-        projection["ner"] = 1
-    
-    all_docs = list(mongo_coll.find(q, projection))
-    
-    # 3. Apply entity filters
-    if and_entities or or_entities:
-        filtered_docs = [
-            doc for doc in all_docs
-            if doc_matches_entity_filters(doc, and_entities, or_entities)
-        ]
+    # entity filters
+    ent_where = _entity_where(and_entities, or_entities)
+    if ent_where:
+        where_parts.append(ent_where)
+
+    # final where
+    where_clause = {}
+    if where_parts:
+        where_clause = {"$and": where_parts} if len(where_parts) > 1 else where_parts[0]
+
+    # 2. Vector search (or blank-text meta-only scan)
+    if text.strip():
+        query_text = f"Represent this sentence for searching relevant passages: {text}"
+        emb = encoder.encode(query_text, convert_to_tensor=True).cpu().numpy().tolist()
+        res = collection.query(
+            query_embeddings=[emb],
+            n_results=n * 3,
+            include=["documents", "metadatas", "distances"],
+            where=where_clause or None
+        )
     else:
-        filtered_docs = all_docs
-    
-    # 4. If text is blank and any entity parameters exist, return filtered docs directly
-    if not text.strip() and (and_entities or or_entities or show_entities):
-        results = []
-        for doc in filtered_docs[:n]:
-            _id = str(doc["_id"])
-            results.append({
-                "id":        _id,
-                "title":     doc.get("title", ""),
-                "published": _iso_or_empty(doc.get("published")),
-                "source":    doc.get("source", ""),
-                "text":      doc.get("article", ""),
-                "entities":  format_entities(extract_entities_from_doc(doc, show_entities))
-                             if show_entities is not None else None
-            })
-        return results
-    
-    # 5. Otherwise, perform vector search
-    allowed_ids = {str(d["_id"]) for d in filtered_docs}
-    docs_by_id = {str(d["_id"]): d for d in filtered_docs}
+        # blank text → pure metadata scan
+        res = collection.get(
+            where=where_clause or None,
+            limit=n * 3,
+            include=["documents", "metadatas"]
+        )
+        # reshape to same structure as query result
+        res = {
+            "ids": [res["ids"]],
+            "documents": [res["documents"]],
+            "metadatas": [res["metadatas"]]
+        }
 
-    # BGE models benefit from query instruction prefix
-    query_text = f"Represent this sentence for searching relevant passages: {text}"
-    emb = encoder.encode(query_text, convert_to_tensor=True).cpu().numpy().tolist()
-    res = collection.query(
-        query_embeddings=[emb],
-        n_results=n * 3,               # over-fetch in case many fall outside filters
-        include=["documents", "distances"]
-    )
+    # 3. Pull full Mongo docs once for titles/sources/NER display
+    ids_found = res["ids"][0]
+    mongo_docs = {str(d["_id"]): d for d in
+                  mongo_coll.find({"_id": {"$in": [ObjectId(i) for i in ids_found]}},
+                                  {"_id": 1, "title": 1, "source": 1, "published": 1, "ner": 1})}
 
-    # 6. Keep only hits that respect all filters and extract entities
-    filtered = []
-    for _id, doc_text in zip(res["ids"][0], res["documents"][0]):
-        if _id in allowed_ids:
-            mongo_doc = docs_by_id[_id]
-            filtered.append({
-                "id":        _id,
-                "title":     mongo_doc.get("title", ""),
-                "published": _iso_or_empty(mongo_doc.get("published")),
-                "source":    mongo_doc.get("source", ""),
-                "text":      doc_text,
-                "entities":  format_entities(extract_entities_from_doc(mongo_doc, show_entities))
-                             if show_entities is not None else None
-            })
-            if len(filtered) >= n:
-                break
-    
-    return filtered
+    # 4. Build final list
+    out = []
+    for _id, doc_text, meta in zip(res["ids"][0], res["documents"][0], res["metadatas"][0]):
+        if _id not in mongo_docs:
+            continue  # safety
+        mdoc = mongo_docs[_id]
+
+        published_iso = ""
+        if meta and "published" in meta and isinstance(meta["published"], (int, float)):
+             published_iso = datetime.fromtimestamp(meta["published"]).isoformat()
+
+        out.append({
+            "id":        _id,
+            "title":     mdoc.get("title", ""),
+            "published": published_iso,
+            "source":    mdoc.get("source", ""),
+            "text":      doc_text,
+            "entities":  format_entities(extract_entities_from_doc(mdoc, show_entities))
+                         if show_entities is not None else None
+        })
+        if len(out) >= n:
+            break
+    return out
+
+
+def extract_entities_from_doc(doc: Dict, show_entities: List[Tuple[str, str]]) -> Dict[str, Set[str]]:
+    """
+    Extract entities from document that match the show_entities filter.
+    Returns dict mapping entity labels to sets of entity texts.
+    If show_entities is empty, returns all entities.
+
+    Filter rules:
+    - (None, "text"): Match entity with text="text" across all types
+    - ("LABEL", "text"): Match entity with label="LABEL" and text="text"
+    - ("LABEL", ""): Match all entities with label="LABEL"
+    """
+    result = defaultdict(set)
+
+    if 'ner' not in doc or 'entities' not in doc['ner']:
+        return result
+
+    for entity in doc['ner']['entities']:
+        entity_text = entity.get('text', '')
+        entity_label = entity.get('label', '')
+
+        if not show_entities:
+            # Show all entities
+            result[entity_label].add(entity_text)
+        else:
+            # Check if this entity matches any in show_entities
+            for show_label, show_text in show_entities:
+                if show_label is None:
+                    # Match on text only
+                    if entity_text == show_text:
+                        result[entity_label].add(entity_text)
+                elif show_text == "":
+                    # Match all entities of this type (e.g., "LOC/")
+                    if entity_label == show_label:
+                        result[entity_label].add(entity_text)
+                else:
+                    # Match on both label and text
+                    if entity_label == show_label and entity_text == show_text:
+                        result[entity_label].add(entity_text)
+
+    return result
+
+
+def format_entities(entities_by_type: Dict[str, Set[str]]) -> str:
+    """
+    Format entities for display.
+    """
+    if not entities_by_type:
+        return "<entities>\n(none)\n</entities>"
+
+    lines = ["<entities>"]
+    for label in sorted(entities_by_type.keys()):
+        entity_list = sorted(entities_by_type[label])
+        lines.append(f"{label}: {', '.join(entity_list)}")
+    lines.append("</entities>")
+
+    return '\n'.join(lines)
 
 
 def export_titles(start_date: str = None, end_date: str = None) -> None:
@@ -379,7 +382,7 @@ def export_titles(start_date: str = None, end_date: str = None) -> None:
             {"fetch_error": {"$in": [None, ""]}}
         ]
     }
-    
+
     if start_date or end_date:
         date_filter = {}
         if start_date:
@@ -387,27 +390,27 @@ def export_titles(start_date: str = None, end_date: str = None) -> None:
         if end_date:
             date_filter["$lte"] = parse_date_arg(end_date)
         q["published"] = date_filter
-    
+
     # Fetch documents with _id, title, published, and source
     cursor = mongo_coll.find(q, {"_id": 1, "title": 1, "published": 1, "source": 1})
-    
+
     # Write tab-delimited output
     for doc in cursor:
         _id = str(doc["_id"])
         title = doc.get("title", "")
         source = doc.get("source", "")
         published = doc.get("published")
-        
+
         # Format published date as YYYY-MM-DD
         if published and isinstance(published, datetime):
             published_str = published.strftime("%Y-%m-%d")
         else:
             published_str = ""
-        
+
         # Escape tabs and newlines in title and source
         title = title.replace("\t", " ").replace("\n", " ").replace("\r", " ")
         source = source.replace("\t", " ").replace("\n", " ").replace("\r", " ")
-        
+
         print(f"{published_str}\t{source}\t{_id}\t{title}")
 
 
@@ -420,6 +423,8 @@ def main(argv=None):
 
     p_load = sub.add_parser("load", help="Embed all articles into Chroma")
     p_load.add_argument("-l", "--limit", type=int, help="Only process N articles")
+    p_load.add_argument("--start-date", help="Load articles published on/after this date (ISO or -N)")
+    p_load.add_argument("--end-date",   help="Load articles published on/before this date (ISO or -N)")
 
     p_query = sub.add_parser("query", help="Search articles by text")
     p_query.add_argument("text", nargs='?', default='', help="Query string (optional if using entity filters)")
@@ -437,7 +442,9 @@ def main(argv=None):
     args = parser.parse_args(argv)
 
     if args.cmd == "load":
-        count = load_into_chroma(limit=args.limit)
+        count = load_into_chroma(limit=args.limit,
+                                start_date=args.start_date,
+                                end_date=args.end_date)
         print(f"✅  Stored {count} new vectors in Chroma")
         return
 
@@ -445,7 +452,7 @@ def main(argv=None):
         and_entities = parse_entity_list(args.andentity) if args.andentity else []
         or_entities = parse_entity_list(args.orentity) if args.orentity else []
         show_entities = parse_entity_list(args.showentity) if args.showentity else None
-        
+
         hits = query_chroma(args.text,
                             n=args.top,
                             start_date=args.start_date,
