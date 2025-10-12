@@ -292,9 +292,11 @@ def query_chroma(text: str,
             continue  # safety
         mdoc = mongo_docs[_id]
 
+        # Get published date from MongoDB document
         published_iso = ""
-        if meta and "published" in meta and isinstance(meta["published"], (int, float)):
-             published_iso = datetime.fromtimestamp(meta["published"]).isoformat()
+        published_dt = mdoc.get("published")
+        if published_dt and isinstance(published_dt, datetime):
+            published_iso = published_dt.isoformat()
 
         out.append({
             "id":        _id,
