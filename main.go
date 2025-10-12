@@ -246,6 +246,9 @@ func fetchAllFeeds(src map[string]string) []Article {
 				}
 				if item.PublishedParsed != nil {
 					a.Published = *item.PublishedParsed
+				} else {
+					// Use current date if published date is not available
+					a.Published = time.Now()
 				}
 				out = append(out, a)
 			}
