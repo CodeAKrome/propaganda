@@ -21,7 +21,7 @@ from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 
 # ------------------------------------------------------------------
-# Config – change if necessary
+# Config â€" change if necessary
 # ------------------------------------------------------------------
 MONGO_URI      = os.getenv("MONGO_URI", "mongodb://root:example@localhost:27017")
 MONGO_DB       = "rssnews"
@@ -450,11 +450,135 @@ def export_titles(start_date: str = None, end_date: str = None) -> None:
         print(f"{published_str}\t{source}\t{_id}\t{title}")
 
 
+def dump_entities(start_date: str = None,
+                  end_date: str = None,
+                  show_entities: List[Tuple[str, str]] = None) -> None:
+    """
+    Export tab-delimited list of unique entities sorted by entity type.
+    Optional date window:
+    - ISO-8601 strings (e.g., '2025-09-06T08:00:58+00:00')
+    - Negative integers for relative days (e.g., '-7' = 7 days ago)
+    Optional entity filter:
+    - show_entities: only show these entities (empty list = show all)
+    
+    Output format: ENTITY_TYPE\tENTITY_TEXT\tCOUNT
+    """
+    # Build the query filter
+    q = {
+        "$or": [
+            {"fetch_error": {"$exists": False}},
+            {"fetch_error": {"$in": [None, ""]}}
+        ],
+        "ner.entities": {"$exists": True}
+    }
+
+    if start_date or end_date:
+        date_filter = {}
+        if start_date:
+            date_filter["$gte"] = parse_date_arg(start_date)
+        if end_date:
+            date_filter["$lte"] = parse_date_arg(end_date)
+        q["published"] = date_filter
+
+    # Fetch documents with NER data
+    cursor = mongo_coll.find(q, {"ner": 1})
+
+    # Collect entities with counts
+    entity_counts = defaultdict(lambda: defaultdict(int))
+    
+    for doc in cursor:
+        entities_in_doc = extract_entities_from_doc(doc, show_entities if show_entities is not None else [])
+        
+        for entity_type, entity_texts in entities_in_doc.items():
+            for entity_text in entity_texts:
+                entity_counts[entity_type][entity_text] += 1
+
+    # Sort by entity type, then by entity text
+    for entity_type in sorted(entity_counts.keys()):
+        for entity_text in sorted(entity_counts[entity_type].keys()):
+            count = entity_counts[entity_type][entity_text]
+            print(f"{entity_type}\t{entity_text}\t{count}")
+
+
+def export_articles(start_date: str = None,
+                   end_date: str = None,
+                   and_entities: List[Tuple[str, str]] = None,
+                   or_entities: List[Tuple[str, str]] = None,
+                   show_entities: List[Tuple[str, str]] = None) -> None:
+    """
+    Export articles matching entity filters, formatted like query results.
+    Optional date window:
+    - ISO-8601 strings (e.g., '2025-09-06T08:00:58+00:00')
+    - Negative integers for relative days (e.g., '-7' = 7 days ago)
+    Optional entity filters:
+    - and_entities: must have ALL of these entities
+    - or_entities: must have AT LEAST ONE of these entities
+    - show_entities: display these entities in results (empty list = show all)
+    """
+    and_entities = and_entities or []
+    or_entities = or_entities or []
+
+    # Build the query filter
+    q = {
+        "article": {"$exists": True, "$ne": None},
+        "$or": [
+            {"fetch_error": {"$exists": False}},
+            {"fetch_error": {"$in": [None, ""]}}
+        ]
+    }
+
+    # Add date filter
+    if start_date or end_date:
+        date_filter = {}
+        if start_date:
+            date_filter["$gte"] = parse_date_arg(start_date)
+        if end_date:
+            date_filter["$lte"] = parse_date_arg(end_date)
+        q["published"] = date_filter
+
+    # Add entity filter
+    entity_filter = build_mongo_entity_filter(and_entities, or_entities)
+    if entity_filter:
+        q.update(entity_filter)
+
+    # Query MongoDB
+    cursor = mongo_coll.find(
+        q,
+        {"_id": 1, "title": 1, "source": 1, "published": 1, "ner": 1, "article": 1}
+    )
+
+    # Output results in same format as query command
+    for doc in cursor:
+        _id = str(doc["_id"])
+        title = doc.get("title", "")
+        source = doc.get("source", "")
+        article_text = doc.get("article", "")
+        
+        # Get published date
+        published_iso = ""
+        published_dt = doc.get("published")
+        if published_dt and isinstance(published_dt, datetime):
+            published_iso = published_dt.isoformat()
+
+        print("---")
+        print(f"ID: {_id}")
+        print(f"Title: {title}")
+        print(f"Published: {published_iso}")
+        print(f"Source: {source}")
+        
+        # Show entities if requested
+        if show_entities is not None:
+            entities = format_entities(extract_entities_from_doc(doc, show_entities))
+            print(entities)
+        
+        print(f"Text: {article_text}")
+
+
 # ------------------------------------------------------------------
 # CLI
 # ------------------------------------------------------------------
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="MongoDB → Chroma vector loader / querier")
+    parser = argparse.ArgumentParser(description="MongoDB â†' Chroma vector loader / querier")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     p_load = sub.add_parser("load", help="Embed all articles into Chroma")
@@ -469,11 +593,23 @@ def main(argv=None):
     p_query.add_argument("--end-date",   help="End date: ISO format or negative days (e.g., '-1' for 1 day ago)")
     p_query.add_argument("--andentity", help="Comma-separated entities (all required). Format: [LABEL/]TEXT")
     p_query.add_argument("--orentity", help="Comma-separated entities (at least one required). Format: [LABEL/]TEXT")
-    p_query.add_argument("--showentity", help="Comma-separated entities to display. Format: [LABEL/]TEXT or LABEL/ for all of type (empty = show all)")
+    p_query.add_argument("--showentity", nargs='?', const='', help="Display entities. Provide comma-separated list ([LABEL/]TEXT or LABEL/ for all of type) or use flag alone to show all entities")
 
     p_title = sub.add_parser("title", help="Export tab-delimited MongoDB ID and article title")
     p_title.add_argument("--start-date", help="Start date: ISO format or negative days (e.g., '-7' for 7 days ago)")
     p_title.add_argument("--end-date",   help="End date: ISO format or negative days (e.g., '-1' for 1 day ago)")
+
+    p_entity = sub.add_parser("dumpentity", help="Export tab-delimited list of unique entities")
+    p_entity.add_argument("--start-date", help="Start date: ISO format or negative days (e.g., '-7' for 7 days ago)")
+    p_entity.add_argument("--end-date",   help="End date: ISO format or negative days (e.g., '-1' for 1 day ago)")
+    p_entity.add_argument("--showentity", nargs='?', const='', help="Filter entities. Provide comma-separated list ([LABEL/]TEXT or LABEL/ for all of type) or use flag alone to show all entities")
+
+    p_article = sub.add_parser("article", help="Export articles matching entity filters")
+    p_article.add_argument("--start-date", help="Start date: ISO format or negative days (e.g., '-7' for 7 days ago)")
+    p_article.add_argument("--end-date",   help="End date: ISO format or negative days (e.g., '-1' for 1 day ago)")
+    p_article.add_argument("--andentity", help="Comma-separated entities (all required). Format: [LABEL/]TEXT")
+    p_article.add_argument("--orentity", help="Comma-separated entities (at least one required). Format: [LABEL/]TEXT")
+    p_article.add_argument("--showentity", nargs='?', const='', help="Display entities. Provide comma-separated list ([LABEL/]TEXT or LABEL/ for all of type) or use flag alone to show all entities")
 
     args = parser.parse_args(argv)
 
@@ -481,13 +617,25 @@ def main(argv=None):
         count = load_into_chroma(limit=args.limit,
                                 start_date=args.start_date,
                                 end_date=args.end_date)
-        print(f"✅  Stored {count} new vectors in Chroma")
+        print(f"âœ…  Stored {count} new vectors in Chroma")
         return
 
     if args.cmd == "query":
         and_entities = parse_entity_list(args.andentity) if args.andentity else []
         or_entities = parse_entity_list(args.orentity) if args.orentity else []
-        show_entities = parse_entity_list(args.showentity) if args.showentity else None
+        
+        # Handle --showentity flag
+        if args.showentity is not None:
+            # Flag was provided
+            if args.showentity == '':
+                # No value provided, show all entities
+                show_entities = []
+            else:
+                # Value provided, parse it
+                show_entities = parse_entity_list(args.showentity)
+        else:
+            # Flag not provided, don't show entities
+            show_entities = None
 
         hits = query_chroma(args.text,
                             n=args.top,
@@ -510,6 +658,49 @@ def main(argv=None):
     if args.cmd == "title":
         export_titles(start_date=args.start_date,
                      end_date=args.end_date)
+        return
+
+    if args.cmd == "dumpentity":
+        # Handle --showentity flag
+        if args.showentity is not None:
+            # Flag was provided
+            if args.showentity == '':
+                # No value provided, show all entities
+                show_entities = []
+            else:
+                # Value provided, parse it
+                show_entities = parse_entity_list(args.showentity)
+        else:
+            # Flag not provided, show all entities by default
+            show_entities = []
+        
+        dump_entities(start_date=args.start_date,
+                     end_date=args.end_date,
+                     show_entities=show_entities)
+        return
+
+    if args.cmd == "article":
+        and_entities = parse_entity_list(args.andentity) if args.andentity else []
+        or_entities = parse_entity_list(args.orentity) if args.orentity else []
+        
+        # Handle --showentity flag
+        if args.showentity is not None:
+            # Flag was provided
+            if args.showentity == '':
+                # No value provided, show all entities
+                show_entities = []
+            else:
+                # Value provided, parse it
+                show_entities = parse_entity_list(args.showentity)
+        else:
+            # Flag not provided, don't show entities
+            show_entities = None
+        
+        export_articles(start_date=args.start_date,
+                       end_date=args.end_date,
+                       and_entities=and_entities,
+                       or_entities=or_entities,
+                       show_entities=show_entities)
         return
 
 
