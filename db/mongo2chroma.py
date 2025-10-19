@@ -204,8 +204,8 @@ def load_into_chroma(limit: int = None,
     if limit:
         total_docs = min(total_docs, limit)
 
-    cursor = mongo_coll.find(q, {"_id": 1, "article": 1}).limit(limit) \
-        if limit else mongo_coll.find(q, {"_id": 1, "article": 1})
+    cursor = mongo_coll.find(q, {"_id": 1, "article": 1}).sort("published", -1).limit(limit) \
+        if limit else mongo_coll.find(q, {"_id": 1, "article": 1}).sort("published", -1)
 
     docs, ids = [], []
     stored = 0
@@ -441,8 +441,8 @@ def export_titles(start_date: str = None, end_date: str = None) -> None:
             date_filter["$lte"] = parse_date_arg(end_date)
         q["published"] = date_filter
 
-    # Fetch documents with _id, title, published, and source
-    cursor = mongo_coll.find(q, {"_id": 1, "title": 1, "published": 1, "source": 1})
+    # Fetch documents with _id, title, published, and source, sorted by published date
+    cursor = mongo_coll.find(q, {"_id": 1, "title": 1, "published": 1, "source": 1}).sort("published", -1)
 
     # Write tab-delimited output
     for doc in cursor:
@@ -494,8 +494,8 @@ def dump_entities(start_date: str = None,
             date_filter["$lte"] = parse_date_arg(end_date)
         q["published"] = date_filter
 
-    # Fetch documents with NER data
-    cursor = mongo_coll.find(q, {"ner": 1})
+    # Fetch documents with NER data, sorted by published date
+    cursor = mongo_coll.find(q, {"ner": 1}).sort("published", -1)
 
     # Collect entities with counts
     entity_counts = defaultdict(lambda: defaultdict(int))
@@ -558,11 +558,11 @@ def export_articles(start_date: str = None,
     if entity_filter:
         q.update(entity_filter)
 
-    # Query MongoDB with optional limit
+    # Query MongoDB with optional limit, sorted by published date (most recent first)
     cursor = mongo_coll.find(
         q,
         {"_id": 1, "title": 1, "source": 1, "published": 1, "ner": 1, "article": 1}
-    )
+    ).sort("published", -1)
     
     if limit:
         cursor = cursor.limit(limit)
