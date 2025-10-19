@@ -160,13 +160,22 @@ def build_mongo_entity_filter(and_list: List[Tuple[str, str]],
 # ------------------------------------------------------------------
 def load_into_chroma(limit: int = None,
                      start_date: str = None,
-                     end_date: str = None) -> int:
+                     end_date: str = None,
+                     and_entities: List[Tuple[str, str]] = None,
+                     or_entities: List[Tuple[str, str]] = None) -> int:
     """
     Embed every article that has `article` text **and no fetch_error**
     and add into Chroma. Only stores ID and embedding.
     Already-existing IDs are kept (not overwritten).
     Returns number of vectors stored.
+    
+    Optional entity filters:
+    - and_entities: must have ALL of these entities
+    - or_entities: must have AT LEAST ONE of these entities
     """
+    and_entities = and_entities or []
+    or_entities = or_entities or []
+    
     q = {
         "article": {"$exists": True, "$ne": None},
         "$or": [
@@ -183,6 +192,11 @@ def load_into_chroma(limit: int = None,
         if end_date:
             date_filter["$lte"] = parse_date_arg(end_date)
         q["published"] = date_filter
+
+    # Add entity filter
+    entity_filter = build_mongo_entity_filter(and_entities, or_entities)
+    if entity_filter:
+        q.update(entity_filter)
 
     # Get total count for tqdm progress bar
     print("Counting documents to load...")
@@ -591,6 +605,8 @@ def main(argv=None):
     p_load.add_argument("-l", "--limit", type=int, help="Only process N articles")
     p_load.add_argument("--start-date", help="Load articles published on/after this date (ISO or -N)")
     p_load.add_argument("--end-date",   help="Load articles published on/before this date (ISO or -N)")
+    p_load.add_argument("--andentity", help="Comma-separated entities (all required). Format: [LABEL/]TEXT")
+    p_load.add_argument("--orentity", help="Comma-separated entities (at least one required). Format: [LABEL/]TEXT")
 
     p_query = sub.add_parser("query", help="Search articles by text")
     p_query.add_argument("text", nargs='?', default='', help="Query string (optional if using entity filters)")
@@ -621,9 +637,14 @@ def main(argv=None):
     args = parser.parse_args(argv)
 
     if args.cmd == "load":
+        and_entities = parse_entity_list(args.andentity) if args.andentity else []
+        or_entities = parse_entity_list(args.orentity) if args.orentity else []
+        
         count = load_into_chroma(limit=args.limit,
                                 start_date=args.start_date,
-                                end_date=args.end_date)
+                                end_date=args.end_date,
+                                and_entities=and_entities,
+                                or_entities=or_entities)
         print(f"âœ…  Stored {count} new vectors in Chroma")
         return
 
