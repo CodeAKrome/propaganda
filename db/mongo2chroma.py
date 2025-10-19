@@ -504,7 +504,8 @@ def export_articles(start_date: str = None,
                    end_date: str = None,
                    and_entities: List[Tuple[str, str]] = None,
                    or_entities: List[Tuple[str, str]] = None,
-                   show_entities: List[Tuple[str, str]] = None) -> None:
+                   show_entities: List[Tuple[str, str]] = None,
+                   limit: int = None) -> None:
     """
     Export articles matching entity filters, formatted like query results.
     Optional date window:
@@ -514,6 +515,8 @@ def export_articles(start_date: str = None,
     - and_entities: must have ALL of these entities
     - or_entities: must have AT LEAST ONE of these entities
     - show_entities: display these entities in results (empty list = show all)
+    Optional limit:
+    - limit: maximum number of articles to return
     """
     and_entities = and_entities or []
     or_entities = or_entities or []
@@ -541,11 +544,14 @@ def export_articles(start_date: str = None,
     if entity_filter:
         q.update(entity_filter)
 
-    # Query MongoDB
+    # Query MongoDB with optional limit
     cursor = mongo_coll.find(
         q,
         {"_id": 1, "title": 1, "source": 1, "published": 1, "ner": 1, "article": 1}
     )
+    
+    if limit:
+        cursor = cursor.limit(limit)
 
     # Output results in same format as query command
     for doc in cursor:
@@ -605,6 +611,7 @@ def main(argv=None):
     p_entity.add_argument("--showentity", nargs='?', const='', help="Filter entities. Provide comma-separated list ([LABEL/]TEXT or LABEL/ for all of type) or use flag alone to show all entities")
 
     p_article = sub.add_parser("article", help="Export articles matching entity filters")
+    p_article.add_argument("-n", "--top", type=int, default=None, help="Maximum number of articles to return")
     p_article.add_argument("--start-date", help="Start date: ISO format or negative days (e.g., '-7' for 7 days ago)")
     p_article.add_argument("--end-date",   help="End date: ISO format or negative days (e.g., '-1' for 1 day ago)")
     p_article.add_argument("--andentity", help="Comma-separated entities (all required). Format: [LABEL/]TEXT")
@@ -700,7 +707,8 @@ def main(argv=None):
                        end_date=args.end_date,
                        and_entities=and_entities,
                        or_entities=or_entities,
-                       show_entities=show_entities)
+                       show_entities=show_entities,
+                       limit=args.top)
         return
 
 
