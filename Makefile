@@ -36,7 +36,9 @@ query:
 	find db/output -name "*.md" -delete
 	find db/output -name "*.txt" -delete
 	find db/output -name "*.vec" -delete
+	find db/output -name "*.cypher" -delete
 	source $(DB_ENV)/bin/activate && cd db && ./runbatch.sh
+#	source $(DB_ENV)/bin/activate && cd db && ./run_parallel.sh
 # generate mp3 files into mp3/mp3 using files in db/output/*.md
 mp3:
 	find mp3/mp3 -name "*.mp3" -delete
