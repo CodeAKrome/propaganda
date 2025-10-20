@@ -93,6 +93,7 @@ def main(argv=None):
     parser.add_argument("--orentity",  help="Comma-separated entities (at least one). Format: [LABEL/]TEXT")
     parser.add_argument("--start-date", help="Start date: ISO or -N")
     parser.add_argument("--end-date",   help="End date: ISO or -N")
+    parser.add_argument("--text", help="Full text search string for MongoDB")
     parser.add_argument("--showentity", nargs="?", const="", help="Display entities. Provide list or use flag alone for all")
     parser.add_argument("-n", "--top", type=int, default=10, help="How many results to return (default 10)")
     args = parser.parse_args(argv)
@@ -118,6 +119,17 @@ def main(argv=None):
     entity_filter = build_mongo_entity_filter(and_entities, or_entities)
     if entity_filter:
         mongo_filter.update(entity_filter)
+
+    # ---  Text search is a separate query that feeds IDs into the main filter  ---
+    if args.text:
+        text_filter = {"$text": {"$search": args.text}}
+        text_ids = [doc["_id"] for doc in mongo_coll.find(text_filter, {"_id": 1})]
+        debug(f"Full-text search matched: {len(text_ids)} records")
+        if "_id" in mongo_filter:
+            # combine with existing _id filter if present
+            mongo_filter["_id"]["$in"].extend(text_ids)
+        else:
+            mongo_filter["_id"] = {"$in": text_ids}
 
     # 2. Fetch candidates
     candidates = list(mongo_coll.find(
@@ -181,7 +193,9 @@ def main(argv=None):
         print(f"Source: {doc.get('source', '')}")
         if show_entities is not None:
             from mongo2chroma import extract_entities_from_doc, format_entities
-            print(format_entities(extract_entities_from_doc(doc, show_entities)))
+            # The logic in extract_entities_from_doc handles Optional[str] for the label,
+            # so we can safely ignore the linter warning here.
+            print(format_entities(extract_entities_from_doc(doc, show_entities)))  # type: ignore
         print(f"Text: {doc.get('article', '')}")
 
 
