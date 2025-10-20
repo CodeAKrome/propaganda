@@ -21,7 +21,7 @@ from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 
 # ------------------------------------------------------------------
-# Config â€" change if necessary
+# Config — change if necessary
 # ------------------------------------------------------------------
 MONGO_URI      = os.getenv("MONGO_URI", "mongodb://root:example@localhost:27017")
 MONGO_DB       = "rssnews"
@@ -516,6 +516,7 @@ def dump_entities(start_date: str = None,
 
 def export_articles(start_date: str = None,
                    end_date: str = None,
+                   id_list: List[str] = None,
                    and_entities: List[Tuple[str, str]] = None,
                    or_entities: List[Tuple[str, str]] = None,
                    show_entities: List[Tuple[str, str]] = None,
@@ -525,6 +526,7 @@ def export_articles(start_date: str = None,
     Optional date window:
     - ISO-8601 strings (e.g., '2025-09-06T08:00:58+00:00')
     - Negative integers for relative days (e.g., '-7' = 7 days ago)
+    Optional id_list: comma-separated MongoDB _id strings
     Optional entity filters:
     - and_entities: must have ALL of these entities
     - or_entities: must have AT LEAST ONE of these entities
@@ -532,6 +534,7 @@ def export_articles(start_date: str = None,
     Optional limit:
     - limit: maximum number of articles to return
     """
+    id_list = id_list or []
     and_entities = and_entities or []
     or_entities = or_entities or []
 
@@ -543,6 +546,10 @@ def export_articles(start_date: str = None,
             {"fetch_error": {"$in": [None, ""]}}
         ]
     }
+
+    # Restrict to requested IDs if provided
+    if id_list:
+        q["_id"] = {"$in": [ObjectId(i) for i in id_list]}
 
     # Add date filter
     if start_date or end_date:
@@ -598,7 +605,7 @@ def export_articles(start_date: str = None,
 # CLI
 # ------------------------------------------------------------------
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="MongoDB â†' Chroma vector loader / querier")
+    parser = argparse.ArgumentParser(description="MongoDB → Chroma vector loader / querier")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     p_load = sub.add_parser("load", help="Embed all articles into Chroma")
@@ -628,6 +635,7 @@ def main(argv=None):
 
     p_article = sub.add_parser("article", help="Export articles matching entity filters")
     p_article.add_argument("-n", "--top", type=int, default=None, help="Maximum number of articles to return")
+    p_article.add_argument("--id", help="Comma-separated list of MongoDB _id strings")
     p_article.add_argument("--start-date", help="Start date: ISO format or negative days (e.g., '-7' for 7 days ago)")
     p_article.add_argument("--end-date",   help="End date: ISO format or negative days (e.g., '-1' for 1 day ago)")
     p_article.add_argument("--andentity", help="Comma-separated entities (all required). Format: [LABEL/]TEXT")
@@ -645,7 +653,7 @@ def main(argv=None):
                                 end_date=args.end_date,
                                 and_entities=and_entities,
                                 or_entities=or_entities)
-        print(f"âœ…  Stored {count} new vectors in Chroma")
+        print(f"✅  Stored {count} new vectors in Chroma")
         return
 
     if args.cmd == "query":
@@ -708,6 +716,7 @@ def main(argv=None):
         return
 
     if args.cmd == "article":
+        id_list = [i.strip() for i in args.id.split(",")] if args.id else []
         and_entities = parse_entity_list(args.andentity) if args.andentity else []
         or_entities = parse_entity_list(args.orentity) if args.orentity else []
         
@@ -726,6 +735,7 @@ def main(argv=None):
         
         export_articles(start_date=args.start_date,
                        end_date=args.end_date,
+                       id_list=id_list,
                        and_entities=and_entities,
                        or_entities=or_entities,
                        show_entities=show_entities,
