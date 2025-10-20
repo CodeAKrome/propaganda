@@ -83,7 +83,7 @@ def build_mongo_entity_filter(and_list: List[Tuple[Optional[str], str]],
 
 # --------------  debug helpers  ------------------------------------
 def debug(msg: str):
-    print(f"# {msg}", file=sys.stderr)
+    print(f"{msg}", file=sys.stderr)
 
 # ------------------------------------------------------------------
 def main(argv=None):
@@ -120,30 +120,36 @@ def main(argv=None):
     if entity_filter:
         mongo_filter.update(entity_filter)
 
-    # ---  Text search is a separate query that feeds IDs into the main filter  ---
-    if args.text:
-        text_filter = {"$text": {"$search": args.text}}
-        text_ids = [doc["_id"] for doc in mongo_coll.find(text_filter, {"_id": 1})]
-        debug(f"Full-text search matched: {len(text_ids)} records")
-        if "_id" in mongo_filter:
-            # combine with existing _id filter if present
-            mongo_filter["_id"]["$in"].extend(text_ids)
-        else:
-            mongo_filter["_id"] = {"$in": text_ids}
-
     # 2. Fetch candidates
+    # ---  Start with the filtered list  ---
     candidates = list(mongo_coll.find(
         mongo_filter,
         {"_id": 1, "title": 1, "source": 1, "published": 1, "ner": 1, "article": 1}
     ).sort("published", -1))
+    debug(f"Mongo filter matched: {len(candidates)} records")
+
+    # ---  If text search is specified, run it as a separate query and add to the list  ---
+    if args.text:
+        text_filter = {"$text": {"$search": args.text}}
+        text_candidates = list(mongo_coll.find(
+            text_filter,
+            {"_id": 1, "title": 1, "source": 1, "published": 1, "ner": 1, "article": 1}
+        ))
+        debug(f"Full-text search matched: {len(text_candidates)} records")
+        
+        # ---  Combine and de-duplicate  ---
+        candidate_dict = {str(c["_id"]): c for c in candidates}
+        for c in text_candidates:
+            candidate_dict[str(c["_id"])] = c
+        candidates = list(candidate_dict.values())
 
     if not candidates:
-        debug("Mongo filter matched: 0 records")
+        debug("No candidates found.")
         print("No articles match the filter.")
         return
 
     candidate_ids = [str(c["_id"]) for c in candidates]
-    debug(f"Mongo filter matched: {len(candidates)} records")
+    debug(f"Total unique candidates for vector search: {len(candidates)}")
     # debug("Mongo _ids: " + ",".join(candidate_ids))
 
     # 3. Wipe / create temporary Chroma collection
@@ -156,13 +162,17 @@ def main(argv=None):
         metadata={"hnsw:space": "cosine"}
     )
 
-    # 4. Embed + insert candidates
-    ids, docs = [], []
-    for c in candidates:
-        ids.append(str(c["_id"]))
-        docs.append(c.get("article", "").strip())
-    embeddings = encoder.encode(docs, convert_to_tensor=True).cpu().numpy().tolist()
-    tmp_coll.add(documents=docs, embeddings=embeddings, ids=ids)
+    # 4. Embed + insert candidates in batches
+    batch_size = 4096
+    for i in range(0, len(candidates), batch_size):
+        batch = candidates[i:i+batch_size]
+        ids = [str(c["_id"]) for c in batch]
+        docs = [c.get("article", "").strip() for c in batch]
+        
+        debug(f"Processing batch {i//batch_size + 1}/{(len(candidates) + batch_size - 1)//batch_size}...")
+        
+        embeddings = encoder.encode(docs, convert_to_tensor=True).cpu().numpy().tolist()
+        tmp_coll.add(documents=docs, embeddings=embeddings, ids=ids)
 
     # 5. Vector search
     query_emb = encoder.encode(
