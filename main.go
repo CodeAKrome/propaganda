@@ -205,7 +205,7 @@ func parseFeedWithRetry(fp *gofeed.Parser, url string, maxRetries int) (*gofeed.
 		// Check if it's a 429 error
 		if strings.Contains(err.Error(), "429") || strings.Contains(err.Error(), "Too Many Requests") {
 			if attempt < maxRetries {
-				log.Printf("   ⏳ rate limited, waiting %v before retry %d/%d", backoff, attempt+1, maxRetries)
+				log.Printf("  ⏳ rate limited, waiting %v before retry %d/%d", backoff, attempt+1, maxRetries)
 				time.Sleep(backoff)
 				backoff *= 2 // exponential backoff
 				continue

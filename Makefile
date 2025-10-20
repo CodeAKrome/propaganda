@@ -3,11 +3,12 @@ DB_ENV = db/.venv
 SHELL := /bin/bash
 MLX_MODEL = mlx-community/Llama-4-Scout-17B-16E-Instruct-4bit
 
-.PHONY: build load back front vector query mp3 mgconsole testload thingsthatgo fini ner
+.PHONY: build load back front vector query mp3 mgconsole testload thingsthatgo fini ner fner
 
 thingsthatgo: load ner vector query mp3 fini
 
 fload: load ner vector fini
+fner: ner vector fini
 fquerymp3: query mp3 fini
 fquery: query fini
 fmp3: mp3 fini
