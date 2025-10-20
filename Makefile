@@ -2,13 +2,15 @@ CONDA_MP3_ENV = kokoro
 DB_ENV = db/.venv
 SHELL := /bin/bash
 MLX_MODEL = mlx-community/Llama-4-Scout-17B-16E-Instruct-4bit
+NUMDAYS = -7
 
-.PHONY: build load back front vector query mp3 mgconsole testload thingsthatgo fini ner fner
+.PHONY: build load back front vector query mp3 mgconsole testload thingsthatgo fini ner fner fnervector
 
 thingsthatgo: load ner vector query mp3 fini
 
 fload: load ner vector fini
-fner: ner vector fini
+fnervector: ner vector fini
+fner: ner vector query mp3 fini
 fquerymp3: query mp3 fini
 fquery: query fini
 fmp3: mp3 fini
@@ -31,14 +33,15 @@ vector:
 	$(DB_ENV)/bin/python db/mongo2chroma.py load
 # Do NER
 ner:
-	cd ../ner && ./RUNME.sh -7
+	cd ../ner && ./RUNME.sh $(NUMDAYS)
 # runseries of queries to generate db/output/*.md
 query:
 	find db/output -name "*.md" -delete
 	find db/output -name "*.txt" -delete
 	find db/output -name "*.vec" -delete
 	find db/output -name "*.cypher" -delete
-	source $(DB_ENV)/bin/activate && cd db && ./runbatch.sh
+	source $(DB_ENV)/bin/activate && cd db && ./runentitybatch.sh
+#	source $(DB_ENV)/bin/activate && cd db && ./runbatch.sh
 #	source $(DB_ENV)/bin/activate && cd db && ./run_parallel.sh
 # generate mp3 files into mp3/mp3 using files in db/output/*.md
 mp3:
