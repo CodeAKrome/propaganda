@@ -191,7 +191,7 @@ func cleanText(src, raw string) string {
 }
 
 // Helper function to parse feeds with retry logic
-func parseFeedWithRetry(fp *gofeed.Parser, url string, maxRetries int) (*gofeed.Feed, error) {
+func parseFeedWithRetry(fp *gofeed.Parser, name, url string, maxRetries int) (*gofeed.Feed, error) {
 	var feed *gofeed.Feed
 	var err error
 	backoff := initialBackoff
@@ -205,7 +205,7 @@ func parseFeedWithRetry(fp *gofeed.Parser, url string, maxRetries int) (*gofeed.
 		// Check if it's a 429 error
 		if strings.Contains(err.Error(), "429") || strings.Contains(err.Error(), "Too Many Requests") {
 			if attempt < maxRetries {
-				log.Printf("  ⏳ rate limited, waiting %v before retry %d/%d", backoff, attempt+1, maxRetries)
+				log.Printf("  ⏳ rate limited on %s, waiting %v before retry %d/%d", name, backoff, attempt+1, maxRetries)
 				time.Sleep(backoff)
 				backoff *= 2 // exponential backoff
 				continue
@@ -231,7 +231,7 @@ func fetchAllFeeds(src map[string]string) []Article {
 		go func(n, u string) {
 			defer wg.Done()
 			fp := gofeed.NewParser()
-			feed, err := parseFeedWithRetry(fp, u, maxRetries)
+			feed, err := parseFeedWithRetry(fp, n, u, maxRetries)
 			if err != nil {
 				log.Printf("⚠️  feed failed: %s → %v", n, err)
 				return
