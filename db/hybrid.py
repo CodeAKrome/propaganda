@@ -93,13 +93,18 @@ def main(argv=None):
     parser.add_argument("--orentity",  help="Comma-separated entities (at least one). Format: [LABEL/]TEXT")
     parser.add_argument("--start-date", help="Start date: ISO or -N")
     parser.add_argument("--end-date",   help="End date: ISO or -N")
-    parser.add_argument("--text", help="Full text search string for MongoDB")
+    parser.add_argument("--fulltext", help="Full text search for MongoDB. Comma-separated for OR.")
     parser.add_argument("--showentity", nargs="?", const="", help="Display entities. Provide list or use flag alone for all")
     parser.add_argument("-n", "--top", type=int, default=10, help="How many results to return (default 10)")
     args = parser.parse_args(argv)
 
     and_entities = parse_entity_list(args.andentity)
     or_entities  = parse_entity_list(args.orentity)
+
+    # ---  process fulltext argument for OR search ---
+    fulltext_search_string = None
+    if args.fulltext:
+        fulltext_search_string = ' '.join([term.strip() for term in args.fulltext.split(',')])
 
     # 1. Build Mongo filter
     mongo_filter = {
@@ -129,8 +134,10 @@ def main(argv=None):
     debug(f"Mongo filter matched: {len(candidates)} records")
 
     # ---  If text search is specified, run it as a separate query and add to the list  ---
-    if args.text:
-        text_filter = {"$text": {"$search": args.text}}
+    if fulltext_search_string:
+        text_filter = {"$text": {"$search": fulltext_search_string}}
+        if "published" in mongo_filter:
+            text_filter["published"] = mongo_filter["published"]
         text_candidates = list(mongo_coll.find(
             text_filter,
             {"_id": 1, "title": 1, "source": 1, "published": 1, "ner": 1, "article": 1}
@@ -176,7 +183,7 @@ def main(argv=None):
 
     # 5. Vector search
     query_emb = encoder.encode(
-        f"Represent this sentence for searching relevant passages: {args.text}",
+        f"Represent this sentence for searching relevant passages: {fulltext_search_string if fulltext_search_string else args.text}",
         convert_to_tensor=True
     ).cpu().numpy().tolist()
     res = tmp_coll.query(query_embeddings=[query_emb], n_results=args.top, include=["documents"])
