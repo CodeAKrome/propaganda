@@ -53,7 +53,7 @@ mp3:
 	./batch.sh
 #	cd mp3 && conda run -n $(CONDA_MP3_ENV) ./batch.sh
 fini:
-	echo -e "\a\a\a"
+	afplay ~/Music/df\ picking\ up\ man.wav
 	say "The news has been loaded, Doctor!"
 mgconsole:
 	docker run -it memgraph/mgconsole:latest --host host.docker.internal
