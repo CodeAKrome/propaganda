@@ -20,48 +20,54 @@ from sentence_transformers import SentenceTransformer
 # ------------------------------------------------------------------
 # Re-use the exact same configuration section from mongo2chroma.py
 # ------------------------------------------------------------------
-MONGO_URI   = os.getenv("MONGO_URI", "mongodb://root:example@localhost:27017")
-MONGO_DB    = "rssnews"
-MONGO_COLL  = "articles"
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://root:example@localhost:27017")
+MONGO_DB = "rssnews"
+MONGO_COLL = "articles"
 
-CHROMA_PATH = "./chroma"          # same persistent path
-HYBRID_COLL = "hybrid_tmp"        # temporary collection – wiped each run
+CHROMA_PATH = "./chroma"  # same persistent path
+HYBRID_COLL = "hybrid_tmp"  # temporary collection – wiped each run
 EMBED_MODEL = "BAAI/bge-large-en-v1.5"
 # ------------------------------------------------------------------
 
 mongo_client = pymongo.MongoClient(MONGO_URI)
-mongo_coll   = mongo_client[MONGO_DB][MONGO_COLL]
+mongo_coll = mongo_client[MONGO_DB][MONGO_COLL]
 
 chroma_client = chromadb.PersistentClient(
-    path=CHROMA_PATH,
-    settings=Settings(anonymized_telemetry=False)
+    path=CHROMA_PATH, settings=Settings(anonymized_telemetry=False)
 )
 
 encoder = SentenceTransformer(EMBED_MODEL)
 
+
 # ----------  re-use helper code from mongo2chroma.py  --------------
 def parse_date_arg(date_str: str) -> datetime:
-    if date_str.startswith('-') and date_str[1:].isdigit():
+    if date_str.startswith("-") and date_str[1:].isdigit():
         return datetime.now() + timedelta(days=int(date_str))
     return datetime.fromisoformat(date_str)
 
+
 def parse_entity_spec(spec: str) -> Tuple[Optional[str], str]:
-    if '/' in spec:
-        label, text = spec.split('/', 1)
+    if "/" in spec:
+        label, text = spec.split("/", 1)
         return label, text
     return None, spec
+
 
 def parse_entity_list(entity_str: Optional[str]) -> List[Tuple[Optional[str], str]]:
     if not entity_str:
         return []
-    return [parse_entity_spec(e.strip()) for e in entity_str.split(',')]
+    return [parse_entity_spec(e.strip()) for e in entity_str.split(",")]
 
-def build_mongo_entity_filter(and_list: List[Tuple[Optional[str], str]],
-                              or_list: List[Tuple[Optional[str], str]]) -> Dict:
+
+def build_mongo_entity_filter(
+    and_list: List[Tuple[Optional[str], str]], or_list: List[Tuple[Optional[str], str]]
+) -> Dict:
     clauses = []
     for label, text in and_list:
         if label and text:
-            clauses.append({"ner.entities": {"$elemMatch": {"label": label, "text": text}}})
+            clauses.append(
+                {"ner.entities": {"$elemMatch": {"label": label, "text": text}}}
+            )
         elif label:
             clauses.append({"ner.entities.label": label})
         else:
@@ -70,7 +76,9 @@ def build_mongo_entity_filter(and_list: List[Tuple[Optional[str], str]],
         or_clauses = []
         for label, text in or_list:
             if label and text:
-                or_clauses.append({"ner.entities": {"$elemMatch": {"label": label, "text": text}}})
+                or_clauses.append(
+                    {"ner.entities": {"$elemMatch": {"label": label, "text": text}}}
+                )
             elif label:
                 or_clauses.append({"ner.entities.label": label})
             else:
@@ -81,38 +89,61 @@ def build_mongo_entity_filter(and_list: List[Tuple[Optional[str], str]],
     # ---  always wrap in a dict  ---
     return {"$and": clauses} if len(clauses) > 1 else clauses[0]
 
+
 # --------------  debug helpers  ------------------------------------
 def debug(msg: str):
     print(f"{msg}", file=sys.stderr)
+
 
 # ------------------------------------------------------------------
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Hybrid Mongo→Chroma vector search")
     parser.add_argument("text", help="Query string for vector search")
-    parser.add_argument("--andentity", help="Comma-separated entities (all required). Format: [LABEL/]TEXT")
-    parser.add_argument("--orentity",  help="Comma-separated entities (at least one). Format: [LABEL/]TEXT")
+    parser.add_argument(
+        "--andentity",
+        help="Comma-separated entities (all required). Format: [LABEL/]TEXT",
+    )
+    parser.add_argument(
+        "--orentity",
+        help="Comma-separated entities (at least one). Format: [LABEL/]TEXT",
+    )
     parser.add_argument("--start-date", help="Start date: ISO or -N")
-    parser.add_argument("--end-date",   help="End date: ISO or -N")
-    parser.add_argument("--fulltext", help="Full text search for MongoDB. Comma-separated for OR.")
-    parser.add_argument("--showentity", nargs="?", const="", help="Display entities. Provide list or use flag alone for all")
-    parser.add_argument("-n", "--top", type=int, default=10, help="How many results to return (default 10)")
+    parser.add_argument("--end-date", help="End date: ISO or -N")
+    parser.add_argument(
+        "--fulltext", help="Full text search for MongoDB. Comma-separated for OR."
+    )
+    parser.add_argument(
+        "--showentity",
+        nargs="?",
+        const="",
+        help="Display entities. Provide list or use flag alone for all",
+    )
+    parser.add_argument(
+        "-n",
+        "--top",
+        type=int,
+        default=10,
+        help="How many results to return (default 10)",
+    )
     args = parser.parse_args(argv)
 
     and_entities = parse_entity_list(args.andentity)
-    or_entities  = parse_entity_list(args.orentity)
+    or_entities = parse_entity_list(args.orentity)
 
     # ---  process fulltext argument for OR search ---
     fulltext_search_string = None
     if args.fulltext:
-        fulltext_search_string = ' '.join([term.strip() for term in args.fulltext.split(',')])
+        fulltext_search_string = " ".join(
+            [term.strip() for term in args.fulltext.split(",")]
+        )
 
     # 1. Build Mongo filter
     mongo_filter = {
         "article": {"$exists": True, "$ne": None},
         "$or": [
             {"fetch_error": {"$exists": False}},
-            {"fetch_error": {"$in": [None, ""]}}
-        ]
+            {"fetch_error": {"$in": [None, ""]}},
+        ],
     }
     if args.start_date or args.end_date:
         dr = {}
@@ -127,10 +158,12 @@ def main(argv=None):
 
     # 2. Fetch candidates
     # ---  Start with the filtered list  ---
-    candidates = list(mongo_coll.find(
-        mongo_filter,
-        {"_id": 1, "title": 1, "source": 1, "published": 1, "ner": 1, "article": 1}
-    ).sort("published", -1))
+    candidates = list(
+        mongo_coll.find(
+            mongo_filter,
+            {"_id": 1, "title": 1, "source": 1, "published": 1, "ner": 1, "article": 1},
+        ).sort("published", -1)
+    )
     debug(f"Mongo filter matched: {len(candidates)} records")
 
     # ---  If text search is specified, run it as a separate query and add to the list  ---
@@ -138,12 +171,21 @@ def main(argv=None):
         text_filter = {"$text": {"$search": fulltext_search_string}}
         if "published" in mongo_filter:
             text_filter["published"] = mongo_filter["published"]
-        text_candidates = list(mongo_coll.find(
-            text_filter,
-            {"_id": 1, "title": 1, "source": 1, "published": 1, "ner": 1, "article": 1}
-        ))
+        text_candidates = list(
+            mongo_coll.find(
+                text_filter,
+                {
+                    "_id": 1,
+                    "title": 1,
+                    "source": 1,
+                    "published": 1,
+                    "ner": 1,
+                    "article": 1,
+                },
+            )
+        )
         debug(f"Full-text search matched: {len(text_candidates)} records")
-        
+
         # ---  Combine and de-duplicate  ---
         candidate_dict = {str(c["_id"]): c for c in candidates}
         for c in text_candidates:
@@ -165,28 +207,36 @@ def main(argv=None):
     except Exception:
         pass
     tmp_coll = chroma_client.create_collection(
-        name=HYBRID_COLL,
-        metadata={"hnsw:space": "cosine"}
+        name=HYBRID_COLL, metadata={"hnsw:space": "cosine"}
     )
 
     # 4. Embed + insert candidates in batches
     batch_size = 4096
     for i in range(0, len(candidates), batch_size):
-        batch = candidates[i:i+batch_size]
+        batch = candidates[i : i + batch_size]
         ids = [str(c["_id"]) for c in batch]
         docs = [c.get("article", "").strip() for c in batch]
-        
-        debug(f"Processing batch {i//batch_size + 1}/{(len(candidates) + batch_size - 1)//batch_size}...")
-        
+
+        debug(
+            f"Processing batch {i//batch_size + 1}/{(len(candidates) + batch_size - 1)//batch_size}..."
+        )
+
         embeddings = encoder.encode(docs, convert_to_tensor=True).cpu().numpy().tolist()
         tmp_coll.add(documents=docs, embeddings=embeddings, ids=ids)
 
     # 5. Vector search
-    query_emb = encoder.encode(
-        f"Represent this sentence for searching relevant passages: {fulltext_search_string if fulltext_search_string else args.text}",
-        convert_to_tensor=True
-    ).cpu().numpy().tolist()
-    res = tmp_coll.query(query_embeddings=[query_emb], n_results=args.top, include=["documents"])
+    query_emb = (
+        encoder.encode(
+            f"Represent this sentence for searching relevant passages: {fulltext_search_string if fulltext_search_string else args.text}",
+            convert_to_tensor=True,
+        )
+        .cpu()
+        .numpy()
+        .tolist()
+    )
+    res = tmp_coll.query(
+        query_embeddings=[query_emb], n_results=args.top, include=["documents"]
+    )
     hit_ids = res["ids"][0]
 
     debug(f"Vector search returned: {len(hit_ids)} hits")
@@ -194,7 +244,9 @@ def main(argv=None):
 
     # 6. Build id→doc map and print
     id_to_doc = {str(c["_id"]): c for c in candidates}
-    show_entities = parse_entity_list(args.showentity) if args.showentity is not None else None
+    show_entities = (
+        parse_entity_list(args.showentity) if args.showentity is not None else None
+    )
 
     for _id in hit_ids:
         doc = id_to_doc.get(_id)
@@ -210,6 +262,7 @@ def main(argv=None):
         print(f"Source: {doc.get('source', '')}")
         if show_entities is not None:
             from mongo2chroma import extract_entities_from_doc, format_entities
+
             # The logic in extract_entities_from_doc handles Optional[str] for the label,
             # so we can safely ignore the linter warning here.
             print(format_entities(extract_entities_from_doc(doc, show_entities)))  # type: ignore

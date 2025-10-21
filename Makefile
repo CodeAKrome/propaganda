@@ -15,6 +15,10 @@ fquerymp3: query mp3 fini
 fquery: query fini
 fmp3: mp3 fini
 
+black:
+	black db/*.py
+	black ner/*.py
+
 # build propaganda go binary
 build:
 	go build
