@@ -2,23 +2,27 @@ CONDA_MP3_ENV = kokoro
 DB_ENV = db/.venv
 SHELL := /bin/bash
 MLX_MODEL = mlx-community/Llama-4-Scout-17B-16E-Instruct-4bit
-NUMDAYS = -7
+NUMDAYS = -3
+TITLEFILE = output/titles.tsv
 
-.PHONY: build load back front vector query mp3 mgconsole testload thingsthatgo fini ner fner fnervector
+.PHONY: build load back front vector query mp3 mgconsole testload thingsthatgo fini ner fner fnervector entity
 
 thingsthatgo: load ner vector query mp3 fini
 
 fload: load ner vector fini
+fner: ner vector entity query mp3 fini
 fnervector: ner vector fini
-fner: ner vector query mp3 fini
-fquerymp3: query mp3 fini
-fquery: query fini
+fquerymp3: entity query mp3 fini
+fquery: entity query fini
 fmp3: mp3 fini
 
 black:
 	black db/*.py
 	black ner/*.py
-
+entity:
+	cd db && ./mongo2chroma.py title --start-date $(NUMDAYS) | sort -k4,4 > $(TITLEFILE)
+	cd db && ./mongo2chroma.py dumpentity --start-date $(NUMDAYS) | egrep '(PERSON|GPE|LOC|EVENT)' > output/impentity.tsv
+	cd db && ./mongo2chroma.py dumpentity --start-date $(NUMDAYS)  > output/entity.tsv
 # build propaganda go binary
 build:
 	go build

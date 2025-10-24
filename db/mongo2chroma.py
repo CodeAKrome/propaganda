@@ -9,7 +9,7 @@ ChromaDB stores only vectors and IDs. All filtering and data lookup via MongoDB.
 import os
 import sys
 import argparse
-from typing import List, Dict, Set, Tuple
+from typing import List, Dict, Set, Tuple, Optional
 from datetime import datetime, timedelta
 from collections import defaultdict
 
@@ -65,7 +65,7 @@ def parse_date_arg(date_str: str) -> datetime:
         return datetime.fromisoformat(date_str)
 
 
-def parse_entity_spec(entity_spec: str) -> Tuple[str, str]:
+def parse_entity_spec(entity_spec: str) -> Tuple[str | None, str]:
     """
     Parse entity specification. Returns (label, text) tuple.
     If no slash, label is None and text is the full spec.
@@ -80,7 +80,7 @@ def parse_entity_spec(entity_spec: str) -> Tuple[str, str]:
         return (None, entity_spec)
 
 
-def parse_entity_list(entity_str: str) -> List[Tuple[str, str]]:
+def parse_entity_list(entity_str: str) -> List[Tuple[str | None, str]]:
     """
     Parse comma-separated entity list into list of (label, text) tuples.
     """
@@ -90,7 +90,7 @@ def parse_entity_list(entity_str: str) -> List[Tuple[str, str]]:
 
 
 def build_mongo_entity_filter(
-    and_list: List[Tuple[str, str]], or_list: List[Tuple[str, str]]
+    and_list: List[Tuple[str | None, str]], or_list: List[Tuple[str | None, str]]
 ) -> Dict:
     """
     Build MongoDB query filter for entity matching.
@@ -140,11 +140,11 @@ def build_mongo_entity_filter(
 # Public API
 # ------------------------------------------------------------------
 def load_into_chroma(
-    limit: int = None,
-    start_date: str = None,
-    end_date: str = None,
-    and_entities: List[Tuple[str, str]] = None,
-    or_entities: List[Tuple[str, str]] = None,
+    limit: Optional[int] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    and_entities: Optional[List[Tuple[str | None, str]]] = None,
+    or_entities: Optional[List[Tuple[str | None, str]]] = None,
 ) -> int:
     """
     Embed every article that has `article` text **and no fetch_error**
@@ -229,11 +229,11 @@ def load_into_chroma(
 def query_chroma(
     text: str,
     n: int = 5,
-    start_date: str = None,
-    end_date: str = None,
-    and_entities: List[Tuple[str, str]] = None,
-    or_entities: List[Tuple[str, str]] = None,
-    show_entities: List[Tuple[str, str]] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    and_entities: Optional[List[Tuple[str | None, str]]] = None,
+    or_entities: Optional[List[Tuple[str | None, str]]] = None,
+    show_entities: Optional[List[Tuple[str | None, str]]] = None,
 ) -> List[Dict[str, str]]:
     """
     Return the `n` most similar articles as:
@@ -357,7 +357,7 @@ def query_chroma(
 
 
 def extract_entities_from_doc(
-    doc: Dict, show_entities: List[Tuple[str, str]]
+    doc: Dict, show_entities: List[Tuple[str | None, str]]
 ) -> Dict[str, Set[str]]:
     """
     Extract entities from document that match the show_entities filter.
@@ -416,7 +416,7 @@ def format_entities(entities_by_type: Dict[str, Set[str]]) -> str:
     return "\n".join(lines)
 
 
-def export_titles(start_date: str = None, end_date: str = None) -> None:
+def export_titles(start_date: Optional[str] = None, end_date: Optional[str] = None) -> None:
     """
     Export tab-delimited published date, source, MongoDB ID, and article title to stdout.
     Optional date window:
@@ -465,9 +465,9 @@ def export_titles(start_date: str = None, end_date: str = None) -> None:
 
 
 def dump_entities(
-    start_date: str = None,
-    end_date: str = None,
-    show_entities: List[Tuple[str, str]] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    show_entities: Optional[List[Tuple[str | None, str]]] = None,
 ) -> None:
     """
     Export tab-delimited list of unique entities sorted by entity type.
@@ -500,7 +500,9 @@ def dump_entities(
     cursor = mongo_coll.find(q, {"ner": 1}).sort("published", -1)
 
     # Collect entities with counts
-    entity_counts = defaultdict(lambda: defaultdict(int))
+    # Explicitly define the inner defaultdict type to help Pylance
+    InnerDict = lambda: defaultdict(int)
+    entity_counts: Dict[str, Dict[str, int]] = defaultdict(InnerDict)
 
     for doc in cursor:
         entities_in_doc = extract_entities_from_doc(
@@ -511,21 +513,27 @@ def dump_entities(
             for entity_text in entity_texts:
                 entity_counts[entity_type][entity_text] += 1
 
-    # Sort by entity type, then by entity text
-    for entity_type in sorted(entity_counts.keys()):
-        for entity_text in sorted(entity_counts[entity_type].keys()):
-            count = entity_counts[entity_type][entity_text]
-            print(f"{entity_type}\t{entity_text}\t{count}")
+    # Prepare for sorting: (count, entity_type, entity_text)
+    sorted_entities = []
+    for entity_type in entity_counts.keys():
+        for entity_text, count in entity_counts[entity_type].items():
+            sorted_entities.append((count, entity_type, entity_text))
+
+    # Sort by count descending, then by entity type, then by entity text
+    sorted_entities.sort(key=lambda x: (-x[0], x[1], x[2]))
+
+    for count, entity_type, entity_text in sorted_entities:
+        print(f"{count}\t{entity_type}\t{entity_text}")
 
 
 def export_articles(
-    start_date: str = None,
-    end_date: str = None,
-    id_list: List[str] = None,
-    and_entities: List[Tuple[str, str]] = None,
-    or_entities: List[Tuple[str, str]] = None,
-    show_entities: List[Tuple[str, str]] = None,
-    limit: int = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    id_list: Optional[List[str]] = None,
+    and_entities: Optional[List[Tuple[str | None, str]]] = None,
+    or_entities: Optional[List[Tuple[str | None, str]]] = None,
+    show_entities: Optional[List[Tuple[str | None, str]]] = None,
+    limit: Optional[int] = None,
 ) -> None:
     """
     Export articles matching entity filters, formatted like query results.
@@ -736,9 +744,9 @@ def main(argv=None):
         or_entities = parse_entity_list(args.orentity) if args.orentity else []
 
         count = load_into_chroma(
-            limit=args.limit,
-            start_date=args.start_date,
-            end_date=args.end_date,
+            limit=int(args.limit) if args.limit is not None else None,
+            start_date=str(args.start_date) if args.start_date is not None else None,
+            end_date=str(args.end_date) if args.end_date is not None else None,
             and_entities=and_entities,
             or_entities=or_entities,
         )
@@ -764,9 +772,9 @@ def main(argv=None):
 
         hits = query_chroma(
             args.text,
-            n=args.top,
-            start_date=args.start_date,
-            end_date=args.end_date,
+            n=int(args.top),
+            start_date=str(args.start_date) if args.start_date is not None else None,
+            end_date=str(args.end_date) if args.end_date is not None else None,
             and_entities=and_entities,
             or_entities=or_entities,
             show_entities=show_entities,
@@ -783,7 +791,10 @@ def main(argv=None):
         return
 
     if args.cmd == "title":
-        export_titles(start_date=args.start_date, end_date=args.end_date)
+        export_titles(
+            start_date=str(args.start_date) if args.start_date is not None else None,
+            end_date=str(args.end_date) if args.end_date is not None else None,
+        )
         return
 
     if args.cmd == "dumpentity":
@@ -801,8 +812,8 @@ def main(argv=None):
             show_entities = []
 
         dump_entities(
-            start_date=args.start_date,
-            end_date=args.end_date,
+            start_date=str(args.start_date) if args.start_date is not None else None,
+            end_date=str(args.end_date) if args.end_date is not None else None,
             show_entities=show_entities,
         )
         return
@@ -826,13 +837,13 @@ def main(argv=None):
             show_entities = None
 
         export_articles(
-            start_date=args.start_date,
-            end_date=args.end_date,
+            start_date=str(args.start_date) if args.start_date is not None else None,
+            end_date=str(args.end_date) if args.end_date is not None else None,
             id_list=id_list,
             and_entities=and_entities,
             or_entities=or_entities,
             show_entities=show_entities,
-            limit=args.top,
+            limit=int(args.top) if args.top is not None else None,
         )
         return
 
