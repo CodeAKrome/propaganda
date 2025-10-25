@@ -2,7 +2,7 @@ CONDA_MP3_ENV = kokoro
 DB_ENV = db/.venv
 SHELL := /bin/bash
 MLX_MODEL = mlx-community/Llama-4-Scout-17B-16E-Instruct-4bit
-NUMDAYS = -3
+NUMDAYS = -2
 TITLEFILE = output/titles.tsv
 
 .PHONY: build load back front vector query mp3 mgconsole testload thingsthatgo fini ner fner fnervector entity
@@ -29,6 +29,7 @@ build:
 # read RSS feeds and load data into mongodb
 load:
 	./propaganda config/big.tsv config/kill.tsv
+	source $(DB_ENV)/bin/activate && cd db && ./dedupe.py
 #	go run main.go config/big.tsv config/kill.tsv
 # start back end before front end
 back:
@@ -38,7 +39,7 @@ front:
 	front/RUNME.sh
 # read data from mongodb and create vectors in chroma
 vector:
-	$(DB_ENV)/bin/python db/mongo2chroma.py load
+	$(DB_ENV)/bin/python db/mongo2chroma.py load --start-date $(NUMDAYS)
 # Do NER
 ner:
 	cd ../ner && ./RUNME.sh $(NUMDAYS)
@@ -48,6 +49,7 @@ query:
 	find db/output -name "*.txt" -delete
 	find db/output -name "*.vec" -delete
 	find db/output -name "*.cypher" -delete
+	find db/output -name "*.reporter" -delete
 	source $(DB_ENV)/bin/activate && cd db && ./runentitybatch.sh
 #	source $(DB_ENV)/bin/activate && cd db && ./runbatch.sh
 #	source $(DB_ENV)/bin/activate && cd db && ./run_parallel.sh
