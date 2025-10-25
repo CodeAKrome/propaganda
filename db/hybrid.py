@@ -125,6 +125,11 @@ def main(argv=None):
         default=10,
         help="How many results to return (default 10)",
     )
+    parser.add_argument(
+        "--filter",
+        action="store_true",
+        help="Use entity search results as the candidate pool for full-text search.",
+    )
     args = parser.parse_args(argv)
 
     and_entities = parse_entity_list(args.andentity)
@@ -156,41 +161,58 @@ def main(argv=None):
     if entity_filter:
         mongo_filter.update(entity_filter)
 
-    # 2. Fetch candidates
-    # ---  Start with the filtered list  ---
-    candidates = list(
-        mongo_coll.find(
-            mongo_filter,
-            {"_id": 1, "title": 1, "source": 1, "published": 1, "ner": 1, "article": 1},
-        ).sort("published", -1)
-    )
-    debug(f"Mongo filter matched: {len(candidates)} records")
+    # 2. Fetch candidates based on filter logic
+    if args.filter and fulltext_search_string:
+        # --filter: Entity search provides candidates for full-text search (2-stage)
+        debug("Filter mode: Using entity search results for full-text search.")
+        # Stage 1: Get IDs from entity/date filter
+        initial_candidates = list(mongo_coll.find(mongo_filter, {"_id": 1}))
+        candidate_ids = [c["_id"] for c in initial_candidates]
+        debug(f"Entity filter matched: {len(candidate_ids)} records")
 
-    # ---  If text search is specified, run it as a separate query and add to the list  ---
-    if fulltext_search_string:
-        text_filter = {"$text": {"$search": fulltext_search_string}}
-        if "published" in mongo_filter:
-            text_filter["published"] = mongo_filter["published"]
-        text_candidates = list(
-            mongo_coll.find(
-                text_filter,
-                {
-                    "_id": 1,
-                    "title": 1,
-                    "source": 1,
-                    "published": 1,
-                    "ner": 1,
-                    "article": 1,
-                },
+        if not candidate_ids:
+            candidates = []
+        else:
+            # Stage 2: Run full-text search only on those IDs
+            fulltext_filter = {
+                "_id": {"$in": candidate_ids},
+                "$text": {"$search": fulltext_search_string},
+            }
+            candidates = list(
+                mongo_coll.find(
+                    fulltext_filter,
+                    {"_id": 1, "title": 1, "source": 1, "published": 1, "ner": 1, "article": 1},
+                )
             )
+    else:
+        # Default behavior (no --filter): Union of entity and full-text results
+        debug("Default mode: Combining entity and full-text search results.")
+        # Start with the entity/date filtered list
+        candidates = list(
+            mongo_coll.find(
+                mongo_filter,
+                {"_id": 1, "title": 1, "source": 1, "published": 1, "ner": 1, "article": 1},
+            ).sort("published", -1)
         )
-        debug(f"Full-text search matched: {len(text_candidates)} records")
+        debug(f"Mongo filter matched: {len(candidates)} records")
 
-        # ---  Combine and de-duplicate  ---
-        candidate_dict = {str(c["_id"]): c for c in candidates}
-        for c in text_candidates:
-            candidate_dict[str(c["_id"])] = c
-        candidates = list(candidate_dict.values())
+        # If full-text search is specified, run it and combine results
+        if fulltext_search_string:
+            text_filter = {"$text": {"$search": fulltext_search_string}}
+            if "published" in mongo_filter:
+                text_filter["published"] = mongo_filter["published"]
+            text_candidates = list(
+                mongo_coll.find(
+                    text_filter,
+                    {"_id": 1, "title": 1, "source": 1, "published": 1, "ner": 1, "article": 1},
+                )
+            )
+            debug(f"Full-text search matched: {len(text_candidates)} records")
+            # Combine and de-duplicate
+            candidate_dict = {str(c["_id"]): c for c in candidates}
+            for c in text_candidates:
+                candidate_dict[str(c["_id"])] = c
+            candidates = list(candidate_dict.values())
 
     if not candidates:
         debug("No candidates found.")
