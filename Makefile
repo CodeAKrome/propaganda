@@ -23,6 +23,8 @@ entity:
 	cd db && ./mongo2chroma.py title --start-date $(NUMDAYS) | sort -k4,4 > $(TITLEFILE)
 	cd db && ./mongo2chroma.py dumpentity --start-date $(NUMDAYS) | egrep '(PERSON|GPE|LOC|EVENT)' > output/impentity.tsv
 	cd db && ./mongo2chroma.py dumpentity --start-date $(NUMDAYS)  > output/entity.tsv
+	cd db && ./mongo2chroma.py dumpentity --start-date -60  > output/entity_60days.tsv
+	cd db && ./mongo2chroma.py dumpentity --start-date -60 | egrep '(PERSON|GPE|LOC|EVENT)' > output/impentity_60days.tsv
 # build propaganda go binary
 build:
 	go build
