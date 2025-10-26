@@ -135,12 +135,17 @@ def main(argv=None):
     and_entities = parse_entity_list(args.andentity)
     or_entities = parse_entity_list(args.orentity)
 
-    # ---  process fulltext argument for OR search ---
+    # ---  process fulltext argument ---
     fulltext_search_string = None
     if args.fulltext:
-        fulltext_search_string = " ".join(
-            [term.strip() for term in args.fulltext.split(",")]
-        )
+        # For MongoDB $text search:
+        # To search for an exact phrase, it must be wrapped in escaped quotes.
+        # e.g., "\"toxic masculinity\""
+        # The user can provide a comma-separated list of phrases for an OR search.
+        # e.g., "toxic masculinity, gray rock" -> "\"toxic masculinity\" \"gray rock\""
+        phrases = [term.strip() for term in args.fulltext.split(",")]
+        # Wrap each phrase in quotes for an exact phrase search.
+        fulltext_search_string = " ".join([f'"{phrase}"' for phrase in phrases])
 
     # 1. Build Mongo filter
     mongo_filter = {
