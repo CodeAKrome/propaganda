@@ -1,3 +1,4 @@
+groq
 google.generativeai
 pymongo
 sentence-transformers
