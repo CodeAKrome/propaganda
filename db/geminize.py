@@ -339,14 +339,17 @@ def main(argv=None):
         help="Comma-separated list of MongoDB _id strings to process"
     )
     parser.add_argument(
+        "--idfile",
+        help="File to save modified MongoDB IDs (default: ids.txt)"
+    )
+    parser.add_argument(
+        "--idsource",
+        help="File to load MongoDB _id strings to process (one per line)"
+    )
+    parser.add_argument(
         "--update",
         action="store_true",
         help="Update records even if destination field already has data"
-    )
-    parser.add_argument(
-        "--idfile",
-        default="ids.txt",
-        help="File to save modified MongoDB IDs (default: ids.txt)"
     )
     parser.add_argument(
         "--dry-run",
@@ -355,6 +358,10 @@ def main(argv=None):
     )
     
     args = parser.parse_args(argv)
+    
+    # Validate --id and --idsource are mutually exclusive
+    if args.id and args.idsource:
+        parser.error("Cannot specify both --id and --idsource")
     
     # Validate query input - must provide either --query or --queryfile
     if not args.query and not args.queryfile:
@@ -385,6 +392,20 @@ def main(argv=None):
     id_list = None
     if args.id:
         id_list = [i.strip() for i in args.id.split(",")]
+    elif args.idsource:
+        try:
+            with open(args.idsource, "r") as f:
+                id_list = [line.strip() for line in f if line.strip()]
+        except FileNotFoundError:
+            print(f"Error: ID source file '{args.idsource}' not found.")
+            sys.exit(1)
+        except Exception as e:
+            print(f"Error reading ID source file '{args.idsource}': {e}")
+            sys.exit(1)
+    
+    # Set default for --idfile if not specified
+    if not args.idfile:
+        args.idfile = "ids.txt"
     
     # Print configuration
     print("=" * 70)
@@ -401,7 +422,10 @@ def main(argv=None):
     if args.n:
         print(f"Limit: {args.n} records")
     if id_list:
-        print(f"Processing specific IDs: {', '.join(id_list)}")
+        if args.idsource:
+            print(f"Processing IDs from file: {args.idsource} ({len(id_list)} IDs)")
+        else:
+            print(f"Processing specific IDs: {', '.join(id_list[:5])}" + (f" ... and {len(id_list)-5} more" if len(id_list) > 5 else ""))
     if args.start_date:
         print(f"Start date: {args.start_date}")
     if args.end_date:
