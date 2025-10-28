@@ -178,6 +178,10 @@ def process_articles(
         source = doc.get("source", "")
         published = doc.get("published", "")
         
+        # Format published date if it's a datetime object
+        if isinstance(published, datetime):
+            published = published.isoformat()
+        
         prompt = f"""Query: {query}
 
 Article Title: {title}
@@ -193,10 +197,24 @@ Article Content:
             response = model.generate_content(prompt)
             result_text = response.text
             
+            # Clean up response - remove markdown code fences and common wrappers
+            result_text_cleaned = result_text.strip()
+            
+            # Remove markdown code blocks (```json, ```python, etc.)
+            if result_text_cleaned.startswith("```"):
+                lines = result_text_cleaned.split("\n")
+                # Remove first line if it's a code fence
+                if lines[0].startswith("```"):
+                    lines = lines[1:]
+                # Remove last line if it's a closing code fence
+                if lines and lines[-1].strip() == "```":
+                    lines = lines[:-1]
+                result_text_cleaned = "\n".join(lines).strip()
+            
             # Prepare update data
             update_timestamp = datetime.now()
             update_data = {
-                dst_field: result_text,
+                dst_field: result_text_cleaned,
                 f"{dst_field}_model": model_name,
                 f"{dst_field}_timestamp": update_timestamp,
             }
@@ -211,12 +229,12 @@ Article Content:
             print("-" * 70)
             print(prompt[:500] + "..." if len(prompt) > 500 else prompt)
             print("-" * 70)
-            print(f"\nGemini Response ({len(result_text)} chars):")
+            print(f"\nGemini Response ({len(result_text_cleaned)} chars):")
             print("-" * 70)
-            print(result_text)
+            print(result_text_cleaned)
             print("-" * 70)
             print(f"\n{'Would insert' if dry_run else 'Inserted'} into MongoDB:")
-            print(f"  {dst_field}: {result_text[:100]}..." if len(result_text) > 100 else f"  {dst_field}: {result_text}")
+            print(f"  {dst_field}: {result_text_cleaned[:100]}..." if len(result_text_cleaned) > 100 else f"  {dst_field}: {result_text_cleaned}")
             print(f"  {dst_field}_model: {model_name}")
             print(f"  {dst_field}_timestamp: {update_timestamp.isoformat()}")
             print("=" * 70)
@@ -378,7 +396,7 @@ def main(argv=None):
         model_name=args.model,
         src_field=args.src,
         dst_field=args.dst,
-        query=args.query,
+        query=query,
         start_date=args.start_date,
         end_date=args.end_date,
         news_sources=news_sources,
