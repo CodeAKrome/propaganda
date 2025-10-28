@@ -298,8 +298,11 @@ def main(argv=None):
     )
     parser.add_argument(
         "-q", "--query",
-        required=True,
-        help="Query/prompt for LLM (required)"
+        help="Query/prompt for LLM"
+    )
+    parser.add_argument(
+        "--queryfile",
+        help="Read query/prompt from file"
     )
     parser.add_argument(
         "-n",
@@ -319,6 +322,26 @@ def main(argv=None):
     
     args = parser.parse_args(argv)
     
+    # Validate query input - must provide either --query or --queryfile
+    if not args.query and not args.queryfile:
+        parser.error("Either -q/--query or --queryfile must be provided")
+    
+    if args.query and args.queryfile:
+        parser.error("Cannot specify both -q/--query and --queryfile")
+    
+    # Read query from file if --queryfile is specified
+    query = args.query
+    if args.queryfile:
+        try:
+            with open(args.queryfile, "r") as f:
+                query = f.read()
+        except FileNotFoundError:
+            print(f"Error: Query file '{args.queryfile}' not found.")
+            sys.exit(1)
+        except Exception as e:
+            print(f"Error reading query file '{args.queryfile}': {e}")
+            sys.exit(1)
+    
     # Parse news sources
     news_sources = None
     if args.news:
@@ -331,7 +354,11 @@ def main(argv=None):
     print(f"Model: {args.model}")
     print(f"Source field: {args.src}")
     print(f"Destination field: {args.dst}")
-    print(f"Query: {args.query}")
+    if args.queryfile:
+        print(f"Query file: {args.queryfile}")
+        print(f"Query: {query[:100]}..." if len(query) > 100 else f"Query: {query}")
+    else:
+        print(f"Query: {query}")
     if args.n:
         print(f"Limit: {args.n} records")
     if args.start_date:
