@@ -62,6 +62,7 @@ def build_mongo_query(
     end_date: Optional[str] = None,
     news_sources: Optional[List[str]] = None,
     src_field: str = "article",
+    id_list: Optional[List[str]] = None,
 ) -> dict:
     """
     Build MongoDB query filter.
@@ -73,6 +74,10 @@ def build_mongo_query(
             {"fetch_error": {"$in": [None, ""]}},
         ],
     }
+
+    # Add ID filter if specified
+    if id_list:
+        q["_id"] = {"$in": [ObjectId(i) for i in id_list]}
 
     # Add date filter
     if start_date or end_date:
@@ -100,6 +105,8 @@ def process_articles(
     news_sources: Optional[List[str]] = None,
     limit: Optional[int] = None,
     id_file: str = "ids.txt",
+    id_list: Optional[List[str]] = None,
+    update_existing: bool = False,
     dry_run: bool = False,
 ) -> dict:
     """
@@ -107,7 +114,7 @@ def process_articles(
     Returns statistics about the processing run.
     """
     # Build query
-    mongo_query = build_mongo_query(start_date, end_date, news_sources, src_field)
+    mongo_query = build_mongo_query(start_date, end_date, news_sources, src_field, id_list)
     
     # Count documents
     print("Counting documents to process...")
@@ -168,8 +175,8 @@ def process_articles(
             stats["skipped"] += 1
             continue
         
-        # Skip if destination field already exists and has content
-        if dst_field in doc and doc[dst_field]:
+        # Skip if destination field already exists and has content (unless --update flag is set)
+        if not update_existing and dst_field in doc and doc[dst_field]:
             stats["skipped"] += 1
             continue
         
@@ -328,6 +335,15 @@ def main(argv=None):
         help="Limit number of records to process"
     )
     parser.add_argument(
+        "--id",
+        help="Comma-separated list of MongoDB _id strings to process"
+    )
+    parser.add_argument(
+        "--update",
+        action="store_true",
+        help="Update records even if destination field already has data"
+    )
+    parser.add_argument(
         "--idfile",
         default="ids.txt",
         help="File to save modified MongoDB IDs (default: ids.txt)"
@@ -365,6 +381,11 @@ def main(argv=None):
     if args.news:
         news_sources = [s.strip() for s in args.news.split(",")]
     
+    # Parse ID list
+    id_list = None
+    if args.id:
+        id_list = [i.strip() for i in args.id.split(",")]
+    
     # Print configuration
     print("=" * 70)
     print("MongoDB to Gemini RAG Processor")
@@ -379,6 +400,8 @@ def main(argv=None):
         print(f"Query: {query}")
     if args.n:
         print(f"Limit: {args.n} records")
+    if id_list:
+        print(f"Processing specific IDs: {', '.join(id_list)}")
     if args.start_date:
         print(f"Start date: {args.start_date}")
     if args.end_date:
@@ -386,6 +409,10 @@ def main(argv=None):
     if news_sources:
         print(f"News sources: {', '.join(news_sources)}")
     print(f"ID file: {args.idfile}")
+    if args.update:
+        print("Update mode: Will reprocess records with existing data")
+    else:
+        print("Skip mode: Will skip records with existing data")
     if args.dry_run:
         print("DRY RUN MODE - No changes will be made")
     print("=" * 70)
@@ -402,6 +429,8 @@ def main(argv=None):
         news_sources=news_sources,
         limit=args.n,
         id_file=args.idfile,
+        id_list=id_list,
+        update_existing=args.update,
         dry_run=args.dry_run,
     )
     
