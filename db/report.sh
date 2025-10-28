@@ -4,6 +4,14 @@ entity="$3"
 query="$4"
 fulltext=${5:-}
 
+# -----------------------------
+# 3. Check input
+# -----------------------------
+if [[ -z "$query" ]]; then
+  echo "Usage: $0 <date offset> <filebase> <entities> <query>"
+  exit 1
+fi
+
 vec="output/${filename}.vec"
 news="output/${filename}.md"
 cypherfile="output/${filename}.cypher"
@@ -67,30 +75,50 @@ Do not use markup. Do not make tables. Reply with plain text only.
 
 EOF
  
-# -----------------------------
-# 3. Check input
-# -----------------------------
-if [[ -z "$query" ]]; then
-  echo "Usage: $0 <filebase> <entities> <query>"
-  exit 1
-fi
 
-# -- SVO cypher no ent prompt
-reportersvo() {
+# -- Ollama
+reporter() {
     local model="$1"
+    printf "Using model: $model\n"
     ( cat prompt_svo.txt "$vec" ) | ollama run --verbose --hidethinking "$model" | egrep '\->' | sort | uniq > "$cypherfile"
     cypher=$(<"$cypherfile")
     echo "$reporter $cypher $query $footer" > "$reporterfile"
     ( cat "$reporterfile" "$vec" ) | ollama run --verbose --hidethinking "$model" > "$news"
 }
 
-# -- SVO cypher no ent prompt Gemini
-reportergemsvo() {
+# -- Gemini
+reportergem() {
     ( cat prompt_svo.txt "$vec" ) | ./gemini.py models/gemini-2.5-flash | egrep '\->' | sort | uniq > "$cypherfile"
     cypher=$(<"$cypherfile")
     echo "$reporter\n<relations>\n $cypher \n</relations>\n$query $footer" > "$reporterfile"
     ( cat "$reporterfile" "$vec" ) | ./gemini.py models/gemini-2.5-flash > "$news"
 }
 
-reportergemsvo
+# -- MLX
+reportermlx() {
+    local model="$1"
+    printf "Using model: $model\n"
+    ( cat prompt_svo.txt "$vec" ) | ./mlxllm.py - --model "$model" | egrep '\->' | sort | uniq > "$cypherfile"
+    cypher=$(<"$cypherfile")
+    echo "$reporter\n<relations>\n $cypher \n</relations>\n$query $footer" > "$reporterfile"
+    ( cat "$reporterfile" "$vec" ) | ./mlxllm.py - --model "$model" > "$news"
+}
 
+reportergem
+#reportermlx Wwayu/DarkIdol-Llama-3.1-8B-Instruct-1.2-Uncensored-mlx-6Bit
+# good, 38m long
+#reporter reportergptoss120b
+# good, little thin < 1m. no cypher
+#reporter reporterllama323b:latest
+# junk
+#reporter reporterllama318b:latest
+# no lotta, sux
+#reporter reporterdeepseekcoderv216b:latest
+# good, but 11m
+#reporter reporterqwen314b:latest
+# good 5m
+#reporter reporterglm49b:latest
+# naw, As a professional newscaster, I would report:
+#reporter reportergranite338b:latest
+# good, slow 30m
+#reporter reporterllama3170b:latest
