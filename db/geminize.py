@@ -9,6 +9,7 @@ and stores results in destination field.
 import os
 import sys
 import argparse
+import time
 from typing import Optional, List
 from datetime import datetime, timedelta
 
@@ -16,6 +17,12 @@ import pymongo
 from bson import ObjectId
 import google.generativeai as genai
 from tqdm import tqdm
+
+try:
+    import ollama
+    OLLAMA_AVAILABLE = True
+except ImportError:
+    OLLAMA_AVAILABLE = False
 
 # ------------------------------------------------------------------
 # Config
@@ -28,13 +35,11 @@ DEFAULT_MODEL = "models/gemini-2.5-flash"
 # ------------------------------------------------------------------
 # Setup
 # ------------------------------------------------------------------
-# Ensure the GEMINI_API_KEY environment variable is set
-if not os.environ.get("GEMINI_API_KEY"):
-    print("Error: GEMINI_API_KEY environment variable not set.")
-    sys.exit(1)
-
-# Configure the API key
-genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+# Gemini API key (only needed if not using Ollama)
+gemini_configured = False
+if os.environ.get("GEMINI_API_KEY"):
+    genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+    gemini_configured = True
 
 # MongoDB connection
 mongo_client = pymongo.MongoClient(MONGO_URI)
@@ -107,6 +112,7 @@ def process_articles(
     id_file: str = "ids.txt",
     id_list: Optional[List[str]] = None,
     update_existing: bool = False,
+    use_ollama: bool = False,
     dry_run: bool = False,
 ) -> dict:
     """
@@ -138,12 +144,23 @@ def process_articles(
         total_docs = min(total_docs, limit)
         print(f"Limiting to {total_docs} documents")
     
-    # Initialize Gemini model
-    try:
-        model = genai.GenerativeModel(model_name)
-    except Exception as e:
-        print(f"Error initializing Gemini model '{model_name}': {e}")
-        sys.exit(1)
+    # Initialize LLM model
+    model = None
+    if use_ollama:
+        if not OLLAMA_AVAILABLE:
+            print("Error: ollama package not installed. Install with: pip install ollama")
+            sys.exit(1)
+        print(f"Using Ollama model: {model_name}")
+    else:
+        if not gemini_configured:
+            print("Error: GEMINI_API_KEY environment variable not set.")
+            sys.exit(1)
+        try:
+            model = genai.GenerativeModel(model_name)
+            print(f"Using Gemini model: {model_name}")
+        except Exception as e:
+            print(f"Error initializing Gemini model '{model_name}': {e}")
+            sys.exit(1)
     
     # Fetch documents
     cursor = mongo_coll.find(
@@ -151,9 +168,8 @@ def process_articles(
         {"_id": 1, "title": 1, "source": 1, "published": 1, src_field: 1, dst_field: 1}
     ).sort("published", -1)
     
-    # Apply limit if specified
-    if limit:
-        cursor = cursor.limit(limit)
+    # Note: We don't apply limit to cursor because we need to examine documents
+    # until we've actually processed 'limit' documents
     
     # Statistics
     stats = {
@@ -163,10 +179,19 @@ def process_articles(
         "errors": 0,
         "model": model_name,
         "modified_ids": [],
+        "total_time": 0,
+        "inference_time": 0,
+        "use_ollama": use_ollama,
+        "examined": 0,
     }
     
+    # Start overall timer
+    start_time = time.time()
+    
     # Process each document
-    for doc in tqdm(cursor, total=total_docs, desc="Processing articles"):
+    for doc in tqdm(cursor, desc="Processing articles"):
+        stats["examined"] += 1
+        
         _id = doc["_id"]
         src_content = doc.get(src_field, "")
         
@@ -199,10 +224,25 @@ Article Content:
 {src_content}
 """
         
-        # Process through Gemini
+        # Process through LLM (Gemini or Ollama)
         try:
-            response = model.generate_content(prompt)
-            result_text = response.text
+            # Time the inference
+            inference_start = time.time()
+            
+            if use_ollama:
+                # Use Ollama
+                response = ollama.chat(
+                    model=model_name,
+                    messages=[{"role": "user", "content": prompt}]
+                )
+                result_text = response["message"]["content"]
+            else:
+                # Use Gemini
+                response = model.generate_content(prompt)
+                result_text = response.text
+            
+            inference_time = time.time() - inference_start
+            stats["inference_time"] += inference_time
             
             # Clean up response - remove markdown code fences and common wrappers
             result_text_cleaned = result_text.strip()
@@ -223,7 +263,9 @@ Article Content:
             update_data = {
                 dst_field: result_text_cleaned,
                 f"{dst_field}_model": model_name,
+                f"{dst_field}_backend": "ollama" if use_ollama else "gemini",
                 f"{dst_field}_timestamp": update_timestamp,
+                f"{dst_field}_inference_time": inference_time,
             }
             
             # Print what will be/was updated
@@ -232,18 +274,21 @@ Article Content:
             print(f"Title: {title}")
             print(f"Source: {source}")
             print(f"Published: {published}")
-            print(f"\nPrompt sent to Gemini ({len(prompt)} chars):")
+            print(f"Inference time: {inference_time:.2f}s")
+            print(f"\nPrompt sent to {'Ollama' if use_ollama else 'Gemini'} ({len(prompt)} chars):")
             print("-" * 70)
             print(prompt[:500] + "..." if len(prompt) > 500 else prompt)
             print("-" * 70)
-            print(f"\nGemini Response ({len(result_text_cleaned)} chars):")
+            print(f"\n{'Ollama' if use_ollama else 'Gemini'} Response ({len(result_text_cleaned)} chars):")
             print("-" * 70)
             print(result_text_cleaned)
             print("-" * 70)
             print(f"\n{'Would insert' if dry_run else 'Inserted'} into MongoDB:")
             print(f"  {dst_field}: {result_text_cleaned[:100]}..." if len(result_text_cleaned) > 100 else f"  {dst_field}: {result_text_cleaned}")
             print(f"  {dst_field}_model: {model_name}")
+            print(f"  {dst_field}_backend: {'ollama' if use_ollama else 'gemini'}")
             print(f"  {dst_field}_timestamp: {update_timestamp.isoformat()}")
+            print(f"  {dst_field}_inference_time: {inference_time:.2f}s")
             print("=" * 70)
             
             if not dry_run:
@@ -256,6 +301,11 @@ Article Content:
             # Track modified ID
             stats["modified_ids"].append(str(_id))
             stats["processed"] += 1
+            
+            # Check if we've reached the limit of processed documents
+            if limit and stats["processed"] >= limit:
+                print(f"\n✅ Reached limit of {limit} processed documents")
+                break
                 
         except Exception as e:
             print(f"\nError processing article {_id}: {e}")
@@ -272,6 +322,9 @@ Article Content:
                         }
                     }
                 )
+    
+    # Calculate total time
+    stats["total_time"] = time.time() - start_time
     
     # Save modified IDs to file
     if stats["modified_ids"]:
@@ -297,7 +350,12 @@ def main(argv=None):
     parser.add_argument(
         "--model",
         default=DEFAULT_MODEL,
-        help=f"Gemini model name (default: {DEFAULT_MODEL})"
+        help=f"Model name (default: {DEFAULT_MODEL} for Gemini, or specify Ollama model with --ollama)"
+    )
+    parser.add_argument(
+        "--ollama",
+        action="store_true",
+        help="Use Ollama instead of Gemini for inference"
     )
     parser.add_argument(
         "--start-date",
@@ -411,6 +469,7 @@ def main(argv=None):
     print("=" * 70)
     print("MongoDB to Gemini RAG Processor")
     print("=" * 70)
+    print(f"LLM Backend: {'Ollama' if args.ollama else 'Gemini'}")
     print(f"Model: {args.model}")
     print(f"Source field: {args.src}")
     print(f"Destination field: {args.dst}")
@@ -455,6 +514,7 @@ def main(argv=None):
         id_file=args.idfile,
         id_list=id_list,
         update_existing=args.update,
+        use_ollama=args.ollama,
         dry_run=args.dry_run,
     )
     
@@ -462,11 +522,19 @@ def main(argv=None):
     print("\n" + "=" * 70)
     print("Processing Report")
     print("=" * 70)
+    print(f"LLM Backend: {'Ollama' if stats['use_ollama'] else 'Gemini'}")
     print(f"Model used: {stats['model']}")
-    print(f"Total documents found: {stats['total']}")
+    print(f"Total documents in query: {stats['total']}")
+    print(f"Documents examined: {stats['examined']}")
     print(f"Successfully processed: {stats['processed']}")
     print(f"Skipped (empty or already processed): {stats['skipped']}")
     print(f"Errors: {stats['errors']}")
+    print("-" * 70)
+    print(f"Total time: {stats['total_time']:.2f}s")
+    print(f"Total inference time: {stats['inference_time']:.2f}s")
+    if stats['processed'] > 0:
+        print(f"Average inference time: {stats['inference_time']/stats['processed']:.2f}s per article")
+        print(f"Average total time: {stats['total_time']/stats['processed']:.2f}s per article")
     print("=" * 70)
     
     # Exit with error code if there were errors
