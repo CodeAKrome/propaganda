@@ -9,11 +9,11 @@ TITLEFILE = output/titles.tsv
 
 thingsthatgo: load ner vector query mp3 fini
 
-fload: load ner vector fini
+fload: load ner vector entity fini
 fner: ner vector entity query mp3 fini
 fnervector: ner vector fini
 fquerymp3: entity query mp3 fini
-fquery: entity query fini
+fquery: query mp3 fini
 fmp3: mp3 fini
 
 black:
