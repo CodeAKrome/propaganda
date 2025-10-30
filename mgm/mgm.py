@@ -155,67 +155,62 @@ class NewsVideoGenerator:
             h = np.random.randint(200, 600)
             buildings.append((x, w, h))
         
-        def make_frame(t):
-            # Time-based colors
-            if time_of_day == 'night':
-                sky_top = (10, 15, 40)
-                sky_bottom = (30, 35, 60)
-            else:
-                sky_top = (100, 150, 200)
-                sky_bottom = (150, 180, 220)
-            
-            img = Image.new('RGB', (width, height))
-            draw = ImageDraw.Draw(img)
-            
-            # Draw gradient sky
-            for y in range(height):
-                ratio = y / height
-                r = int(sky_top[0] + (sky_bottom[0] - sky_top[0]) * ratio)
-                g = int(sky_top[1] + (sky_bottom[1] - sky_top[1]) * ratio)
-                b = int(sky_top[2] + (sky_bottom[2] - sky_top[2]) * ratio)
-                draw.line([(0, y), (width, y)], fill=(r, g, b))
-            
-            # Draw buildings with animated lights
-            for i, (x, w, h) in enumerate(buildings):
-                y = height - h
-                
-                # Building color
-                if time_of_day == 'night':
-                    building_color = (20 + i % 30, 20 + i % 30, 25 + i % 35)
-                else:
-                    building_color = (100 + i % 50, 100 + i % 50, 110 + i % 50)
-                
-                draw.rectangle([x, y, x + w, height], fill=building_color)
-                
-                # Draw windows with blinking effect
-                if time_of_day == 'night':
-                    window_rows = h // 40
-                    window_cols = w // 30
-                    for row in range(window_rows):
-                        for col in range(window_cols):
-                            wx = x + 10 + col * 30
-                            wy = y + 20 + row * 40
-                            
-                            # Animated window lights
-                            blink = (hash_val + i + row + col + int(t * 10)) % 20
-                            if blink < 15:
-                                brightness = 200 + int(55 * math.sin(t * 3 + i + row + col))
-                                window_color = (brightness, brightness, 150)
-                                draw.rectangle([wx, wy, wx + 15, wy + 20], fill=window_color)
-            
-            # Draw stars if night
-            if time_of_day == 'night':
-                np.random.seed(42)
-                for i in range(100):
-                    sx = np.random.randint(0, width)
-                    sy = np.random.randint(0, height // 2)
-                    twinkle = math.sin(t * 5 + i) * 0.5 + 0.5
-                    brightness = int(200 * twinkle)
-                    draw.ellipse([sx, sy, sx+2, sy+2], fill=(brightness, brightness, brightness))
-            
-            return np.array(img)
+        # Time-based colors
+        if time_of_day == 'night':
+            sky_top = (10, 15, 40)
+            sky_bottom = (30, 35, 60)
+        else:
+            sky_top = (100, 150, 200)
+            sky_bottom = (150, 180, 220)
         
-        return VideoClip(make_frame, duration=duration)
+        img = Image.new('RGB', (width, height))
+        draw = ImageDraw.Draw(img)
+        
+        # Draw gradient sky
+        for y in range(height):
+            ratio = y / height
+            r = int(sky_top[0] + (sky_bottom[0] - sky_top[0]) * ratio)
+            g = int(sky_top[1] + (sky_bottom[1] - sky_top[1]) * ratio)
+            b = int(sky_top[2] + (sky_bottom[2] - sky_top[2]) * ratio)
+            draw.line([(0, y), (width, y)], fill=(r, g, b))
+        
+        # Draw buildings with static lights
+        for i, (x, w, h) in enumerate(buildings):
+            y = height - h
+            
+            # Building color
+            if time_of_day == 'night':
+                building_color = (20 + i % 30, 20 + i % 30, 25 + i % 35)
+            else:
+                building_color = (100 + i % 50, 100 + i % 50, 110 + i % 50)
+            
+            draw.rectangle([x, y, x + w, height], fill=building_color)
+            
+            # Draw windows with static lights
+            if time_of_day == 'night':
+                window_rows = h // 40
+                window_cols = w // 30
+                for row in range(window_rows):
+                    for col in range(window_cols):
+                        wx = x + 10 + col * 30
+                        wy = y + 20 + row * 40
+                        
+                        blink = (hash_val + i + row + col) % 20
+                        if blink < 15:
+                            brightness = 200 + int(55 * math.sin(i + row + col))
+                            window_color = (brightness, brightness, 150)
+                            draw.rectangle([wx, wy, wx + 15, wy + 20], fill=window_color)
+        
+        # Draw stars if night
+        if time_of_day == 'night':
+            np.random.seed(42)
+            for i in range(100):
+                sx = np.random.randint(0, width)
+                sy = np.random.randint(0, height // 2)
+                brightness = np.random.randint(150, 255)
+                draw.ellipse([sx, sy, sx+2, sy+2], fill=(brightness, brightness, brightness))
+        
+        return ImageClip(np.array(img)).set_duration(duration)
     
     def create_procedural_scene(self, scene_type, duration):
         """Create procedural scenes for various topics."""
@@ -233,171 +228,153 @@ class NewsVideoGenerator:
     def create_government_building(self, duration):
         """Create an animated government building scene."""
         width, height = self.resolution
+        img = Image.new('RGB', (width, height), (40, 50, 80))
+        draw = ImageDraw.Draw(img)
         
-        def make_frame(t):
-            img = Image.new('RGB', (width, height), (40, 50, 80))
-            draw = ImageDraw.Draw(img)
-            
-            # Draw classical building with columns
-            building_width = 800
-            building_height = 600
-            building_x = (width - building_width) // 2
-            building_y = height - building_height
-            
-            # Building base
-            draw.rectangle([building_x, building_y, building_x + building_width, height],
-                         fill=(180, 180, 190))
-            
-            # Columns
-            num_columns = 8
-            col_spacing = building_width // (num_columns + 1)
-            for i in range(num_columns):
-                col_x = building_x + (i + 1) * col_spacing
-                col_width = 40
-                # Animated shadow effect
-                shadow = int(20 + 10 * math.sin(t + i))
-                draw.rectangle([col_x - col_width//2, building_y + 100, 
-                              col_x + col_width//2, height],
-                             fill=(200 - shadow, 200 - shadow, 210 - shadow))
-            
-            # Pediment (triangular top)
-            draw.polygon([
-                (building_x - 50, building_y + 100),
-                (building_x + building_width + 50, building_y + 100),
-                (building_x + building_width // 2, building_y - 50)
-            ], fill=(160, 160, 170))
-            
-            # Flag animation
-            flag_x = building_x + building_width // 2
-            flag_y = building_y - 100
-            wave = math.sin(t * 3) * 20
-            
-            # Flag pole
-            draw.line([(flag_x, flag_y), (flag_x, building_y - 50)], 
-                     fill=(100, 100, 100), width=5)
-            
-            # Flag (animated wave)
-            flag_points = [
-                (flag_x, flag_y),
-                (flag_x + 100 + wave, flag_y + 10),
-                (flag_x + 100 + wave, flag_y + 60),
-                (flag_x, flag_y + 50)
-            ]
-            draw.polygon(flag_points, fill=(200, 50, 50))
-            
-            return np.array(img)
+        # Draw classical building with columns
+        building_width = 800
+        building_height = 600
+        building_x = (width - building_width) // 2
+        building_y = height - building_height
         
-        return VideoClip(make_frame, duration=duration)
+        # Building base
+        draw.rectangle([building_x, building_y, building_x + building_width, height],
+                     fill=(180, 180, 190))
+        
+        # Columns
+        num_columns = 8
+        col_spacing = building_width // (num_columns + 1)
+        for i in range(num_columns):
+            col_x = building_x + (i + 1) * col_spacing
+            col_width = 40
+            # Static shadow effect
+            shadow = int(20 + 10 * math.sin(i))
+            draw.rectangle([col_x - col_width//2, building_y + 100, 
+                          col_x + col_width//2, height],
+                         fill=(200 - shadow, 200 - shadow, 210 - shadow))
+        
+        # Pediment (triangular top)
+        draw.polygon([
+            (building_x - 50, building_y + 100),
+            (building_x + building_width + 50, building_y + 100),
+            (building_x + building_width // 2, building_y - 50)
+        ], fill=(160, 160, 170))
+        
+        # Flag
+        flag_x = building_x + building_width // 2
+        flag_y = building_y - 100
+        wave = 10 # Static wave
+        
+        # Flag pole
+        draw.line([(flag_x, flag_y), (flag_x, building_y - 50)], 
+                 fill=(100, 100, 100), width=5)
+        
+        # Flag (static wave)
+        flag_points = [
+            (flag_x, flag_y),
+            (flag_x + 100 + wave, flag_y + 10),
+            (flag_x + 100 + wave, flag_y + 60),
+            (flag_x, flag_y + 50)
+        ]
+        draw.polygon(flag_points, fill=(200, 50, 50))
+        
+        return ImageClip(np.array(img)).set_duration(duration)
     
     def create_police_scene(self, duration):
         """Create an animated police/law enforcement scene."""
         width, height = self.resolution
+        img = Image.new('RGB', (width, height), (20, 25, 40))
+        draw = ImageDraw.Draw(img)
         
-        def make_frame(t):
-            img = Image.new('RGB', (width, height), (20, 25, 40))
-            draw = ImageDraw.Draw(img)
-            
-            # Police lights effect (alternating red and blue)
-            light_flash = int(t * 4) % 2
-            
-            # Left light
-            left_intensity = 200 if light_flash == 0 else 50
-            for radius in range(100, 0, -10):
-                alpha = (100 - radius) * 2
-                color = (left_intensity, 0, 50)
-                draw.ellipse([200 - radius, 200 - radius, 
-                            200 + radius, 200 + radius],
-                           fill=color)
-            
-            # Right light
-            right_intensity = 200 if light_flash == 1 else 50
-            for radius in range(100, 0, -10):
-                alpha = (100 - radius) * 2
-                color = (50, 50, right_intensity)
-                draw.ellipse([width - 200 - radius, 200 - radius,
-                            width - 200 + radius, 200 + radius],
-                           fill=color)
-            
-            # Draw police badge symbol in center
-            badge_x, badge_y = width // 2, height // 2
-            badge_size = 150
-            
-            # Badge star
-            points = []
-            for i in range(10):
-                angle = (i * 36 - 90) * math.pi / 180
-                radius = badge_size if i % 2 == 0 else badge_size // 2
-                px = badge_x + radius * math.cos(angle)
-                py = badge_y + radius * math.sin(angle)
-                points.append((px, py))
-            
-            draw.polygon(points, fill=(180, 160, 50), outline=(200, 180, 70))
-            
-            # Badge center
-            draw.ellipse([badge_x - 50, badge_y - 50, badge_x + 50, badge_y + 50],
-                        fill=(100, 100, 120))
-            
-            return np.array(img)
+        # Static police lights effect
+        # Left light (red)
+        for radius in range(100, 0, -10):
+            color = (200, 0, 50)
+            draw.ellipse([200 - radius, 200 - radius, 
+                        200 + radius, 200 + radius],
+                       fill=color)
         
-        return VideoClip(make_frame, duration=duration)
+        # Right light (blue)
+        for radius in range(100, 0, -10):
+            color = (50, 50, 200)
+            draw.ellipse([width - 200 - radius, 200 - radius,
+                        width - 200 + radius, 200 + radius],
+                       fill=color)
+        
+        # Draw police badge symbol in center
+        badge_x, badge_y = width // 2, height // 2
+        badge_size = 150
+        
+        # Badge star
+        points = []
+        for i in range(10):
+            angle = (i * 36 - 90) * math.pi / 180
+            radius = badge_size if i % 2 == 0 else badge_size // 2
+            px = badge_x + radius * math.cos(angle)
+            py = badge_y + radius * math.sin(angle)
+            points.append((px, py))
+        
+        draw.polygon(points, fill=(180, 160, 50), outline=(200, 180, 70))
+        
+        # Badge center
+        draw.ellipse([badge_x - 50, badge_y - 50, badge_x + 50, badge_y + 50],
+                    fill=(100, 100, 120))
+        
+        return ImageClip(np.array(img)).set_duration(duration)
     
     def create_military_scene(self, duration):
         """Create military/National Guard scene."""
         width, height = self.resolution
+        img = Image.new('RGB', (width, height), (60, 70, 50))
+        draw = ImageDraw.Draw(img)
         
-        def make_frame(t):
-            img = Image.new('RGB', (width, height), (60, 70, 50))
-            draw = ImageDraw.Draw(img)
+        # Camouflage pattern background
+        np.random.seed(42)
+        for i in range(50):
+            x = np.random.randint(0, width)
+            y = np.random.randint(0, height)
+            size = np.random.randint(100, 300)
             
-            # Camouflage pattern background
-            np.random.seed(42)
-            for i in range(50):
-                x = np.random.randint(0, width)
-                y = np.random.randint(0, height)
-                size = np.random.randint(100, 300)
-                
-                pattern_colors = [(80, 90, 60), (60, 70, 50), (100, 110, 80), (50, 60, 40)]
-                color = pattern_colors[i % 4]
-                
-                draw.ellipse([x, y, x + size, y + size], fill=color)
+            pattern_colors = [(80, 90, 60), (60, 70, 50), (100, 110, 80), (50, 60, 40)]
+            color = pattern_colors[i % 4]
             
-            # Draw military vehicles (simplified)
-            vehicle_y = height - 300
-            for i in range(3):
-                vx = 300 + i * 400 + int(t * 50 % width)
-                
-                # Vehicle body
-                draw.rectangle([vx, vehicle_y, vx + 200, vehicle_y + 100],
-                             fill=(70, 80, 50))
-                
-                # Wheels
-                draw.ellipse([vx + 30, vehicle_y + 80, vx + 70, vehicle_y + 120],
-                           fill=(40, 40, 40))
-                draw.ellipse([vx + 160, vehicle_y + 80, vx + 200, vehicle_y + 120],
-                           fill=(40, 40, 40))
-            
-            # Add stars for insignia
-            for i in range(3):
-                sx = width // 4 + i * (width // 4)
-                sy = 100
-                
-                # Five-pointed star
-                star_points = []
-                for j in range(10):
-                    angle = (j * 36 - 90) * math.pi / 180
-                    radius = 40 if j % 2 == 0 else 16
-                    px = sx + radius * math.cos(angle)
-                    py = sy + radius * math.sin(angle)
-                    star_points.append((px, py))
-                
-                draw.polygon(star_points, fill=(200, 200, 200))
-            
-            return np.array(img)
+            draw.ellipse([x, y, x + size, y + size], fill=color)
         
-        return VideoClip(make_frame, duration=duration)
+        # Draw military vehicles (simplified)
+        vehicle_y = height - 300
+        for i in range(3):
+            vx = 300 + i * 400
+            
+            # Vehicle body
+            draw.rectangle([vx, vehicle_y, vx + 200, vehicle_y + 100],
+                         fill=(70, 80, 50))
+            
+            # Wheels
+            draw.ellipse([vx + 30, vehicle_y + 80, vx + 70, vehicle_y + 120],
+                       fill=(40, 40, 40))
+            draw.ellipse([vx + 160, vehicle_y + 80, vx + 200, vehicle_y + 120],
+                       fill=(40, 40, 40))
+        
+        # Add stars for insignia
+        for i in range(3):
+            sx = width // 4 + i * (width // 4)
+            sy = 100
+            
+            # Five-pointed star
+            star_points = []
+            for j in range(10):
+                angle = (j * 36 - 90) * math.pi / 180
+                radius = 40 if j % 2 == 0 else 16
+                px = sx + radius * math.cos(angle)
+                py = sy + radius * math.sin(angle)
+                star_points.append((px, py))
+            
+            draw.polygon(star_points, fill=(200, 200, 200))
+        
+        return ImageClip(np.array(img)).set_duration(duration)
     
-    def create_abstract_background(self, topic, duration):
-        """Create abstract animated background."""
+    def create_abstract_background(self, text, topic, duration):
+        """Create a unique, static abstract background based on the segment's text."""
         width, height = self.resolution
         
         # Topic-based color schemes
@@ -409,40 +386,39 @@ class NewsVideoGenerator:
         
         colors = color_schemes.get(topic, color_schemes['default'])
         
-        def make_frame(t):
-            img = Image.new('RGB', (width, height))
-            draw = ImageDraw.Draw(img)
-            
-            # Animated gradient
-            for y in range(height):
-                ratio = (y / height + t * 0.1) % 1.0
-                r = int(colors[0][0] + (colors[1][0] - colors[0][0]) * ratio)
-                g = int(colors[0][1] + (colors[1][1] - colors[0][1]) * ratio)
-                b = int(colors[0][2] + (colors[1][2] - colors[0][2]) * ratio)
-                draw.line([(0, y), (width, y)], fill=(r, g, b))
-            
-            # Floating geometric shapes
-            np.random.seed(42)
-            for i in range(15):
-                phase = t + i * 0.5
-                x = int((width / 15 * i + math.sin(phase) * 100) % width)
-                y = int((height / 3 + math.cos(phase * 1.3) * 150) % height)
-                size = 30 + int(20 * math.sin(phase * 2))
-                
-                alpha = int(100 + 50 * math.sin(phase))
-                shape_color = (255, 255, 255, alpha)
-                
-                if i % 3 == 0:
-                    draw.ellipse([x, y, x+size, y+size], fill=(200, 200, 255, 50))
-                elif i % 3 == 1:
-                    draw.rectangle([x, y, x+size, y+size], fill=(200, 200, 255, 50))
-                else:
-                    points = [(x + size//2, y), (x + size, y + size), (x, y + size)]
-                    draw.polygon(points, fill=(200, 200, 255, 50))
-            
-            return np.array(img)
+        # Use a hash of the text to seed the visual output
+        hash_val = int(hashlib.md5(text.encode()).hexdigest(), 16)
+        np.random.seed(hash_val % (2**32 - 1))
         
-        return VideoClip(make_frame, duration=duration)
+        img = Image.new('RGB', (width, height), colors[0])
+        draw = ImageDraw.Draw(img)
+        
+        # Static gradient
+        for y in range(height):
+            ratio = y / height
+            r = int(colors[0][0] * (1 - ratio) + colors[1][0] * ratio)
+            g = int(colors[0][1] * (1 - ratio) + colors[1][1] * ratio)
+            b = int(colors[0][2] * (1 - ratio) + colors[1][2] * ratio)
+            draw.line([(0, y), (width, y)], fill=(r, g, b))
+        
+        # Floating geometric shapes seeded by the text content
+        num_shapes = 20 + (hash_val % 15)
+        for i in range(num_shapes):
+            x = np.random.randint(0, width)
+            y = np.random.randint(0, height)
+            size = np.random.randint(20, 200)
+            alpha = np.random.randint(30, 80)
+            shape_color = (np.random.randint(150, 255), np.random.randint(150, 255), 255, alpha)
+            
+            if i % 3 == 0:
+                draw.ellipse([x, y, x+size, y+size], fill=shape_color)
+            elif i % 3 == 1:
+                draw.rectangle([x, y, x+size, y+size], fill=shape_color)
+            else:
+                points = [(x + size//2, y), (x + size, y + size), (x, y + size)]
+                draw.polygon(points, fill=shape_color)
+        
+        return ImageClip(np.array(img)).set_duration(duration)
     
     def parse_article(self, text):
         """Parse article into segments with metadata."""
@@ -529,7 +505,7 @@ class NewsVideoGenerator:
         elif 'politics' in segment['topics']:
             return self.create_procedural_scene('government', duration)
         else:
-            return self.create_abstract_background('news', duration)
+            return self.create_abstract_background(segment['text'], 'news', duration)
     
     def generate_audio(self, text, output_path):
         """Generate TTS audio for text with Metal GPU acceleration."""
