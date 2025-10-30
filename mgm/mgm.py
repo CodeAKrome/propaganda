@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 """
-News Article to Video Generator - Fully Local & Free
-Generates synchronized video with TTS audio, procedural visuals, and animations.
-No API keys or paid subscriptions required.
-Optimized for Mac Metal GPU acceleration.
+News Article to Video Generator – Fully Local & Free
+Creates a narrated MP4 from plain text:  procedural visuals,
+AI-generated portraits, TTS audio, animated overlays.
+No API keys or paid services required.
+Optimised for Apple Silicon (Metal) and VideoToolbox hardware encoding.
 """
 
 import sys
@@ -11,15 +12,18 @@ import re
 import json
 import hashlib
 import platform
+import tempfile
+import shutil
 from pathlib import Path
 from kokoro import KPipeline
 from diffusers import AutoPipelineForText2Image
 import soundfile as sf
 import torch
 from moviepy.editor import (
-    VideoClip, ImageClip, TextClip, CompositeVideoClip, 
+    VideoClip, ImageClip, TextClip, CompositeVideoClip,
     AudioFileClip, concatenate_videoclips, concatenate_audioclips
 )
+from moviepy.audio.AudioClip import AudioArrayClip
 from diffusers import DPMSolverMultistepScheduler
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance
@@ -27,27 +31,26 @@ from io import BytesIO
 import time
 import math
 
+# ---------- generator --------------------------------------------------------
 class NewsVideoGenerator:
     def __init__(self, voice='af_heart', resolution=(1920, 1080)):
-        # Configure Metal GPU acceleration for Mac
         self._setup_metal_acceleration()
-        
         self.pipeline = KPipeline(lang_code='a')
         self._setup_image_pipeline()
         self.voice = voice
         self.resolution = resolution
-        self.sample_rate = 24000
+        self.sample_rate = 24_000
         self.cache_dir = Path('/tmp/video_cache')
         self.cache_dir.mkdir(exist_ok=True)
-        
+
+    # ---- device setup -------------------------------------------------------
     def _setup_metal_acceleration(self):
-        """Configure PyTorch to use Metal GPU acceleration on Mac."""
-        if platform.system() == 'Darwin':  # macOS
+        if platform.system() == 'Darwin':                      # macOS
             if torch.backends.mps.is_available():
                 self.device = torch.device('mps')
                 print("✓ Metal GPU acceleration enabled", file=sys.stderr)
                 torch.set_default_device('mps')
-                torch.set_default_dtype(torch.float32) # Ensures new tensors are created on the default device
+                torch.set_default_dtype(torch.float32)
                 torch.backends.mps.enable_mps_fallback = True
             else:
                 self.device = torch.device('cpu')
@@ -60,852 +63,410 @@ class NewsVideoGenerator:
                 self.device = torch.device('cpu')
                 print("⚠ Using CPU", file=sys.stderr)
 
+    # ---- diffusion pipeline -------------------------------------------------
     def _setup_image_pipeline(self):
-        """Initializes the Stable Diffusion image generation pipeline."""
         print("Initializing AI image generation pipeline...", file=sys.stderr)
-        # Using a fast, distilled model for better performance on local machines.
-        # You can swap this with other models like "runwayml/stable-diffusion-v1-5"
-        # or "stabilityai/stable-diffusion-xl-base-1.0" for higher quality at the cost of speed.
-        # Temporarily set default device to CPU to ensure the image pipeline loads correctly,
-        # then restore the original default device. This prevents MPS tensors in the scheduler.
-        original_default_device = torch.get_default_device()
-        torch.set_default_device('cpu')
+        original = torch.get_default_device()
+        torch.set_default_device('cpu')          # avoid MPS tensors in scheduler
         try:
             self.image_pipeline = AutoPipelineForText2Image.from_pretrained(
                 "stabilityai/sd-turbo"
             )
         finally:
-            torch.set_default_device(original_default_device)
-        
+            torch.set_default_device(original)
+
+    # ---- procedural portraits ----------------------------------------------
     def create_placeholder_portrait(self, name, style='professional'):
-        """Create a high-quality procedural portrait with multiple styles."""
         img = Image.new('RGB', (400, 400), (0, 0, 0))
         draw = ImageDraw.Draw(img)
-        
-        # Generate consistent colors from name
-        hash_val = int(hashlib.md5(name.encode()).hexdigest(), 16)
-        hue = (hash_val % 360)
-        
-        # Convert HSV to RGB for background
-        h, s, v = hue / 360.0, 0.6, 0.4
-        c = v * s
-        x = c * (1 - abs((h * 6) % 2 - 1))
-        m = v - c
-        
-        if h < 1/6:
-            r, g, b = c, x, 0
-        elif h < 2/6:
-            r, g, b = x, c, 0
-        elif h < 3/6:
-            r, g, b = 0, c, x
-        elif h < 4/6:
-            r, g, b = 0, x, c
-        elif h < 5/6:
-            r, g, b = x, 0, c
-        else:
-            r, g, b = c, 0, x
-        
-        bg_color = (int((r+m)*255), int((g+m)*255), int((b+m)*255))
-        
-        # Create gradient background
+
+        # consistent colours from name hash
+        h = int(hashlib.md5(name.encode()).hexdigest(), 16) % 360
+        s, v = 0.6, 0.4
+        c = v * s; x = c * (1 - abs((h / 60.0) % 2 - 1)); m = v - c
+        if h < 60:   r, g, b = c, x, 0
+        elif h < 120: r, g, b = x, c, 0
+        elif h < 180: r, g, b = 0, c, x
+        elif h < 240: r, g, b = 0, x, c
+        elif h < 300: r, g, b = x, 0, c
+        else:         r, g, b = c, 0, x
+        bg = tuple(int((ch + m) * 255) for ch in (r, g, b))
+
+        # gradient background
         for y in range(400):
-            ratio = y / 400
-            darker = tuple(int(c * (0.7 + 0.3 * ratio)) for c in bg_color)
-            draw.line([(0, y), (400, y)], fill=darker)
-        
+            alpha = y / 400
+            shade = tuple(int(c * (0.7 + 0.3 * alpha)) for c in bg)
+            draw.line([(0, y), (400, y)], fill=shade)
+
         if style == 'professional':
-            # Draw circle background for avatar
-            circle_color = tuple(min(255, int(c * 1.3)) for c in bg_color)
-            draw.ellipse([50, 50, 350, 350], fill=circle_color)
-            
-            # Add subtle border
-            draw.ellipse([50, 50, 350, 350], outline=(255, 255, 255, 128), width=3)
-            
-            # Get initials
-            parts = name.split()
-            initials = ''.join([p[0] for p in parts[:2]]).upper()
-            
-            # Draw initials with shadow
+            circle = tuple(min(255, int(c * 1.3)) for c in bg)
+            draw.ellipse([50, 50, 350, 350], fill=circle, outline=(255, 255, 255), width=3)
+            initials = ''.join(w[0] for w in name.split()[:2]).upper()
             try:
                 font = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial Bold.ttf", 120)
             except:
-                try:
-                    font = ImageFont.truetype("Arial Bold", 120)
-                except:
-                    font = ImageFont.load_default()
-            
-            # Text shadow
+                font = ImageFont.load_default()
             bbox = draw.textbbox((0, 0), initials, font=font)
-            text_width = bbox[2] - bbox[0]
-            text_height = bbox[3] - bbox[1]
-            
-            x = (400 - text_width) // 2
-            y = (400 - text_height) // 2 - 10
-            
-            # Shadow
-            draw.text((x+3, y+3), initials, fill=(0, 0, 0, 180), font=font)
-            # Main text
+            tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+            x, y = (400 - tw) // 2, (400 - th) // 2 - 10
+            draw.text((x + 3, y + 3), initials, fill=(0, 0, 0, 180), font=font)
             draw.text((x, y), initials, fill='white', font=font)
-            
-        elif style == 'silhouette':
-            # Create a silhouette-style portrait
-            # Head shape
-            draw.ellipse([100, 80, 300, 280], fill=(40, 40, 50))
-            # Shoulders
-            draw.polygon([(120, 280), (280, 280), (350, 400), (50, 400)], fill=(40, 40, 50))
-            # Add rim light effect
-            draw.arc([100, 80, 300, 280], 200, 340, fill=(200, 200, 255), width=3)
-        
         return img
-    
+
+    # ---- procedural backgrounds -------------------------------------------
     def create_procedural_cityscape(self, city_name, duration, time_of_day='night'):
-        """Create an animated procedural cityscape."""
-        width, height = self.resolution
-        
-        # Generate consistent cityscape from name
-        hash_val = int(hashlib.md5(city_name.encode()).hexdigest(), 16)
-        np.random.seed(hash_val % 10000)
-        
-        # Generate building parameters
-        num_buildings = 20
-        buildings = []
-        for i in range(num_buildings):
-            x = (width // num_buildings) * i
-            w = width // num_buildings + np.random.randint(-20, 40)
-            h = np.random.randint(200, 600)
-            buildings.append((x, w, h))
-        
-        # Time-based colors
-        if time_of_day == 'night':
-            sky_top = (10, 15, 40)
-            sky_bottom = (30, 35, 60)
-        else:
-            sky_top = (100, 150, 200)
-            sky_bottom = (150, 180, 220)
-        
-        img = Image.new('RGB', (width, height))
+        w, h = self.resolution
+        seed = int(hashlib.md5(city_name.encode()).hexdigest(), 16) % 10_000
+        np.random.seed(seed)
+        n_build = 20
+        builds = []
+        for i in range(n_build):
+            x = (w // n_build) * i
+            bw = w // n_build + np.random.randint(-20, 40)
+            bh = np.random.randint(200, 600)
+            builds.append((x, bw, bh))
+
+        top = (10, 15, 40) if time_of_day == 'night' else (100, 150, 200)
+        bot = (30, 35, 60) if time_of_day == 'night' else (150, 180, 220)
+        img = Image.new('RGB', (w, h))
         draw = ImageDraw.Draw(img)
-        
-        # Draw gradient sky
-        for y in range(height):
-            ratio = y / height
-            r = int(sky_top[0] + (sky_bottom[0] - sky_top[0]) * ratio)
-            g = int(sky_top[1] + (sky_bottom[1] - sky_top[1]) * ratio)
-            b = int(sky_top[2] + (sky_bottom[2] - sky_top[2]) * ratio)
-            draw.line([(0, y), (width, y)], fill=(r, g, b))
-        
-        # Draw buildings with static lights
-        for i, (x, w, h) in enumerate(buildings):
-            y = height - h
-            
-            # Building color
+        for y in range(h):
+            ratio = y / h
+            r = int(top[0] + (bot[0] - top[0]) * ratio)
+            g = int(top[1] + (bot[1] - top[1]) * ratio)
+            b = int(top[2] + (bot[2] - top[2]) * ratio)
+            draw.line([(0, y), (w, y)], fill=(r, g, b))
+
+        for i, (x, bw, bh) in enumerate(builds):
+            y = h - bh
+            col = (20 + i % 30,) * 3 if time_of_day == 'night' else (100 + i % 50,) * 3
+            draw.rectangle([x, y, x + bw, h], fill=col)
             if time_of_day == 'night':
-                building_color = (20 + i % 30, 20 + i % 30, 25 + i % 35)
-            else:
-                building_color = (100 + i % 50, 100 + i % 50, 110 + i % 50)
-            
-            draw.rectangle([x, y, x + w, height], fill=building_color)
-            
-            # Draw windows with static lights
-            if time_of_day == 'night':
-                window_rows = h // 40
-                window_cols = w // 30
-                for row in range(window_rows):
-                    for col in range(window_cols):
-                        wx = x + 10 + col * 30
-                        wy = y + 20 + row * 40
-                        
-                        blink = (hash_val + i + row + col) % 20
-                        if blink < 15:
-                            brightness = 200 + int(55 * math.sin(i + row + col))
-                            window_color = (brightness, brightness, 150)
-                            draw.rectangle([wx, wy, wx + 15, wy + 20], fill=window_color)
-        
-        # Draw stars if night
-        if time_of_day == 'night':
-            np.random.seed(42)
-            for i in range(100):
-                sx = np.random.randint(0, width)
-                sy = np.random.randint(0, height // 2)
-                brightness = np.random.randint(150, 255)
-                draw.ellipse([sx, sy, sx+2, sy+2], fill=(brightness, brightness, brightness))
-        
-        return ImageClip(np.array(img)).set_duration(duration)
-    
-    def create_procedural_scene(self, scene_type, duration):
-        """Create procedural scenes for various topics."""
-        width, height = self.resolution
-        
-        if scene_type == 'government':
-            return self.create_government_building(duration)
-        elif scene_type == 'crime':
-            return self.create_police_scene(duration)
-        elif scene_type == 'military':
-            return self.create_military_scene(duration)
-        else:
-            return self.create_abstract_background(scene_type, duration)
-    
-    def create_government_building(self, duration):
-        """Create an animated government building scene."""
-        width, height = self.resolution
-        img = Image.new('RGB', (width, height), (40, 50, 80))
-        draw = ImageDraw.Draw(img)
-        
-        # Draw classical building with columns
-        building_width = 800
-        building_height = 600
-        building_x = (width - building_width) // 2
-        building_y = height - building_height
-        
-        # Building base
-        draw.rectangle([building_x, building_y, building_x + building_width, height],
-                     fill=(180, 180, 190))
-        
-        # Columns
-        num_columns = 8
-        col_spacing = building_width // (num_columns + 1)
-        for i in range(num_columns):
-            col_x = building_x + (i + 1) * col_spacing
-            col_width = 40
-            # Static shadow effect
-            shadow = int(20 + 10 * math.sin(i))
-            draw.rectangle([col_x - col_width//2, building_y + 100, 
-                          col_x + col_width//2, height],
-                         fill=(200 - shadow, 200 - shadow, 210 - shadow))
-        
-        # Pediment (triangular top)
-        draw.polygon([
-            (building_x - 50, building_y + 100),
-            (building_x + building_width + 50, building_y + 100),
-            (building_x + building_width // 2, building_y - 50)
-        ], fill=(160, 160, 170))
-        
-        # Flag
-        flag_x = building_x + building_width // 2
-        flag_y = building_y - 100
-        wave = 10 # Static wave
-        
-        # Flag pole
-        draw.line([(flag_x, flag_y), (flag_x, building_y - 50)], 
-                 fill=(100, 100, 100), width=5)
-        
-        # Flag (static wave)
-        flag_points = [
-            (flag_x, flag_y),
-            (flag_x + 100 + wave, flag_y + 10),
-            (flag_x + 100 + wave, flag_y + 60),
-            (flag_x, flag_y + 50)
-        ]
-        draw.polygon(flag_points, fill=(200, 50, 50))
-        
-        return ImageClip(np.array(img)).set_duration(duration)
-    
-    def create_police_scene(self, duration):
-        """Create an animated police/law enforcement scene."""
-        width, height = self.resolution
-        img = Image.new('RGB', (width, height), (20, 25, 40))
-        draw = ImageDraw.Draw(img)
-        
-        # Static police lights effect
-        # Left light (red)
-        for radius in range(100, 0, -10):
-            color = (200, 0, 50)
-            draw.ellipse([200 - radius, 200 - radius, 
-                        200 + radius, 200 + radius],
-                       fill=color)
-        
-        # Right light (blue)
-        for radius in range(100, 0, -10):
-            color = (50, 50, 200)
-            draw.ellipse([width - 200 - radius, 200 - radius,
-                        width - 200 + radius, 200 + radius],
-                       fill=color)
-        
-        # Draw police badge symbol in center
-        badge_x, badge_y = width // 2, height // 2
-        badge_size = 150
-        
-        # Badge star
-        points = []
-        for i in range(10):
-            angle = (i * 36 - 90) * math.pi / 180
-            radius = badge_size if i % 2 == 0 else badge_size // 2
-            px = badge_x + radius * math.cos(angle)
-            py = badge_y + radius * math.sin(angle)
-            points.append((px, py))
-        
-        draw.polygon(points, fill=(180, 160, 50), outline=(200, 180, 70))
-        
-        # Badge center
-        draw.ellipse([badge_x - 50, badge_y - 50, badge_x + 50, badge_y + 50],
-                    fill=(100, 100, 120))
-        
-        return ImageClip(np.array(img)).set_duration(duration)
-    
-    def create_military_scene(self, duration):
-        """Create military/National Guard scene."""
-        width, height = self.resolution
-        img = Image.new('RGB', (width, height), (60, 70, 50))
-        draw = ImageDraw.Draw(img)
-        
-        # Camouflage pattern background
-        np.random.seed(42)
-        for i in range(50):
-            x = np.random.randint(0, width)
-            y = np.random.randint(0, height)
-            size = np.random.randint(100, 300)
-            
-            pattern_colors = [(80, 90, 60), (60, 70, 50), (100, 110, 80), (50, 60, 40)]
-            color = pattern_colors[i % 4]
-            
-            draw.ellipse([x, y, x + size, y + size], fill=color)
-        
-        # Draw military vehicles (simplified)
-        vehicle_y = height - 300
-        for i in range(3):
-            vx = 300 + i * 400
-            
-            # Vehicle body
-            draw.rectangle([vx, vehicle_y, vx + 200, vehicle_y + 100],
-                         fill=(70, 80, 50))
-            
-            # Wheels
-            draw.ellipse([vx + 30, vehicle_y + 80, vx + 70, vehicle_y + 120],
-                       fill=(40, 40, 40))
-            draw.ellipse([vx + 160, vehicle_y + 80, vx + 200, vehicle_y + 120],
-                       fill=(40, 40, 40))
-        
-        # Add stars for insignia
-        for i in range(3):
-            sx = width // 4 + i * (width // 4)
-            sy = 100
-            
-            # Five-pointed star
-            star_points = []
-            for j in range(10):
-                angle = (j * 36 - 90) * math.pi / 180
-                radius = 40 if j % 2 == 0 else 16
-                px = sx + radius * math.cos(angle)
-                py = sy + radius * math.sin(angle)
-                star_points.append((px, py))
-            
-            draw.polygon(star_points, fill=(200, 200, 200))
-        
-        return ImageClip(np.array(img)).set_duration(duration)
-    
-    def create_abstract_background(self, text, topic, duration):
-        """Create a unique, static abstract background based on the segment's text."""
-        width, height = self.resolution
-        
-        # Topic-based color schemes
-        color_schemes = {
-            'default': [(30, 40, 60), (50, 60, 90)],
-            'news': [(40, 40, 70), (60, 60, 100)],
-            'politics': [(50, 30, 30), (80, 50, 50)],
-        }
-        
-        colors = color_schemes.get(topic, color_schemes['default'])
-        
-        # Use a hash of the text to seed the visual output
-        hash_val = int(hashlib.md5(text.encode()).hexdigest(), 16)
-        np.random.seed(hash_val % (2**32 - 1))
-        
-        img = Image.new('RGB', (width, height), colors[0])
-        draw = ImageDraw.Draw(img)
-        
-        # Static gradient
-        for y in range(height):
-            ratio = y / height
-            r = int(colors[0][0] * (1 - ratio) + colors[1][0] * ratio)
-            g = int(colors[0][1] * (1 - ratio) + colors[1][1] * ratio)
-            b = int(colors[0][2] * (1 - ratio) + colors[1][2] * ratio)
-            draw.line([(0, y), (width, y)], fill=(r, g, b))
-        
-        # Floating geometric shapes seeded by the text content
-        num_shapes = 20 + (hash_val % 15)
-        for i in range(num_shapes):
-            x = np.random.randint(0, width)
-            y = np.random.randint(0, height)
-            size = np.random.randint(20, 200)
-            alpha = np.random.randint(30, 80)
-            shape_color = (np.random.randint(150, 255), np.random.randint(150, 255), 255, alpha)
-            
-            if i % 3 == 0:
-                draw.ellipse([x, y, x+size, y+size], fill=shape_color)
-            elif i % 3 == 1:
-                draw.rectangle([x, y, x+size, y+size], fill=shape_color)
-            else:
-                points = [(x + size//2, y), (x + size, y + size), (x, y + size)]
-                draw.polygon(points, fill=shape_color)
-        
+                rows, cols = bh // 40, bw // 30
+                for row in range(rows):
+                    for col in range(cols):
+                        wx, wy = x + 10 + col * 30, y + 20 + row * 40
+                        if (seed + i + row + col) % 20 < 15:
+                            bright = 200 + int(55 * math.sin(i + row + col))
+                            draw.rectangle([wx, wy, wx + 15, wy + 20],
+                                         fill=(bright, bright, 150))
         return ImageClip(np.array(img)).set_duration(duration)
 
+    def create_government_building(self, duration):
+        w, h = self.resolution
+        img = Image.new('RGB', (w, h), (40, 50, 80))
+        draw = ImageDraw.Draw(img)
+        bw, bh = 800, 600
+        bx = (w - bw) // 2; by = h - bh
+        draw.rectangle([bx, by, bx + bw, h], fill=(180, 180, 190))
+        for i in range(8):
+            cx = bx + (i + 1) * (bw // 9)
+            shadow = int(20 + 10 * math.sin(i))
+            draw.rectangle([cx - 20, by + 100, cx + 20, h],
+                         fill=(200 - shadow,) * 3)
+        draw.polygon([(bx - 50, by + 100), (bx + bw + 50, by + 100),
+                    (bx + bw // 2, by - 50)], fill=(160, 160, 170))
+        return ImageClip(np.array(img)).set_duration(duration)
+
+    def create_police_scene(self, duration):
+        w, h = self.resolution
+        img = Image.new('RGB', (w, h), (20, 25, 40))
+        draw = ImageDraw.Draw(img)
+        for rad in range(100, 0, -10):
+            draw.ellipse([200 - rad, 200 - rad, 200 + rad, 200 + rad],
+                       fill=(200, 0, 50))
+            draw.ellipse([w - 200 - rad, 200 - rad, w - 200 + rad, 200 + rad],
+                       fill=(50, 50, 200))
+        return ImageClip(np.array(img)).set_duration(duration)
+
+    def create_military_scene(self, duration):
+        w, h = self.resolution
+        img = Image.new('RGB', (w, h), (60, 70, 50))
+        draw = ImageDraw.Draw(img)
+        np.random.seed(42)
+        for i in range(50):
+            x = np.random.randint(0, w); y = np.random.randint(0, h)
+            size = np.random.randint(100, 300)
+            cols = [(80, 90, 60), (60, 70, 50), (100, 110, 80), (50, 60, 40)]
+            draw.ellipse([x, y, x + size, y + size], fill=cols[i % 4])
+        return ImageClip(np.array(img)).set_duration(duration)
+
+    def create_abstract_background(self, text, topic, duration):
+        w, h = self.resolution
+        schemes = {'default': [(30, 40, 60), (50, 60, 90)],
+                   'news': [(40, 40, 70), (60, 60, 100)],
+                   'politics': [(50, 30, 30), (80, 50, 50)]}
+        top, bot = schemes.get(topic, schemes['default'])
+        seed = int(hashlib.md5(text.encode()).hexdigest(), 16) % (2 ** 32 - 1)
+        np.random.seed(seed)
+        img = Image.new('RGB', (w, h), top)
+        draw = ImageDraw.Draw(img)
+        for y in range(h):
+            ratio = y / h
+            r = int(top[0] * (1 - ratio) + bot[0] * ratio)
+            g = int(top[1] * (1 - ratio) + bot[1] * ratio)
+            b = int(top[2] * (1 - ratio) + bot[2] * ratio)
+            draw.line([(0, y), (w, y)], fill=(r, g, b))
+        return ImageClip(np.array(img)).set_duration(duration)
+
+    # ---- AI background via SD-Turbo -----------------------------------------
     def create_ai_background(self, segment, duration):
-        """
-        Generates a background image using a local Stable Diffusion model
-        based on the content of the text segment.
-        """
-        # 1. Construct a descriptive prompt from the segment's metadata.
         prompt_parts = segment['topics'] + segment['places']
         if segment['people']:
             prompt_parts.append(f"featuring {segment['people'][0]}")
-
         prompt = ", ".join(prompt_parts)
-        # Add style guidance
         full_prompt = (f"cinematic digital art, news broadcast background, {prompt}. "
                        f"mood: {segment['sentiment']}, high detail, sharp focus")
-
-        # 2. Check cache first to avoid re-generating the image.
-        prompt_hash = hashlib.md5(full_prompt.encode()).hexdigest()
-        cached_image_path = self.cache_dir / f"bg_{prompt_hash}.png"
-
-        if cached_image_path.exists():
-            print(f"✓ Found cached background for: {prompt}", file=sys.stderr)
-            img = Image.open(cached_image_path)
+        phash = hashlib.md5(full_prompt.encode()).hexdigest()
+        cached = self.cache_dir / f"bg_{phash}.png"
+        if cached.exists():
+            img = Image.open(cached)
         else:
             print(f"Generating AI background for: {prompt}", file=sys.stderr)
-            # 3. Generate the image.
-            # sd-turbo is very fast and only needs a few inference steps.
-            # For other models, you might use 20-50 steps.
             img = self.image_pipeline(prompt=full_prompt, num_inference_steps=2, guidance_scale=0.0).images[0]
-            img.save(cached_image_path)
-
-        # 4. Create a video clip from the static image.
+            img.save(cached)
         return ImageClip(np.array(img.resize(self.resolution))).set_duration(duration)
-    
+
+    # ---- text analysis ------------------------------------------------------
     def parse_article(self, text):
-        """Parse article into segments with metadata."""
         text = re.sub(r'[^\w\s.,!?;:\'"()\-]', '', text)
         sentences = re.split(r'(?<=[.!?])\s+', text)
-        
         segments = []
-        for sentence in sentences:
-            if not sentence.strip():
+        for sent in sentences:
+            if not sent.strip():
                 continue
-                
-            segment = {
-                'text': sentence.strip(),
-                'people': self._extract_people(sentence),
-                'places': self._extract_places(sentence),
-                'topics': self._extract_topics(sentence),
-                'sentiment': self._analyze_sentiment(sentence)
-            }
-            segments.append(segment)
-        
+            segments.append({
+                'text': sent.strip(),
+                'people': self._extract_people(sent),
+                'places': self._extract_places(sent),
+                'topics': self._extract_topics(sent),
+                'sentiment': self._analyze_sentiment(sent)
+            })
         return segments
-    
+
     def _extract_people(self, text):
-        """Extract person names from text."""
-        pattern = r'\b(?:President|Governor|Mayor|Mr\.|Ms\.|Dr\.)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)'
-        matches = re.findall(pattern, text)
-        
-        pattern2 = r'\b(?:by|from|with)\s+([A-Z][a-z]+\s+[A-Z][a-z]+)'
-        matches.extend(re.findall(pattern2, text))
-        
+        pat = r'\b(?:President|Governor|Mayor|Mr\.|Ms\.|Dr\.)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)'
+        matches = re.findall(pat, text)
+        matches += re.findall(r'\b(?:by|from|with)\s+([A-Z][a-z]+\s+[A-Z][a-z]+)', text)
         return list(set(matches))
-    
+
     def _extract_places(self, text):
-        """Extract place names from text."""
-        known_places = ['Chicago', 'Memphis', 'America', 'United States', 
-                       'Tennessee', 'Illinois', 'Washington', 'New York',
-                       'Los Angeles', 'San Francisco']
-        places = [p for p in known_places if p in text]
-        return places
-    
+        known = ['Chicago', 'Memphis', 'America', 'United States', 'Tennessee',
+                 'Illinois', 'Washington', 'New York', 'Los Angeles', 'San Francisco']
+        return [p for p in known if p in text]
+
     def _extract_topics(self, text):
-        """Extract key topics from text."""
-        keywords = {
-            'crime': ['crime', 'enforcement', 'operations', 'law'],
-            'politics': ['Trump', 'administration', 'federal', 'government', 'election'],
-            'immigration': ['immigration'],
-            'military': ['National Guard', 'deployment', 'troops'],
-            'city': ['city', 'cities', 'urban', 'Mayor']
-        }
-        
+        kw = {'crime': ['crime', 'enforcement', 'operations', 'law'],
+              'politics': ['Trump', 'administration', 'federal', 'government', 'election'],
+              'immigration': ['immigration'],
+              'military': ['National Guard', 'deployment', 'troops'],
+              'city': ['city', 'cities', 'urban', 'Mayor']}
         topics = []
-        text_lower = text.lower()
-        for topic, words in keywords.items():
-            if any(word.lower() in text_lower for word in words):
-                topics.append(topic)
-        
+        txt = text.lower()
+        for t, words in kw.items():
+            if any(w in txt for w in words):
+                topics.append(t)
         return topics
-    
+
     def _analyze_sentiment(self, text):
-        """Simple sentiment analysis."""
-        positive_words = ['approval', 'cooperative', 'support', 'success']
-        negative_words = ['rejected', 'crime-infested', 'war zones', 'lack']
-        
-        text_lower = text.lower()
-        pos_count = sum(1 for word in positive_words if word in text_lower)
-        neg_count = sum(1 for word in negative_words if word in text_lower)
-        
-        if neg_count > pos_count:
-            return 'negative'
-        elif pos_count > neg_count:
-            return 'positive'
-        return 'neutral'
-    
+        pos = ['approval', 'cooperative', 'support', 'success']
+        neg = ['rejected', 'crime-infested', 'war zones', 'lack']
+        txt = text.lower()
+        pos_c = sum(txt.count(w) for w in pos)
+        neg_c = sum(txt.count(w) for w in neg)
+        return 'negative' if neg_c > pos_c else 'positive' if pos_c > neg_c else 'neutral'
+
+    # ---- background selector ------------------------------------------------
     def get_background_for_segment(self, segment, duration):
-        """Determine and create appropriate background for segment."""
         return self.create_ai_background(segment, duration)
-    
+
+    # ---- TTS with GPU fallback ----------------------------------------------
     def generate_audio(self, text, output_path):
-        """Generate TTS audio for text with Metal GPU acceleration."""
         print(f"Generating audio: {text[:60]}...", file=sys.stderr)
-        
-        if hasattr(self, 'device') and self.device.type in ['mps', 'cuda']:
+        if hasattr(self, 'device') and self.device.type in {'mps', 'cuda'}:
             try:
                 with torch.device(self.device):
-                    # Explicitly move the entire pipeline model to the correct device
                     self.pipeline.model.to(self.device)
-
-                    generator = self.pipeline(text, voice=self.voice)
-                    
-                    audio_chunks = []
-                    for i, (gs, ps, audio) in enumerate(generator):
-                        audio_cpu = audio.cpu() if audio.device.type != 'cpu' else audio
-                        audio_chunks.append(audio_cpu)
+                    gen = self.pipeline(text, voice=self.voice)
+                    chunks = [audio.cpu() for gs, ps, audio in gen]
             except Exception as e:
                 print(f"⚠ GPU generation failed, falling back to CPU: {e}", file=sys.stderr)
-                generator = self.pipeline(text, voice=self.voice)
-                audio_chunks = [audio for _, _, audio in generator]
+                gen = self.pipeline(text, voice=self.voice)
+                chunks = [audio for gs, ps, audio in gen]
         else:
-            generator = self.pipeline(text, voice=self.voice)
-            audio_chunks = [audio for _, _, audio in generator]
-        
-        if not audio_chunks:
-            raise ValueError("No audio generated")
-        
-        full_audio = torch.cat(audio_chunks) if len(audio_chunks) > 1 else audio_chunks[0]
-        
-        if full_audio.device.type != 'cpu':
-            full_audio = full_audio.cpu()
-        
-        sf.write(output_path, full_audio, self.sample_rate)
-        
-        duration = len(full_audio) / self.sample_rate
-        return duration
-    
-    def create_person_overlay(self, person_name, duration, position='right'):
-        """Create an overlay with person's portrait and name."""
-        portrait = self.create_placeholder_portrait(person_name, style='professional')
-        portrait = portrait.resize((300, 300))
-        
-        overlay_width = 350
-        overlay_height = 400
-        overlay_img = Image.new('RGBA', (overlay_width, overlay_height), (0, 0, 0, 0))
-        
-        # Semi-transparent background with gradient
-        for y in range(overlay_height):
-            alpha = int(200 - (y / overlay_height) * 50)
-            bg = Image.new('RGBA', (overlay_width, 1), (20, 40, 80, alpha))
-            overlay_img.paste(bg, (0, y))
-        
-        # Paste portrait
-        portrait_rgba = portrait.convert('RGBA')
-        overlay_img.paste(portrait_rgba, (25, 20), portrait_rgba)
-        
-        # Add name text with glow
-        draw = ImageDraw.Draw(overlay_img)
+            gen = self.pipeline(text, voice=self.voice)
+            chunks = [audio for gs, ps, audio in gen]
+
+        valid = [c for c in chunks if c is not None and c.numel() > 0]
+        if not valid:
+            print("⚠ No audio generated, creating 0.1 s silence", file=sys.stderr)
+            valid = [torch.zeros(int(0.1 * self.sample_rate), dtype=torch.float32)]
+        audio = torch.cat(valid).cpu()
+        sf.write(output_path, audio, self.sample_rate)
+
+        # safety file-size check
+        if not output_path.exists() or output_path.stat().st_size < 1024:
+            print("⚠ Audio file empty, overwriting with 0.1 s silence", file=sys.stderr)
+            sf.write(output_path, np.zeros(int(0.1 * self.sample_rate), dtype=np.float32), self.sample_rate)
+        return len(audio) / self.sample_rate
+
+    # ---- overlays ------------------------------------------------------------
+    def create_person_overlay(self, name, duration, position='right'):
+        portrait = self.create_placeholder_portrait(name).resize((300, 300))
+        ow, oh = 350, 400
+        base = Image.new('RGBA', (ow, oh), (0, 0, 0, 0))
+        for y in range(oh):
+            alpha = int(200 - (y / oh) * 50)
+            base.paste(Image.new('RGBA', (ow, 1), (20, 40, 80, alpha)), (0, y))
+        base.paste(portrait.convert('RGBA'), (25, 20))
+        draw = ImageDraw.Draw(base)
         try:
             font = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial Bold.ttf", 28)
         except:
-            try:
-                font = ImageFont.truetype("Arial Bold", 28)
-            except:
-                font = ImageFont.load_default()
-        
-        bbox = draw.textbbox((0, 0), person_name, font=font)
-        text_width = bbox[2] - bbox[0]
-        x = (overlay_width - text_width) // 2
-        
-        # Glow effect
-        for offset in range(3, 0, -1):
-            alpha = 80 - offset * 20
-            draw.text((x+offset, 342+offset), person_name, fill=(0, 0, 0, alpha), font=font)
-        
-        # Main text
-        draw.text((x, 340), person_name, fill=(255, 255, 255, 255), font=font)
-        
-        clip = ImageClip(np.array(overlay_img)).set_duration(duration)
-        
-        if position == 'right':
-            clip = clip.set_position((self.resolution[0] - overlay_width - 50, 150))
-        else:
-            clip = clip.set_position((50, 150))
-        
-        clip = clip.crossfadein(0.3).crossfadeout(0.3)
-        
-        return clip
-    
+            font = ImageFont.load_default()
+        bbox = draw.textbbox((0, 0), name, font=font)
+        tw = bbox[2] - bbox[0]
+        x = (ow - tw) // 2
+        for off in range(3, 0, -1):
+            draw.text((x + off, 342 + off), name, fill=(0, 0, 0, 80 - off * 20), font=font)
+        draw.text((x, 340), name, fill=(255, 255, 255), font=font)
+        clip = ImageClip(np.array(base)).set_duration(duration)
+        x_pos = self.resolution[0] - ow - 50 if position == 'right' else 50
+        return clip.set_position((x_pos, 150)).crossfadein(0.3).crossfadeout(0.3)
+
     def create_text_overlay(self, segment, duration):
-        """Create text overlay with key information."""
-        width, height = self.resolution
+        w, h = self.resolution
         overlays = []
-        
-        # Location tag
         if segment['places']:
-            location_text = segment['places'][0]
-            location_clip = TextClip(
-                location_text,
-                fontsize=45,
-                color='white',
-                font='Arial-Bold',
-                bg_color='rgba(200,0,0,0.9)',
-                size=(None, None),
-                method='caption'
-            ).set_position((30, 30)).set_duration(duration)
-            overlays.append(location_clip)
-        
-        # Subtitle
-        subtitle_clip = TextClip(
-            segment['text'],
-            fontsize=36,
-            color='white',
-            font='Arial',
-            bg_color='rgba(0,0,0,0.85)',
-            size=(width - 200, None),
-            method='caption',
-            align='center'
-        ).set_position(('center', height - 180)).set_duration(duration)
-        
-        subtitle_clip = subtitle_clip.crossfadein(0.2)
-        overlays.append(subtitle_clip)
-        
+            loc = TextClip(segment['places'][0], fontsize=45, color='white',
+                         font='Arial-Bold', bg_color='rgba(200,0,0,0.9)')
+            overlays.append(loc.set_position((30, 30)).set_duration(duration))
+        subtitle = TextClip(segment['text'], fontsize=36, color='white',
+                          font='Arial', bg_color='rgba(0,0,0,0.85)',
+                          size=(w - 200, None), method='caption', align='center')
+        overlays.append(subtitle.set_position(('center', h - 180))
+                        .set_duration(duration).crossfadein(0.2))
         return overlays
-    
-    # def create_news_banner(self, duration, ticker_text="BREAKING NEWS ANALYSIS"):
-    #     """Create animated news banner."""
-    #     width, height = self.resolution
-        
-    #     def make_banner(t):
-    #         img = Image.new('RGBA', (width, 90), (180, 0, 0, 240))
-    #         draw = ImageDraw.Draw(img)
-            
-    #         try:
-    #             font_large = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial Bold.ttf", 38)
-    #             font_small = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial.ttf", 24)
-    #         except:
-    #             try:
-    #                 font_large = ImageFont.truetype("Arial-Bold", 38)
-    #                 font_small = ImageFont.truetype("Arial", 24)
-    #             except:
-    #                 font_large = font_small = ImageFont.load_default()
-            
-    #         scroll_offset = int(t * 100) % width
-            
-    #         draw.text((30, 25), ticker_text, fill='white', font=font_large)
-            
-    #         ticker = "● LIVE COVERAGE ● LATEST UPDATES ● "
-    #         ticker_full = ticker * 10
-    #         draw.text((width - scroll_offset, 60), ticker_full, fill='yellow', font=font_small)
-            
-    #         return np.array(img)
-        
-    #     banner = VideoClip(make_banner, duration=duration)
-    #     return banner.set_position(('center', 0))
 
     def create_news_banner(self, duration, ticker_text="BREAKING NEWS ANALYSIS"):
-        """Create animated news banner."""
-        width, height = self.resolution
-        
-        def make_banner(t):
-            # Create RGB image instead of RGBA
-            img = Image.new('RGB', (width, 90), (180, 0, 0))
-            draw = ImageDraw.Draw(img)
-            
-            try:
-                font_large = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial Bold.ttf", 38)
-                font_small = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial.ttf", 24)
-            except:
-                try:
-                    font_large = ImageFont.truetype("Arial-Bold", 38)
-                    font_small = ImageFont.truetype("Arial", 24)
-                except:
-                    font_large = font_small = ImageFont.load_default()
-            
-            scroll_offset = int(t * 100) % width
-            
-            draw.text((30, 25), ticker_text, fill='white', font=font_large)
-            
-            ticker = "● LIVE COVERAGE ● LATEST UPDATES ● "
-            ticker_full = ticker * 10
-            draw.text((width - scroll_offset, 60), ticker_full, fill='yellow', font=font_small)
-            
-            return np.array(img)
-        
-        banner = VideoClip(make_banner, duration=duration)
-        return banner.set_position(('center', 0))
-    
-    def create_transition(self, duration=0.5):
-        """Create a transition effect between segments."""
-        width, height = self.resolution
-        
+        w, h = self.resolution
         def make_frame(t):
-            progress = t / duration
-            img = Image.new('RGB', (width, height), (0, 0, 0))
+            img = Image.new('RGB', (w, 90), (180, 0, 0))
             draw = ImageDraw.Draw(img)
-            
-            wipe_pos = int(progress * (width + height))
-            
-            points = [
-                (0, wipe_pos),
-                (wipe_pos, 0),
-                (wipe_pos + 100, 0),
-                (0, wipe_pos + 100)
-            ]
-            draw.polygon(points, fill=(40, 40, 60))
-            
+            try:
+                f1 = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial Bold.ttf", 38)
+                f2 = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial.ttf", 24)
+            except:
+                f1 = f2 = ImageFont.load_default()
+            draw.text((30, 25), ticker_text, fill='white', font=f1)
+            scroll = int(t * 100) % w
+            ticker = "● LIVE COVERAGE ● LATEST UPDATES ● " * 10
+            draw.text((w - scroll, 60), ticker, fill='yellow', font=f2)
             return np.array(img)
-        
-        return VideoClip(make_frame, duration=duration)
+        return VideoClip(make_frame, duration=duration).set_position(('center', 0))
 
+    # ---- final composer -----------------------------------------------------
     def generate_video(self, article_text, output_video_path):
-        """Generate complete video from article text with Metal GPU acceleration."""
         print("Parsing article...", file=sys.stderr)
         segments = self.parse_article(article_text)
-        
         print(f"Found {len(segments)} segments", file=sys.stderr)
-        
-        video_clips = []
-        audio_clips = []
-        current_time = 0
-        
-        # Enable Metal-optimized video encoding on Mac
+
+        video_clips, audio_clips = [], []
+        t = 0
+
+        # hardware encoding opts
         ffmpeg_params = ['-preset', 'medium', '-crf', '18']
         if platform.system() == 'Darwin':
             try:
-                import subprocess
-                result = subprocess.run(['ffmpeg', '-encoders'], 
-                                       capture_output=True, text=True, timeout=2)
-                if 'h264_videotoolbox' in result.stdout:
+                import subprocess, re
+                encoders = subprocess.check_output(['ffmpeg', '-encoders'], text=True, timeout=2)
+                if 'h264_videotoolbox' in encoders:
                     print("✓ Using VideoToolbox hardware encoding", file=sys.stderr)
-                    ffmpeg_params = [
-                        '-c:v', 'h264_videotoolbox',
-                        '-b:v', '8000k',
-                        '-profile:v', 'high',
-                        '-allow_sw', '1'
-                    ]
+                    ffmpeg_params = ['-c:v', 'h264_videotoolbox', '-b:v', '8000k',
+                                   '-profile:v', 'high', '-allow_sw', '1']
             except:
                 pass
-        
-        for i, segment in enumerate(segments):
+
+        for i, seg in enumerate(segments):
             print(f"\n=== Segment {i+1}/{len(segments)} ===", file=sys.stderr)
-            
-            # Generate audio with GPU acceleration
             audio_path = self.cache_dir / f"segment_{i}.wav"
-            duration = self.generate_audio(segment['text'], audio_path)
-            
-            # Create procedural background
-            print(f"Creating procedural background...", file=sys.stderr)
-            background = self.get_background_for_segment(segment, duration)
-            
-            # Darken background slightly for text readability
-            background = background.fl_image(lambda img: (img * 0.7).astype('uint8'))
-            
-            # Create overlays
-            text_overlays = self.create_text_overlay(segment, duration)
-            banner = self.create_news_banner(duration)
-            
-            # Add person overlays
-            person_overlays = []
-            for j, person in enumerate(segment['people'][:2]):
+            try:
+                dur = self.generate_audio(seg['text'], audio_path)
+                if dur <= 0.1:
+                    print(f"⚠ Skipping segment {i+1} – audio too short ({dur:.2f}s)", file=sys.stderr)
+                    continue
+            except Exception as e:
+                print(f"⚠ Error generating audio for segment {i+1}, skipping: {e}", file=sys.stderr)
+                continue
+
+            try:
+                bg = self.get_background_for_segment(seg, dur)
+            except Exception as e:
+                print(f"⚠ Error generating background for segment {i+1}, skipping: {e}", file=sys.stderr)
+                continue
+
+            bg = bg.fl_image(lambda fr: (fr * 0.7).astype('uint8'))
+            banner = self.create_news_banner(dur)
+            overlays = self.create_text_overlay(seg, dur)
+            person_ov = []
+            for j, person in enumerate(seg['people'][:2]):
                 print(f"Creating portrait for: {person}", file=sys.stderr)
-                position = 'right' if j == 0 else 'left'
-                person_clip = self.create_person_overlay(person, duration, position)
-                person_overlays.append(person_clip)
-            
-            # Composite video
-            all_clips = [background, banner] + person_overlays + text_overlays
+                pos = 'right' if j == 0 else 'left'
+                person_ov.append(self.create_person_overlay(person, dur, pos))
+
+            all_clips = [bg, banner] + person_ov + overlays
             video = CompositeVideoClip(all_clips, size=self.resolution).set_opacity(1)
-            video = video.set_duration(duration).set_start(current_time)
-            
-            # Add transition (except for first segment)
-            if i > 0:
-                transition = self.create_transition(0.4)
-                transition = transition.set_start(current_time - 0.2)
-                video_clips.append(transition)
-            
-            # Load audio
-            audio = AudioFileClip(str(audio_path)).set_start(current_time)
-            
+            video = video.set_duration(dur).set_start(t)
             video_clips.append(video)
-            audio_clips.append(audio)
-            current_time += duration
-        
+
+            # ---- safe audio path – no bare arrays -----------------------------
+            tmp_audio = str(self.cache_dir / f'segment_{i}_tmp.wav')
+            shutil.copy(audio_path, tmp_audio)
+            aclip = AudioFileClip(tmp_audio).set_start(t)
+            audio_clips.append(aclip)
+            # ------------------------------------------------------------------
+            t += dur
+
         print("\n=== Compositing final video ===", file=sys.stderr)
-        
-        # Combine all clips
-        final_video = CompositeVideoClip(video_clips, size=self.resolution).set_opacity(1)
-        
-        # Combine audio
-        final_audio = concatenate_audioclips([
-            AudioFileClip(str(self.cache_dir / f"segment_{i}.wav"))
-            for i in range(len(segments))
-        ])
-        
+        final_audio = concatenate_audioclips(audio_clips)
+        # close all readers immediately
+        for ac in audio_clips:
+            ac.close()
+
+        final_video = CompositeVideoClip(video_clips, size=self.resolution)
         final_video = final_video.set_audio(final_audio)
-        
-        # Write output with hardware acceleration
+
         print(f"Writing video to {output_video_path}...", file=sys.stderr)
         final_video.write_videofile(
-            output_video_path,
-            fps=30,
-            codec='libx264',
-            audio_codec='aac',
-            bitrate='8000k',
-            temp_audiofile=str(self.cache_dir / 'temp_audio.m4a'),
-            remove_temp=True,
-            ffmpeg_params=ffmpeg_params,
-            threads=8,
-            logger=None
+            output_video_path, fps=30, codec='libx264', audio_codec='aac',
+            bitrate='8000k', temp_audiofile=str(self.cache_dir / 'temp_audio.m4a'),
+            remove_temp=True, ffmpeg_params=ffmpeg_params, threads=8, logger=None
         )
-        
+        final_video.close()
         print("\n✓ Video generation complete!", file=sys.stderr)
 
+
+# ---------- CLI --------------------------------------------------------------
 def main():
     if len(sys.argv) < 3:
         print("Usage: ./news_video_gen.py <input_file|-> <output.mp4>", file=sys.stderr)
-        print("\n✨ 100% Local & Free - No API Keys Required", file=sys.stderr)
-        print("\nFeatures:", file=sys.stderr)
-        print("  ✓ Procedural cityscapes and backgrounds", file=sys.stderr)
-        print("  ✓ Generated portraits with unique designs", file=sys.stderr)
-        print("  ✓ Animated transitions and effects", file=sys.stderr)
-        print("  ✓ Metal GPU acceleration (Mac)", file=sys.stderr)
-        print("  ✓ VideoToolbox hardware encoding (Mac)", file=sys.stderr)
-        print("  ✓ Multi-threaded processing", file=sys.stderr)
+        print("\n✨ 100% Local & Free – No API Keys Required", file=sys.stderr)
         sys.exit(1)
-    
-    input_file = sys.argv[1]
-    output_file = sys.argv[2]
-    
-    # Display system info
+
+    in_file, out_file = sys.argv[1], sys.argv[2]
     print("=== System Configuration ===", file=sys.stderr)
     print(f"Platform: {platform.system()} {platform.machine()}", file=sys.stderr)
-    print(f"PyTorch version: {torch.__version__}", file=sys.stderr)
-    
+    print(f"PyTorch: {torch.__version__}", file=sys.stderr)
     if platform.system() == 'Darwin':
         print(f"Metal available: {torch.backends.mps.is_available()}", file=sys.stderr)
-        if torch.backends.mps.is_available():
-            print(f"Metal device: {torch.device('mps')}", file=sys.stderr)
-    
     print("============================\n", file=sys.stderr)
-    
-    # Read article text
-    if input_file == '-':
-        text = sys.stdin.read()
-    else:
-        with open(input_file, 'r', encoding='utf-8') as f:
-            text = f.read()
-    
-    # Generate video with GPU acceleration
-    start_time = time.time()
-    generator = NewsVideoGenerator()
-    generator.generate_video(text, output_file)
-    elapsed = time.time() - start_time
-    
-    print(f"\n⚡ Total generation time: {elapsed:.1f} seconds", file=sys.stderr)
-    print(f"✓ Video saved to: {output_file}", file=sys.stderr)
+
+    text = sys.stdin.read() if in_file == '-' else Path(in_file).read_text(encoding='utf-8')
+    t0 = time.time()
+    NewsVideoGenerator().generate_video(text, out_file)
+    print(f"\n⚡ Total generation time: {time.time() - t0:.1f}s", file=sys.stderr)
+    print(f"✓ Video saved to: {out_file}", file=sys.stderr)
+
 
 if __name__ == '__main__':
     main()
