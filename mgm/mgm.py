@@ -13,12 +13,14 @@ import hashlib
 import platform
 from pathlib import Path
 from kokoro import KPipeline
+from diffusers import AutoPipelineForText2Image
 import soundfile as sf
 import torch
 from moviepy.editor import (
     VideoClip, ImageClip, TextClip, CompositeVideoClip, 
     AudioFileClip, concatenate_videoclips, concatenate_audioclips
 )
+from diffusers import DPMSolverMultistepScheduler
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance
 from io import BytesIO
@@ -31,6 +33,7 @@ class NewsVideoGenerator:
         self._setup_metal_acceleration()
         
         self.pipeline = KPipeline(lang_code='a')
+        self._setup_image_pipeline()
         self.voice = voice
         self.resolution = resolution
         self.sample_rate = 24000
@@ -56,6 +59,23 @@ class NewsVideoGenerator:
             else:
                 self.device = torch.device('cpu')
                 print("⚠ Using CPU", file=sys.stderr)
+
+    def _setup_image_pipeline(self):
+        """Initializes the Stable Diffusion image generation pipeline."""
+        print("Initializing AI image generation pipeline...", file=sys.stderr)
+        # Using a fast, distilled model for better performance on local machines.
+        # You can swap this with other models like "runwayml/stable-diffusion-v1-5"
+        # or "stabilityai/stable-diffusion-xl-base-1.0" for higher quality at the cost of speed.
+        # Temporarily set default device to CPU to ensure the image pipeline loads correctly,
+        # then restore the original default device. This prevents MPS tensors in the scheduler.
+        original_default_device = torch.get_default_device()
+        torch.set_default_device('cpu')
+        try:
+            self.image_pipeline = AutoPipelineForText2Image.from_pretrained(
+                "stabilityai/sd-turbo"
+            )
+        finally:
+            torch.set_default_device(original_default_device)
         
     def create_placeholder_portrait(self, name, style='professional'):
         """Create a high-quality procedural portrait with multiple styles."""
@@ -419,6 +439,39 @@ class NewsVideoGenerator:
                 draw.polygon(points, fill=shape_color)
         
         return ImageClip(np.array(img)).set_duration(duration)
+
+    def create_ai_background(self, segment, duration):
+        """
+        Generates a background image using a local Stable Diffusion model
+        based on the content of the text segment.
+        """
+        # 1. Construct a descriptive prompt from the segment's metadata.
+        prompt_parts = segment['topics'] + segment['places']
+        if segment['people']:
+            prompt_parts.append(f"featuring {segment['people'][0]}")
+
+        prompt = ", ".join(prompt_parts)
+        # Add style guidance
+        full_prompt = (f"cinematic digital art, news broadcast background, {prompt}. "
+                       f"mood: {segment['sentiment']}, high detail, sharp focus")
+
+        # 2. Check cache first to avoid re-generating the image.
+        prompt_hash = hashlib.md5(full_prompt.encode()).hexdigest()
+        cached_image_path = self.cache_dir / f"bg_{prompt_hash}.png"
+
+        if cached_image_path.exists():
+            print(f"✓ Found cached background for: {prompt}", file=sys.stderr)
+            img = Image.open(cached_image_path)
+        else:
+            print(f"Generating AI background for: {prompt}", file=sys.stderr)
+            # 3. Generate the image.
+            # sd-turbo is very fast and only needs a few inference steps.
+            # For other models, you might use 20-50 steps.
+            img = self.image_pipeline(prompt=full_prompt, num_inference_steps=2, guidance_scale=0.0).images[0]
+            img.save(cached_image_path)
+
+        # 4. Create a video clip from the static image.
+        return ImageClip(np.array(img.resize(self.resolution))).set_duration(duration)
     
     def parse_article(self, text):
         """Parse article into segments with metadata."""
@@ -494,18 +547,7 @@ class NewsVideoGenerator:
     
     def get_background_for_segment(self, segment, duration):
         """Determine and create appropriate background for segment."""
-        if segment['places']:
-            city = segment['places'][0]
-            time_of_day = 'night' if 'crime' in segment['topics'] else 'day'
-            return self.create_procedural_cityscape(city, duration, time_of_day)
-        elif 'crime' in segment['topics']:
-            return self.create_procedural_scene('crime', duration)
-        elif 'military' in segment['topics']:
-            return self.create_procedural_scene('military', duration)
-        elif 'politics' in segment['topics']:
-            return self.create_procedural_scene('government', duration)
-        else:
-            return self.create_abstract_background(segment['text'], 'news', duration)
+        return self.create_ai_background(segment, duration)
     
     def generate_audio(self, text, output_path):
         """Generate TTS audio for text with Metal GPU acceleration."""
