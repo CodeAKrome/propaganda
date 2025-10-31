@@ -35,6 +35,19 @@ from PIL import Image, ImageDraw, ImageFont
 # ------------------------------------------------------------------
 # Helpers
 # ------------------------------------------------------------------
+def parse_report_file(path: str) -> list:
+    """Parse a .reporter file to extract relationship tuples."""
+    text = Path(path).read_text(encoding="utf-8")
+    m = re.search(r"<relations>(.*?)</relations>", text, flags=re.S)
+    if not m:
+        return []
+    
+    block = m.group(1)
+    # Regex to find tuples of strings: ("source", "target", "relation", "description")
+    pattern = r'\("([^"]+)",\s*"([^"]+)",\s*"([^"]+)",\s*"([^"]+)"\)'
+    relationships = re.findall(pattern, block)
+    return relationships
+
 def parse_entity_file(path: str) -> dict:
     """Convert ukraine.txt <entities> block into dict."""
     text = Path(path).read_text(encoding="utf-8")
@@ -59,6 +72,17 @@ def load_audio_as_array(path: Path, sr: int = 24_000) -> np.ndarray:
             arr = arr.mean(axis=1)        # mono
     return arr
 
+def _find_relevant_relationships(self, sent: str, relationships: list) -> list:
+    """Find relationships where entities are mentioned in the sentence."""
+    relevant = []
+    sent_lower = sent.lower()
+    for rel in relationships:
+        source, target, _, _ = rel
+        # Check if either the source or target entity is in the sentence
+        if re.search(rf'\b{re.escape(source)}\b', sent, re.I) or \
+            re.search(rf'\b{re.escape(target)}\b', sent, re.I):
+            relevant.append(rel)
+    return relevant
 
 # ------------------------------------------------------------------
 # Core generator
@@ -108,7 +132,7 @@ class NewsVideoGenerator:
         return found
 
     def get_background_for_segment(self, segment: dict, duration: float,
-                                   txt_entities: dict = None) -> ImageClip:
+                                   txt_entities: dict = None, relationships: list = None) -> ImageClip:
         if not txt_entities:  # fallback to generic if no entity data
             return self.create_ai_background(segment, duration)
 
@@ -125,9 +149,10 @@ class NewsVideoGenerator:
         if entities["CARDINAL"]:
             prompt_parts.append(f"{entities['CARDINAL'][0]} units")
 
-        if not prompt_parts:  # fallback
+        # If still no specific parts, fall back to generic topics
+        if not prompt_parts:
             prompt_parts = segment['topics'] + segment['places']
-
+            
         prompt = ", ".join(prompt_parts)
         full_prompt = (f"cinematic digital art, news broadcast background, {prompt}. "
                        f"mood: {segment['sentiment']}, highly detailed, 4K")
@@ -413,7 +438,7 @@ class NewsVideoGenerator:
 
     # ---------- Final composer ----------
     def generate_video(self, article_text: str, output_video_path: str,
-                       txt_entities: dict = None) -> None:
+                       txt_entities: dict = None, relationships: list = None) -> None:
         print("Parsing article …", file=sys.stderr)
         segments = self.parse_article(article_text)
         print(f"Found {len(segments)} segments", file=sys.stderr)
@@ -506,6 +531,8 @@ def main():
     parser.add_argument("output", help="Output .mp4")
     parser.add_argument("--data", metavar="ENTITIES.txt",
                         help="Newswire metadata (<entities> block) for object-level backgrounds")
+    parser.add_argument("--report", metavar="REPORT.reporter",
+                        help="Report file (<relations> block) for relationship-based backgrounds")    
     args = parser.parse_args()
 
     print("=== System ===", file=sys.stderr)
@@ -522,11 +549,12 @@ def main():
 
     # parse optional entity file
     txt_entities = parse_entity_file(args.data) if args.data else None
-
+    relationships = parse_report_file(args.report) if args.report else None
+    
     # render
     t0 = time.time()
     gen = NewsVideoGenerator()
-    gen.generate_video(text, args.output, txt_entities)
+    gen.generate_video(text, args.output, txt_entities, relationships)
     print(f"\n⚡ Total: {time.time() - t0:.1f}s", file=sys.stderr)
     print(f"✓ Saved: {args.output}", file=sys.stderr)
 
