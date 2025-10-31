@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 """
-News Article to Video Generator – 100 % local, free, GPU-accelerated.
+Enhanced News Article to Video Generator – 100 % local, free, GPU-accelerated.
 Creates narrated news clips with:
   - TTS via Kokoro (Metal/CUDA)
-  - Stable-Diffusion backgrounds tuned to *concrete* entities (Poseidon, Eurofighter, 101st Airborne…)
+  - Enhanced Stable-Diffusion backgrounds with comprehensive entity and relationship awareness
   - Procedural portraits, banners, transitions
-  - Optional --data file (ukraine.txt) for object-level visuals
+  - Multiple background images per story segment based on entity matches
+  - Relationship-aware background generation
   - FIXED: "too many open files" – audio clips are loaded into RAM and closed immediately
 No API keys, no cloud, Mac VideoToolbox hw-encode ready.
 """
@@ -18,6 +19,7 @@ import re
 import sys
 import time
 from pathlib import Path
+from collections import defaultdict, Counter
 
 import numpy as np
 import soundfile as sf
@@ -33,7 +35,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 
 # ------------------------------------------------------------------
-# Helpers
+# Enhanced Helpers
 # ------------------------------------------------------------------
 def parse_report_file(path: str) -> list:
     """Parse a .reporter file to extract relationship tuples."""
@@ -49,7 +51,7 @@ def parse_report_file(path: str) -> list:
     return relationships
 
 def parse_entity_file(path: str) -> dict:
-    """Convert ukraine.txt <entities> block into dict."""
+    """Convert entities file into dict with enhanced processing."""
     text = Path(path).read_text(encoding="utf-8")
     m = re.search(r"<entities>(.*?)</entities>", text, flags=re.S)
     if not m:
@@ -60,9 +62,19 @@ def parse_entity_file(path: str) -> dict:
     for line in block.splitlines():
         if ":" in line:
             k, v = line.split(":", 1)
-            out[k.strip()].extend([x.strip() for x in v.split(",")])
+            # Clean and expand entity lists
+            entities = [x.strip() for x in v.split(",")]
+            entities = [e for e in entities if e and len(e) > 1]  # Filter out single chars
+            out[k.strip()].extend(entities)
     return out
 
+def parse_story_text(path: str) -> str:
+    """Parse story markdown file to extract main content."""
+    text = Path(path).read_text(encoding="utf-8")
+    # Remove markdown headers and extract main story content
+    lines = [line.strip() for line in text.split('\n') if line.strip()]
+    # Join all content into single story text
+    return ' '.join(lines)
 
 def load_audio_as_array(path: Path, sr: int = 24_000) -> np.ndarray:
     """Load entire audio into RAM, close file-handle immediately."""
@@ -72,22 +84,10 @@ def load_audio_as_array(path: Path, sr: int = 24_000) -> np.ndarray:
             arr = arr.mean(axis=1)        # mono
     return arr
 
-def _find_relevant_relationships(self, sent: str, relationships: list) -> list:
-    """Find relationships where entities are mentioned in the sentence."""
-    relevant = []
-    sent_lower = sent.lower()
-    for rel in relationships:
-        source, target, _, _ = rel
-        # Check if either the source or target entity is in the sentence
-        if re.search(rf'\b{re.escape(source)}\b', sent, re.I) or \
-            re.search(rf'\b{re.escape(target)}\b', sent, re.I):
-            relevant.append(rel)
-    return relevant
-
 # ------------------------------------------------------------------
-# Core generator
+# Enhanced Core generator
 # ------------------------------------------------------------------
-class NewsVideoGenerator:
+class EnhancedNewsVideoGenerator:
     def __init__(self, voice="af_heart", resolution=(1920, 1080)):
         self._setup_metal()
         self.pipeline = KPipeline(lang_code="a")
@@ -97,6 +97,21 @@ class NewsVideoGenerator:
         self.sample_rate = 24_000
         self.cache_dir = Path("/tmp/video_cache")
         self.cache_dir.mkdir(exist_ok=True)
+        
+        # Enhanced entity priority weights for background generation
+        self.entity_weights = {
+            'EVENT': 10,      # Critical - highest priority
+            'PERSON': 9,      # High priority
+            'ORG': 8,         # High priority
+            'GPE': 7,         # Geographic - high priority
+            'FAC': 6,         # Facilities - medium priority
+            'PRODUCT': 5,     # Products - medium priority
+            'NORP': 4,        # Nationalities - medium priority
+            'MONEY': 3,       # Money - low priority
+            'CARDINAL': 2,    # Numbers - low priority
+            'DATE': 1,        # Dates - lowest priority
+            'TIME': 1
+        }
 
     # ---------- GPU ----------
     def _setup_metal(self):
@@ -122,53 +137,210 @@ class NewsVideoGenerator:
             "stabilityai/sd-turbo")
         torch.set_default_device(tmp)
 
-    # ---------- Entity-aware background ----------
-    def _entities_in_sentence(self, sent: str, txt_entities: dict) -> dict:
-        found = {k: [] for k in txt_entities}
-        for ent_type, surf_list in txt_entities.items():
-            for surf in surf_list:
-                if re.search(rf'\b{re.escape(surf)}\b', sent, flags=re.I):
-                    found[ent_type].append(surf)
+    # ---------- Enhanced Entity Detection ----------
+    def _find_all_entities_in_sentence(self, sent: str, txt_entities: dict) -> dict:
+        """Find all entities mentioned in the sentence with weights."""
+        found = {}
+        sent_lower = sent.lower()
+        
+        for ent_type, entity_list in txt_entities.items():
+            if ent_type in self.entity_weights:
+                found[ent_type] = []
+                for entity in entity_list:
+                    # Handle multi-word entities
+                    words = entity.split()
+                    if len(words) == 1:
+                        # Single word - use word boundary
+                        if re.search(rf'\b{re.escape(entity)}\b', sent, re.I):
+                            found[ent_type].append(entity)
+                    else:
+                        # Multi-word - use phrase search
+                        if entity.lower() in sent_lower:
+                            found[ent_type].append(entity)
+        
         return found
 
-    def get_background_for_segment(self, segment: dict, duration: float,
-                                   txt_entities: dict = None, relationships: list = None) -> ImageClip:
-        if not txt_entities:  # fallback to generic if no entity data
-            return self.create_ai_background(segment, duration)
-
-        entities = self._entities_in_sentence(segment['text'], txt_entities)
-        prompt_parts = []
-        if entities["PRODUCT"]:
-            prompt_parts.extend(entities["PRODUCT"])
-        if entities["EVENT"]:
-            prompt_parts.extend(entities["EVENT"])
-        if entities["FAC"]:
-            prompt_parts.extend(entities["FAC"])
-        if entities["ORG"] and "NATO" in " ".join(entities["ORG"]):
-            prompt_parts.append("NATO base")
-        if entities["CARDINAL"]:
-            prompt_parts.append(f"{entities['CARDINAL'][0]} units")
-
-        # If still no specific parts, fall back to generic topics
-        if not prompt_parts:
-            prompt_parts = segment['topics'] + segment['places']
+    def _find_relevant_relationships(self, sent: str, relationships: list) -> list:
+        """Find relationships where entities are mentioned in the sentence."""
+        relevant = []
+        sent_lower = sent.lower()
+        
+        for rel in relationships:
+            source, target, relation, description = rel
             
-        prompt = ", ".join(prompt_parts)
-        full_prompt = (f"cinematic digital art, news broadcast background, {prompt}. "
-                       f"mood: {segment['sentiment']}, highly detailed, 4K")
+            # Check if source or target is in the sentence
+            source_in = any(word in sent_lower for word in source.lower().split())
+            target_in = any(word in sent_lower for word in target.lower().split())
+            
+            if source_in or target_in:
+                # Score relationship relevance
+                relevance_score = 0
+                if source_in and target_in:
+                    relevance_score += 10  # Both entities present
+                elif source_in or target_in:
+                    relevance_score += 5   # One entity present
+                
+                # Add relation type weight
+                relation_lower = relation.lower()
+                if 'killed' in relation_lower or 'attacked' in relation_lower:
+                    relevance_score += 8  # Violence-related
+                elif 'ordered' in relation_lower or 'announced' in relation_lower:
+                    relevance_score += 6  # Official actions
+                elif 'brokered' in relation_lower or 'mediated' in relation_lower:
+                    relevance_score += 4  # Diplomatic
+                
+                relevant.append((rel, relevance_score))
+        
+        # Sort by relevance score
+        relevant.sort(key=lambda x: x[1], reverse=True)
+        return [rel for rel, score in relevant if score > 3]  # Only relevant relationships
 
-        prompt_hash = hashlib.md5(full_prompt.encode()).hexdigest()
-        cached = self.cache_dir / f"bg_{prompt_hash}.png"
-        if cached.exists():
-            img = Image.open(cached)
+    # ---------- Enhanced Background Generation ----------
+    def _generate_entity_based_prompts(self, segment: dict, entities: dict, relationships: list) -> list:
+        """Generate multiple background prompts based on entities and relationships."""
+        prompts = []
+        sent_text = segment['text']
+        
+        # 1. Event-focused backgrounds (highest priority)
+        if entities.get('EVENT'):
+            for event in entities['EVENT'][:2]:  # Top 2 events
+                prompt = f"breaking news background, {event}, dramatic news scene, high detail, 4K"
+                prompts.append(prompt)
+        
+        # 2. People-focused backgrounds
+        if entities.get('PERSON'):
+            for person in entities['PERSON'][:3]:  # Top 3 people
+                prompt = f"professional news background, {person}, official setting, diplomatic atmosphere"
+                prompts.append(prompt)
+        
+        # 3. Location-focused backgrounds
+        if entities.get('GPE'):
+            for location in entities['GPE'][:2]:  # Top 2 locations
+                if 'gaza' in location.lower():
+                    prompt = f"middle east conflict background, {location}, war zone, humanitarian crisis"
+                elif 'israel' in location.lower():
+                    prompt = f"israeli government background, {location}, military briefing room, official atmosphere"
+                else:
+                    prompt = f"international news background, {location}, diplomatic setting"
+                prompts.append(prompt)
+        
+        # 4. Organization-focused backgrounds
+        if entities.get('ORG'):
+            for org in entities['ORG'][:2]:  # Top 2 organizations
+                if 'hamas' in org.lower():
+                    prompt = f"conflict background, {org} headquarters, militant organization, war room"
+                elif 'idf' in org.lower() or 'military' in org.lower():
+                    prompt = f"military briefing background, {org} command center, military operations"
+                elif 'red cross' in org.lower():
+                    prompt = f"humanitarian background, {org}, aid workers, medical assistance"
+                else:
+                    prompt = f"organizational background, {org}, institutional setting"
+                prompts.append(prompt)
+        
+        # 5. Relationship-driven backgrounds
+        if relationships:
+            for rel in relationships[:2]:  # Top 2 relationships
+                source, target, relation, description = rel
+                if 'killed' in relation.lower():
+                    prompt = f"war casualties background, memorial scene, conflict aftermath, somber atmosphere"
+                elif 'attacked' in relation.lower():
+                    prompt = f"military action background, conflict zone, battle scene, dramatic news coverage"
+                elif 'ordered' in relation.lower():
+                    prompt = f"political decision background, government briefing, official announcement, serious atmosphere"
+                elif 'brokered' in relation.lower():
+                    prompt = f"diplomatic background, peace talks, international mediation, negotiation scene"
+                else:
+                    prompt = f"news background, {source} and {target}, {relation}, professional setting"
+                prompts.append(prompt)
+        
+        # 6. Context-specific backgrounds based on sentiment and content
+        sentiment = segment.get('sentiment', 'neutral')
+        if sentiment == 'negative':
+            prompts.append(f"crisis news background, conflict zone, emergency situation, dramatic lighting")
+        elif sentiment == 'positive':
+            prompts.append(f"peace process background, diplomatic talks, hopeful atmosphere, professional setting")
         else:
-            print(f"🎨 Generating object-level background: {prompt}", file=sys.stderr)
-            img = self.image_pipeline(prompt=full_prompt,
-                                      num_inference_steps=2,
-                                      guidance_scale=0.0).images[0]
-            img.save(cached)
+            prompts.append(f"breaking news background, neutral atmosphere, professional journalism, clean composition")
+        
+        # 7. Time-sensitive backgrounds
+        if entities.get('DATE') or entities.get('TIME'):
+            time_context = ""
+            if entities.get('TIME'):
+                for time_val in entities['TIME']:
+                    if 'night' in time_val.lower():
+                        time_context = "nighttime news background"
+                    elif 'day' in time_val.lower():
+                        time_context = "daytime news background"
+            
+            if time_context:
+                prompts.append(time_context)
+        
+        # Ensure we have at least one prompt
+        if not prompts:
+            prompts.append(f"news background, {segment.get('topics', ['current events'])[0] if segment.get('topics') else 'current events'}, professional atmosphere")
+        
+        return prompts[:6]  # Return up to 6 different background prompts
 
-        return ImageClip(np.array(img.resize(self.resolution))).set_duration(duration)
+    def get_multiple_backgrounds_for_segment(self, segment: dict, duration: float,
+                                           txt_entities: dict = None, relationships: list = None) -> list:
+        """Generate multiple background images for a single segment."""
+        if not txt_entities:
+            # Fallback to simple single background
+            return [self.create_ai_background(segment, duration)]
+        
+        # Find all entities in this segment
+        entities = self._find_all_entities_in_sentence(segment['text'], txt_entities)
+        
+        # Find relevant relationships
+        relevant_relationships = self._find_relevant_relationships(segment['text'], relationships) if relationships else []
+        
+        # Generate multiple prompts
+        prompts = self._generate_entity_based_prompts(segment, entities, relevant_relationships)
+        
+        background_clips = []
+        
+        for i, prompt in enumerate(prompts):
+            try:
+                # Create a sub-duration for each background
+                sub_duration = duration / len(prompts)
+                start_time = i * sub_duration
+                
+                # Generate background image
+                full_prompt = f"cinematic digital art, {prompt}, highly detailed, 4K, professional news quality"
+                
+                prompt_hash = hashlib.md5(full_prompt.encode()).hexdigest()
+                cached = self.cache_dir / f"bg_{prompt_hash}.png"
+                
+                if cached.exists():
+                    img = Image.open(cached)
+                else:
+                    print(f"🎨 Generating background {i+1}/{len(prompts)}: {prompt[:60]}…", file=sys.stderr)
+                    img = self.image_pipeline(prompt=full_prompt,
+                                            num_inference_steps=2,
+                                            guidance_scale=0.0).images[0]
+                    img.save(cached)
+                
+                # Create background clip with crossfade
+                bg_clip = ImageClip(np.array(img.resize(self.resolution))).set_duration(sub_duration)
+                if len(prompts) > 1:
+                    # Add crossfade between backgrounds
+                    if i > 0:
+                        bg_clip = bg_clip.crossfadein(0.5)
+                    if i < len(prompts) - 1:
+                        bg_clip = bg_clip.crossfadeout(0.5)
+                
+                bg_clip = bg_clip.set_start(start_time)
+                background_clips.append(bg_clip)
+                
+            except Exception as e:
+                print(f"⚠ Error generating background {i+1}: {e}", file=sys.stderr)
+                continue
+        
+        # If no backgrounds were generated successfully, create a fallback
+        if not background_clips:
+            background_clips = [self.create_ai_background(segment, duration)]
+        
+        return background_clips
 
     # ---------- Legacy generic background ----------
     def create_ai_background(self, segment: dict, duration: float) -> ImageClip:
@@ -221,7 +393,7 @@ class NewsVideoGenerator:
 
         return len(audio) / self.sample_rate
 
-    # ---------- Text parsing ----------
+    # ---------- Enhanced Text parsing ----------
     def parse_article(self, text: str):
         text = re.sub(r'[^\w\s.,!?;:\'"()\-]', '', text)
         sentences = re.split(r'(?<=[.!?])\s+', text)
@@ -262,13 +434,13 @@ class NewsVideoGenerator:
         return topics
 
     def _analyze_sentiment(self, text: str):
-        pos, neg = ["approval", "support"], ["rejected", "war zones"]
+        pos, neg = ["approval", "support", "peace", "ceasefire"], ["rejected", "war zones", "killed", "attack", "violation"]
         low = text.lower()
         cpos = sum(low.count(w) for w in pos)
         cneg = sum(low.count(w) for w in neg)
         return "negative" if cneg > cpos else "positive" if cpos > cneg else "neutral"
 
-    # ---- overlays ------------------------------------------------------------
+    # ---- overlays (keeping original implementations) ----
     def create_person_overlay(self, name, duration, position='right'):
         """Create an overlay with person's portrait and name."""
         portrait = self.create_placeholder_portrait(name, style='professional')
@@ -436,9 +608,9 @@ class NewsVideoGenerator:
 
         return VideoClip(make, duration=duration).set_position(("center", 0))
 
-    # ---------- Final composer ----------
-    def generate_video(self, article_text: str, output_video_path: str,
-                       txt_entities: dict = None, relationships: list = None) -> None:
+    # ---------- Enhanced Final composer ----------
+    def generate_enhanced_video(self, article_text: str, output_video_path: str,
+                               txt_entities: dict = None, relationships: list = None) -> None:
         print("Parsing article …", file=sys.stderr)
         segments = self.parse_article(article_text)
         print(f"Found {len(segments)} segments", file=sys.stderr)
@@ -462,6 +634,8 @@ class NewsVideoGenerator:
 
         for i, seg in enumerate(segments):
             print(f"\n=== Segment {i+1}/{len(segments)} ===", file=sys.stderr)
+            print(f"Text: {seg['text'][:100]}...", file=sys.stderr)
+            
             audio_path = self.cache_dir / f"segment_{i}.wav"
             
             try:
@@ -477,19 +651,26 @@ class NewsVideoGenerator:
                 print(f"⚠ Error generating audio for segment {i+1}, skipping: {e}", file=sys.stderr)
                 continue
 
-            # Now that we have the exact duration, build the video segment
+            # Now that we have the exact duration, build the video segment with enhanced backgrounds
             try:
-                bg = self.get_background_for_segment(seg, dur, txt_entities)
-                bg = bg.fl_image(lambda fr: (fr * 0.7).astype('uint8'))
+                # Generate multiple backgrounds for this segment
+                backgrounds = self.get_multiple_backgrounds_for_segment(seg, dur, txt_entities, relationships)
+                
+                # Create banner
                 banner = self.create_news_banner(dur)
+                
+                # Create overlays
                 overlays = self.create_text_overlay(seg, dur)
+                
+                # Create person overlays
                 person_ov = []
                 for j, person in enumerate(seg['people'][:2]):
                     print(f"Creating portrait for: {person}", file=sys.stderr)
                     pos = 'right' if j == 0 else 'left'
                     person_ov.append(self.create_person_overlay(person, dur, pos))
 
-                all_clips = [bg, banner] + person_ov + overlays
+                # Combine all clips
+                all_clips = backgrounds + [banner] + person_ov + overlays
                 video = CompositeVideoClip(all_clips, size=self.resolution).set_opacity(1)
                 video = video.set_duration(dur).set_start(t)
                 video_clips.append(video)
@@ -519,44 +700,55 @@ class NewsVideoGenerator:
             remove_temp=True, ffmpeg_params=ffmpeg_params, threads=8, logger=None
         )
         final_video.close()
-        print("\n✓ Video generation complete!", file=sys.stderr)
+        print("\n✓ Enhanced video generation complete!", file=sys.stderr)
 
 
 # ------------------------------------------------------------------
-# CLI
+# Enhanced CLI
 # ------------------------------------------------------------------
 def main():
-    parser = argparse.ArgumentParser(description="Local news-video generator")
-    parser.add_argument("input", help="Article text file or '-' for stdin")
+    parser = argparse.ArgumentParser(description="Enhanced local news-video generator with multiple backgrounds")
+    parser.add_argument("input", help="Article text file, markdown story file, or '-' for stdin")
     parser.add_argument("output", help="Output .mp4")
     parser.add_argument("--data", metavar="ENTITIES.txt",
-                        help="Newswire metadata (<entities> block) for object-level backgrounds")
+                        help="Entities metadata file for enhanced background generation")
     parser.add_argument("--report", metavar="REPORT.reporter",
-                        help="Report file (<relations> block) for relationship-based backgrounds")    
+                        help="Report file with relationship data for context-aware backgrounds")
+    parser.add_argument("--story", metavar="STORY.md",
+                        help="Markdown story file to extract main narrative")
     args = parser.parse_args()
 
-    print("=== System ===", file=sys.stderr)
+    print("=== Enhanced System ===", file=sys.stderr)
     print(f"Platform: {platform.system()} {platform.machine()}", file=sys.stderr)
     print(f"PyTorch: {torch.__version__}", file=sys.stderr)
     if platform.system() == "Darwin":
         print(f"Metal: {torch.backends.mps.is_available()}", file=sys.stderr)
 
-    # read article
+    # read article/story
     if args.input == "-":
         text = sys.stdin.read()
+    elif args.story:
+        # Parse story markdown file
+        text = parse_story_text(args.story)
     else:
         text = Path(args.input).read_text(encoding="utf-8")
 
-    # parse optional entity file
+    # parse optional entity and relationship files
     txt_entities = parse_entity_file(args.data) if args.data else None
     relationships = parse_report_file(args.report) if args.report else None
     
-    # render
+    if txt_entities:
+        print(f"Loaded entities: {sum(len(v) for v in txt_entities.values())} total", file=sys.stderr)
+    if relationships:
+        print(f"Loaded relationships: {len(relationships)} total", file=sys.stderr)
+    
+    # render with enhanced generator
     t0 = time.time()
-    gen = NewsVideoGenerator()
-    gen.generate_video(text, args.output, txt_entities, relationships)
+    gen = EnhancedNewsVideoGenerator()
+    gen.generate_enhanced_video(text, args.output, txt_entities, relationships)
     print(f"\n⚡ Total: {time.time() - t0:.1f}s", file=sys.stderr)
     print(f"✓ Saved: {args.output}", file=sys.stderr)
+    print(f"🎨 Enhanced with multiple context-aware backgrounds!", file=sys.stderr)
 
 
 if __name__ == "__main__":
