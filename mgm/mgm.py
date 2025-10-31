@@ -1,301 +1,184 @@
 #!/usr/bin/env python
 """
-News Article to Video Generator – Fully Local & Free
-Creates a narrated MP4 from plain text:  procedural visuals,
-AI-generated portraits, TTS audio, animated overlays.
-No API keys or paid services required.
-Optimised for Apple Silicon (Metal) and VideoToolbox hardware encoding.
+News Article to Video Generator – 100 % local, free, GPU-accelerated.
+Creates narrated news clips with:
+  - TTS via Kokoro (Metal/CUDA)
+  - Stable-Diffusion backgrounds tuned to *concrete* entities (Poseidon, Eurofighter, 101st Airborne…)
+  - Procedural portraits, banners, transitions
+  - Optional --data file (ukraine.txt) for object-level visuals
+  - FIXED: "too many open files" – audio clips are loaded into RAM and closed immediately
+No API keys, no cloud, Mac VideoToolbox hw-encode ready.
 """
 
-import sys
-import re
+import argparse
 import json
 import hashlib
 import platform
-import tempfile
-import shutil
+import re
+import sys
+import time
 from pathlib import Path
-from kokoro import KPipeline
-from diffusers import AutoPipelineForText2Image
+
+import numpy as np
 import soundfile as sf
 import torch
+from diffusers import AutoPipelineForText2Image
+from kokoro import KPipeline
 from moviepy.editor import (
-    VideoClip, ImageClip, TextClip, CompositeVideoClip,
-    AudioFileClip, concatenate_videoclips, concatenate_audioclips
+    AudioFileClip, CompositeVideoClip, ImageClip, TextClip,
+    VideoClip, concatenate_audioclips, concatenate_videoclips
 )
 from moviepy.audio.AudioClip import AudioArrayClip
-from diffusers import DPMSolverMultistepScheduler
-import numpy as np
-from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance
-from io import BytesIO
-import time
-import math
+from PIL import Image, ImageDraw, ImageFont
 
-# ---------- generator --------------------------------------------------------
+
+# ------------------------------------------------------------------
+# Helpers
+# ------------------------------------------------------------------
+def parse_entity_file(path: str) -> dict:
+    """Convert ukraine.txt <entities> block into dict."""
+    text = Path(path).read_text(encoding="utf-8")
+    m = re.search(r"<entities>(.*?)</entities>", text, flags=re.S)
+    if not m:
+        sys.exit("ERROR: --data file lacks <entities> … </entities> block")
+    block = m.group(1)
+    out = {k: [] for k in
+           "CARDINAL DATE EVENT FAC GPE LAW LOC MONEY NORP ORDINAL ORG PERSON PRODUCT QUANTITY TIME WORK_OF_ART LANGUAGE PERCENT".split()}
+    for line in block.splitlines():
+        if ":" in line:
+            k, v = line.split(":", 1)
+            out[k.strip()].extend([x.strip() for x in v.split(",")])
+    return out
+
+
+def load_audio_as_array(path: Path, sr: int = 24_000) -> np.ndarray:
+    """Load entire audio into RAM, close file-handle immediately."""
+    with AudioFileClip(str(path)) as clip:
+        arr = clip.to_soundarray(fps=sr)  # (N,2) stereo
+        if arr.ndim == 2 and arr.shape[1] == 2:
+            arr = arr.mean(axis=1)        # mono
+    return arr
+
+
+# ------------------------------------------------------------------
+# Core generator
+# ------------------------------------------------------------------
 class NewsVideoGenerator:
-    def __init__(self, voice='af_heart', resolution=(1920, 1080)):
-        self._setup_metal_acceleration()
-        self.pipeline = KPipeline(lang_code='a')
-        self._setup_image_pipeline()
+    def __init__(self, voice="af_heart", resolution=(1920, 1080)):
+        self._setup_metal()
+        self.pipeline = KPipeline(lang_code="a")
+        self._setup_img_pipe()
         self.voice = voice
         self.resolution = resolution
         self.sample_rate = 24_000
-        self.cache_dir = Path('/tmp/video_cache')
+        self.cache_dir = Path("/tmp/video_cache")
         self.cache_dir.mkdir(exist_ok=True)
 
-    # ---- device setup -------------------------------------------------------
-    def _setup_metal_acceleration(self):
-        if platform.system() == 'Darwin':                      # macOS
-            if torch.backends.mps.is_available():
-                self.device = torch.device('mps')
-                print("✓ Metal GPU acceleration enabled", file=sys.stderr)
-                torch.set_default_device('mps')
-                torch.set_default_dtype(torch.float32)
-                torch.backends.mps.enable_mps_fallback = True
-            else:
-                self.device = torch.device('cpu')
-                print("⚠ Metal GPU not available, using CPU", file=sys.stderr)
+    # ---------- GPU ----------
+    def _setup_metal(self):
+        if platform.system() == "Darwin" and torch.backends.mps.is_available():
+            self.device = torch.device("mps")
+            print("✓ Metal GPU acceleration enabled", file=sys.stderr)
+            torch.set_default_device("mps")
+            torch.set_default_dtype(torch.float32)
+            torch.backends.mps.enable_mps_fallback = True
+        elif torch.cuda.is_available():
+            self.device = torch.device("cuda")
+            print("✓ CUDA GPU acceleration enabled", file=sys.stderr)
         else:
-            if torch.cuda.is_available():
-                self.device = torch.device('cuda')
-                print("✓ CUDA GPU acceleration enabled", file=sys.stderr)
-            else:
-                self.device = torch.device('cpu')
-                print("⚠ Using CPU", file=sys.stderr)
+            self.device = torch.device("cpu")
+            print("⚠ Using CPU", file=sys.stderr)
 
-    # ---- diffusion pipeline -------------------------------------------------
-    def _setup_image_pipeline(self):
-        print("Initializing AI image generation pipeline...", file=sys.stderr)
-        original = torch.get_default_device()
-        torch.set_default_device('cpu')          # avoid MPS tensors in scheduler
-        try:
-            self.image_pipeline = AutoPipelineForText2Image.from_pretrained(
-                "stabilityai/sd-turbo"
-            )
-        finally:
-            torch.set_default_device(original)
+    # ---------- SD Pipeline ----------
+    def _setup_img_pipe(self):
+        print("Initializing SD pipeline …", file=sys.stderr)
+        tmp = torch.get_default_device()
+        torch.set_default_device("cpu")  # avoid MPS scheduler bug
+        self.image_pipeline = AutoPipelineForText2Image.from_pretrained(
+            "stabilityai/sd-turbo")
+        torch.set_default_device(tmp)
 
-    # ---- procedural portraits ----------------------------------------------
-    def create_placeholder_portrait(self, name, style='professional'):
-        img = Image.new('RGB', (400, 400), (0, 0, 0))
-        draw = ImageDraw.Draw(img)
+    # ---------- Entity-aware background ----------
+    def _entities_in_sentence(self, sent: str, txt_entities: dict) -> dict:
+        found = {k: [] for k in txt_entities}
+        for ent_type, surf_list in txt_entities.items():
+            for surf in surf_list:
+                if re.search(rf'\b{re.escape(surf)}\b', sent, flags=re.I):
+                    found[ent_type].append(surf)
+        return found
 
-        # consistent colours from name hash
-        h = int(hashlib.md5(name.encode()).hexdigest(), 16) % 360
-        s, v = 0.6, 0.4
-        c = v * s; x = c * (1 - abs((h / 60.0) % 2 - 1)); m = v - c
-        if h < 60:   r, g, b = c, x, 0
-        elif h < 120: r, g, b = x, c, 0
-        elif h < 180: r, g, b = 0, c, x
-        elif h < 240: r, g, b = 0, x, c
-        elif h < 300: r, g, b = x, 0, c
-        else:         r, g, b = c, 0, x
-        bg = tuple(int((ch + m) * 255) for ch in (r, g, b))
+    def get_background_for_segment(self, segment: dict, duration: float,
+                                   txt_entities: dict = None) -> ImageClip:
+        if not txt_entities:  # fallback to generic if no entity data
+            return self.create_ai_background(segment, duration)
 
-        # gradient background
-        for y in range(400):
-            alpha = y / 400
-            shade = tuple(int(c * (0.7 + 0.3 * alpha)) for c in bg)
-            draw.line([(0, y), (400, y)], fill=shade)
+        entities = self._entities_in_sentence(segment['text'], txt_entities)
+        prompt_parts = []
+        if entities["PRODUCT"]:
+            prompt_parts.extend(entities["PRODUCT"])
+        if entities["EVENT"]:
+            prompt_parts.extend(entities["EVENT"])
+        if entities["FAC"]:
+            prompt_parts.extend(entities["FAC"])
+        if entities["ORG"] and "NATO" in " ".join(entities["ORG"]):
+            prompt_parts.append("NATO base")
+        if entities["CARDINAL"]:
+            prompt_parts.append(f"{entities['CARDINAL'][0]} units")
 
-        if style == 'professional':
-            circle = tuple(min(255, int(c * 1.3)) for c in bg)
-            draw.ellipse([50, 50, 350, 350], fill=circle, outline=(255, 255, 255), width=3)
-            initials = ''.join(w[0] for w in name.split()[:2]).upper()
-            try:
-                font = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial Bold.ttf", 120)
-            except:
-                font = ImageFont.load_default()
-            bbox = draw.textbbox((0, 0), initials, font=font)
-            tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
-            x, y = (400 - tw) // 2, (400 - th) // 2 - 10
-            draw.text((x + 3, y + 3), initials, fill=(0, 0, 0, 180), font=font)
-            draw.text((x, y), initials, fill='white', font=font)
-        return img
+        if not prompt_parts:  # fallback
+            prompt_parts = segment['topics'] + segment['places']
 
-    # ---- procedural backgrounds -------------------------------------------
-    def create_procedural_cityscape(self, city_name, duration, time_of_day='night'):
-        w, h = self.resolution
-        seed = int(hashlib.md5(city_name.encode()).hexdigest(), 16) % 10_000
-        np.random.seed(seed)
-        n_build = 20
-        builds = []
-        for i in range(n_build):
-            x = (w // n_build) * i
-            bw = w // n_build + np.random.randint(-20, 40)
-            bh = np.random.randint(200, 600)
-            builds.append((x, bw, bh))
-
-        top = (10, 15, 40) if time_of_day == 'night' else (100, 150, 200)
-        bot = (30, 35, 60) if time_of_day == 'night' else (150, 180, 220)
-        img = Image.new('RGB', (w, h))
-        draw = ImageDraw.Draw(img)
-        for y in range(h):
-            ratio = y / h
-            r = int(top[0] + (bot[0] - top[0]) * ratio)
-            g = int(top[1] + (bot[1] - top[1]) * ratio)
-            b = int(top[2] + (bot[2] - top[2]) * ratio)
-            draw.line([(0, y), (w, y)], fill=(r, g, b))
-
-        for i, (x, bw, bh) in enumerate(builds):
-            y = h - bh
-            col = (20 + i % 30,) * 3 if time_of_day == 'night' else (100 + i % 50,) * 3
-            draw.rectangle([x, y, x + bw, h], fill=col)
-            if time_of_day == 'night':
-                rows, cols = bh // 40, bw // 30
-                for row in range(rows):
-                    for col in range(cols):
-                        wx, wy = x + 10 + col * 30, y + 20 + row * 40
-                        if (seed + i + row + col) % 20 < 15:
-                            bright = 200 + int(55 * math.sin(i + row + col))
-                            draw.rectangle([wx, wy, wx + 15, wy + 20],
-                                         fill=(bright, bright, 150))
-        return ImageClip(np.array(img)).set_duration(duration)
-
-    def create_government_building(self, duration):
-        w, h = self.resolution
-        img = Image.new('RGB', (w, h), (40, 50, 80))
-        draw = ImageDraw.Draw(img)
-        bw, bh = 800, 600
-        bx = (w - bw) // 2; by = h - bh
-        draw.rectangle([bx, by, bx + bw, h], fill=(180, 180, 190))
-        for i in range(8):
-            cx = bx + (i + 1) * (bw // 9)
-            shadow = int(20 + 10 * math.sin(i))
-            draw.rectangle([cx - 20, by + 100, cx + 20, h],
-                         fill=(200 - shadow,) * 3)
-        draw.polygon([(bx - 50, by + 100), (bx + bw + 50, by + 100),
-                    (bx + bw // 2, by - 50)], fill=(160, 160, 170))
-        return ImageClip(np.array(img)).set_duration(duration)
-
-    def create_police_scene(self, duration):
-        w, h = self.resolution
-        img = Image.new('RGB', (w, h), (20, 25, 40))
-        draw = ImageDraw.Draw(img)
-        for rad in range(100, 0, -10):
-            draw.ellipse([200 - rad, 200 - rad, 200 + rad, 200 + rad],
-                       fill=(200, 0, 50))
-            draw.ellipse([w - 200 - rad, 200 - rad, w - 200 + rad, 200 + rad],
-                       fill=(50, 50, 200))
-        return ImageClip(np.array(img)).set_duration(duration)
-
-    def create_military_scene(self, duration):
-        w, h = self.resolution
-        img = Image.new('RGB', (w, h), (60, 70, 50))
-        draw = ImageDraw.Draw(img)
-        np.random.seed(42)
-        for i in range(50):
-            x = np.random.randint(0, w); y = np.random.randint(0, h)
-            size = np.random.randint(100, 300)
-            cols = [(80, 90, 60), (60, 70, 50), (100, 110, 80), (50, 60, 40)]
-            draw.ellipse([x, y, x + size, y + size], fill=cols[i % 4])
-        return ImageClip(np.array(img)).set_duration(duration)
-
-    def create_abstract_background(self, text, topic, duration):
-        w, h = self.resolution
-        schemes = {'default': [(30, 40, 60), (50, 60, 90)],
-                   'news': [(40, 40, 70), (60, 60, 100)],
-                   'politics': [(50, 30, 30), (80, 50, 50)]}
-        top, bot = schemes.get(topic, schemes['default'])
-        seed = int(hashlib.md5(text.encode()).hexdigest(), 16) % (2 ** 32 - 1)
-        np.random.seed(seed)
-        img = Image.new('RGB', (w, h), top)
-        draw = ImageDraw.Draw(img)
-        for y in range(h):
-            ratio = y / h
-            r = int(top[0] * (1 - ratio) + bot[0] * ratio)
-            g = int(top[1] * (1 - ratio) + bot[1] * ratio)
-            b = int(top[2] * (1 - ratio) + bot[2] * ratio)
-            draw.line([(0, y), (w, y)], fill=(r, g, b))
-        return ImageClip(np.array(img)).set_duration(duration)
-
-    # ---- AI background via SD-Turbo -----------------------------------------
-    def create_ai_background(self, segment, duration):
-        prompt_parts = segment['topics'] + segment['places']
-        if segment['people']:
-            prompt_parts.append(f"featuring {segment['people'][0]}")
         prompt = ", ".join(prompt_parts)
         full_prompt = (f"cinematic digital art, news broadcast background, {prompt}. "
-                       f"mood: {segment['sentiment']}, high detail, sharp focus")
-        phash = hashlib.md5(full_prompt.encode()).hexdigest()
-        cached = self.cache_dir / f"bg_{phash}.png"
+                       f"mood: {segment['sentiment']}, highly detailed, 4K")
+
+        prompt_hash = hashlib.md5(full_prompt.encode()).hexdigest()
+        cached = self.cache_dir / f"bg_{prompt_hash}.png"
         if cached.exists():
             img = Image.open(cached)
         else:
-            print(f"Generating AI background for: {prompt}", file=sys.stderr)
-            img = self.image_pipeline(prompt=full_prompt, num_inference_steps=2, guidance_scale=0.0).images[0]
+            print(f"🎨 Generating object-level background: {prompt}", file=sys.stderr)
+            img = self.image_pipeline(prompt=full_prompt,
+                                      num_inference_steps=2,
+                                      guidance_scale=0.0).images[0]
+            img.save(cached)
+
+        return ImageClip(np.array(img.resize(self.resolution))).set_duration(duration)
+
+    # ---------- Legacy generic background ----------
+    def create_ai_background(self, segment: dict, duration: float) -> ImageClip:
+        prompt_parts = segment["topics"] + segment["places"]
+        prompt = ", ".join(prompt_parts)
+        full_prompt = (f"cinematic digital art, news background, {prompt}, "
+                       f"mood: {segment['sentiment']}, high detail")
+        prompt_hash = hashlib.md5(full_prompt.encode()).hexdigest()
+        cached = self.cache_dir / f"bg_{prompt_hash}.png"
+        if cached.exists():
+            img = Image.open(cached)
+        else:
+            print(f"Generating AI background: {prompt}", file=sys.stderr)
+            img = self.image_pipeline(prompt=full_prompt,
+                                      num_inference_steps=2,
+                                      guidance_scale=0.0).images[0]
             img.save(cached)
         return ImageClip(np.array(img.resize(self.resolution))).set_duration(duration)
 
-    # ---- text analysis ------------------------------------------------------
-    def parse_article(self, text):
-        text = re.sub(r'[^\w\s.,!?;:\'"()\-]', '', text)
-        sentences = re.split(r'(?<=[.!?])\s+', text)
-        segments = []
-        for sent in sentences:
-            if not sent.strip():
-                continue
-            segments.append({
-                'text': sent.strip(),
-                'people': self._extract_people(sent),
-                'places': self._extract_places(sent),
-                'topics': self._extract_topics(sent),
-                'sentiment': self._analyze_sentiment(sent)
-            })
-        return segments
-
-    def _extract_people(self, text):
-        pat = r'\b(?:President|Governor|Mayor|Mr\.|Ms\.|Dr\.)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)'
-        matches = re.findall(pat, text)
-        matches += re.findall(r'\b(?:by|from|with)\s+([A-Z][a-z]+\s+[A-Z][a-z]+)', text)
-        return list(set(matches))
-
-    def _extract_places(self, text):
-        known = ['Chicago', 'Memphis', 'America', 'United States', 'Tennessee',
-                 'Illinois', 'Washington', 'New York', 'Los Angeles', 'San Francisco']
-        return [p for p in known if p in text]
-
-    def _extract_topics(self, text):
-        kw = {'crime': ['crime', 'enforcement', 'operations', 'law'],
-              'politics': ['Trump', 'administration', 'federal', 'government', 'election'],
-              'immigration': ['immigration'],
-              'military': ['National Guard', 'deployment', 'troops'],
-              'city': ['city', 'cities', 'urban', 'Mayor']}
-        topics = []
-        txt = text.lower()
-        for t, words in kw.items():
-            if any(w in txt for w in words):
-                topics.append(t)
-        return topics
-
-    def _analyze_sentiment(self, text):
-        pos = ['approval', 'cooperative', 'support', 'success']
-        neg = ['rejected', 'crime-infested', 'war zones', 'lack']
-        txt = text.lower()
-        pos_c = sum(txt.count(w) for w in pos)
-        neg_c = sum(txt.count(w) for w in neg)
-        return 'negative' if neg_c > pos_c else 'positive' if pos_c > neg_c else 'neutral'
-
-    # ---- background selector ------------------------------------------------
-    def get_background_for_segment(self, segment, duration):
-        return self.create_ai_background(segment, duration)
-
-    # ---- TTS with GPU fallback ----------------------------------------------
-    def generate_audio(self, text, output_path):
-        print(f"Generating audio: {text[:60]}...", file=sys.stderr)
-        if hasattr(self, 'device') and self.device.type in {'mps', 'cuda'}:
+    # ---------- TTS ----------
+    def generate_audio(self, text: str, output_path: Path) -> float:
+        print(f"TTS: {text[:60]}…", file=sys.stderr)
+        if self.device.type in ("mps", "cuda"):
             try:
                 with torch.device(self.device):
                     self.pipeline.model.to(self.device)
-                    gen = self.pipeline(text, voice=self.voice)
-                    chunks = [audio.cpu() for gs, ps, audio in gen]
+                    generator = self.pipeline(text, voice=self.voice)
+                    chunks = [audio.cpu() for gs, ps, audio in generator]
             except Exception as e:
-                print(f"⚠ GPU generation failed, falling back to CPU: {e}", file=sys.stderr)
-                gen = self.pipeline(text, voice=self.voice)
-                chunks = [audio for gs, ps, audio in gen]
+                print(f"⚠ GPU TTS failed, fallback CPU: {e}", file=sys.stderr)
+                generator = self.pipeline(text, voice=self.voice)
+                chunks = [audio for gs, ps, audio in generator]
         else:
-            gen = self.pipeline(text, voice=self.voice)
-            chunks = [audio for gs, ps, audio in gen]
+            generator = self.pipeline(text, voice=self.voice)
+            chunks = [audio for gs, ps, audio in generator]
 
         valid = [c for c in chunks if c is not None and c.numel() > 0]
         if not valid:
@@ -307,74 +190,238 @@ class NewsVideoGenerator:
         # safety file-size check
         if not output_path.exists() or output_path.stat().st_size < 1024:
             print("⚠ Audio file empty, overwriting with 0.1 s silence", file=sys.stderr)
-            sf.write(output_path, np.zeros(int(0.1 * self.sample_rate), dtype=np.float32), self.sample_rate)
+            silent_audio = np.zeros(int(0.1 * self.sample_rate), dtype=np.float32)
+            sf.write(output_path, silent_audio, self.sample_rate)
+            return 0.1
+
         return len(audio) / self.sample_rate
+
+    # ---------- Text parsing ----------
+    def parse_article(self, text: str):
+        text = re.sub(r'[^\w\s.,!?;:\'"()\-]', '', text)
+        sentences = re.split(r'(?<=[.!?])\s+', text)
+        segments = []
+        for sent in sentences:
+            if not sent.strip():
+                continue
+            segments.append({
+                "text": sent.strip(),
+                "people": self._extract_people(sent),
+                "places": self._extract_places(sent),
+                "topics": self._extract_topics(sent),
+                "sentiment": self._analyze_sentiment(sent)
+            })
+        return segments
+
+    def _extract_people(self, text: str):
+        pat = r'\b(?:President|Governor|Mayor|Mr\.|Ms\.|Dr\.)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)'
+        matches = re.findall(pat, text)
+        matches += re.findall(r'\b(?:by|from|with)\s+([A-Z][a-z]+\s+[A-Z][a-z]+)', text)
+        return list(set(matches))
+
+    def _extract_places(self, text: str):
+        known = ["Chicago", "Memphis", "America", "United States", "Tennessee",
+                 "Illinois", "Washington", "New York", "Los Angeles", "San Francisco",
+                 "Russia", "Ukraine", "Moscow", "Ankara", "Germany", "Turkey"]
+        return [p for p in known if p in text]
+
+    def _extract_topics(self, text: str):
+        kw = {"crime": ["crime", "enforcement"], "politics": ["Trump", "administration"],
+              "immigration": ["immigration"], "military": ["National Guard", "troops"],
+              "city": ["city", "Mayor"]}
+        topics = []
+        low = text.lower()
+        for t, ws in kw.items():
+            if any(w in low for w in ws):
+                topics.append(t)
+        return topics
+
+    def _analyze_sentiment(self, text: str):
+        pos, neg = ["approval", "support"], ["rejected", "war zones"]
+        low = text.lower()
+        cpos = sum(low.count(w) for w in pos)
+        cneg = sum(low.count(w) for w in neg)
+        return "negative" if cneg > cpos else "positive" if cpos > cneg else "neutral"
 
     # ---- overlays ------------------------------------------------------------
     def create_person_overlay(self, name, duration, position='right'):
-        portrait = self.create_placeholder_portrait(name).resize((300, 300))
-        ow, oh = 350, 400
-        base = Image.new('RGBA', (ow, oh), (0, 0, 0, 0))
-        for y in range(oh):
-            alpha = int(200 - (y / oh) * 50)
-            base.paste(Image.new('RGBA', (ow, 1), (20, 40, 80, alpha)), (0, y))
-        base.paste(portrait.convert('RGBA'), (25, 20))
-        draw = ImageDraw.Draw(base)
+        """Create an overlay with person's portrait and name."""
+        portrait = self.create_placeholder_portrait(name, style='professional')
+        portrait = portrait.resize((300, 300))
+        
+        overlay_width = 350
+        overlay_height = 400
+        overlay_img = Image.new('RGBA', (overlay_width, overlay_height), (0, 0, 0, 0))
+        
+        # Semi-transparent background with gradient
+        for y in range(overlay_height):
+            alpha = int(200 - (y / overlay_height) * 50)
+            bg = Image.new('RGBA', (overlay_width, 1), (20, 40, 80, alpha))
+            overlay_img.paste(bg, (0, y))
+        
+        # Paste portrait
+        portrait_rgba = portrait.convert('RGBA')
+        overlay_img.paste(portrait_rgba, (25, 20), portrait_rgba)
+        
+        # Add name text with glow
+        draw = ImageDraw.Draw(overlay_img)
         try:
             font = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial Bold.ttf", 28)
         except:
-            font = ImageFont.load_default()
+            try:
+                font = ImageFont.truetype("Arial Bold", 28)
+            except:
+                font = ImageFont.load_default()
+        
         bbox = draw.textbbox((0, 0), name, font=font)
-        tw = bbox[2] - bbox[0]
-        x = (ow - tw) // 2
-        for off in range(3, 0, -1):
-            draw.text((x + off, 342 + off), name, fill=(0, 0, 0, 80 - off * 20), font=font)
-        draw.text((x, 340), name, fill=(255, 255, 255), font=font)
-        clip = ImageClip(np.array(base)).set_duration(duration)
-        x_pos = self.resolution[0] - ow - 50 if position == 'right' else 50
-        return clip.set_position((x_pos, 150)).crossfadein(0.3).crossfadeout(0.3)
+        text_width = bbox[2] - bbox[0]
+        x = (overlay_width - text_width) // 2
+        
+        # Glow effect
+        for offset in range(3, 0, -1):
+            alpha = 80 - offset * 20
+            draw.text((x+offset, 342+offset), name, fill=(0, 0, 0, alpha), font=font)
+        
+        # Main text
+        draw.text((x, 340), name, fill=(255, 255, 255, 255), font=font)
+        
+        clip = ImageClip(np.array(overlay_img)).set_duration(duration)
+        
+        if position == 'right':
+            clip = clip.set_position((self.resolution[0] - overlay_width - 50, 150))
+        else:
+            clip = clip.set_position((50, 150))
+        
+        clip = clip.crossfadein(0.3).crossfadeout(0.3)
+        
+        return clip
 
-    def create_text_overlay(self, segment, duration):
+    def create_placeholder_portrait(self, name, style='professional'):
+        """Create a high-quality procedural portrait with multiple styles."""
+        img = Image.new('RGB', (400, 400), (0, 0, 0))
+        draw = ImageDraw.Draw(img)
+        
+        # Generate consistent colors from name
+        hash_val = int(hashlib.md5(name.encode()).hexdigest(), 16)
+        hue = (hash_val % 360)
+        
+        # Convert HSV to RGB for background
+        h, s, v = hue / 360.0, 0.6, 0.4
+        c = v * s
+        x = c * (1 - abs((h * 6) % 2 - 1))
+        m = v - c
+        
+        if h < 1/6:
+            r, g, b = c, x, 0
+        elif h < 2/6:
+            r, g, b = x, c, 0
+        elif h < 3/6:
+            r, g, b = 0, c, x
+        elif h < 4/6:
+            r, g, b = 0, x, c
+        elif h < 5/6:
+            r, g, b = x, 0, c
+        else:
+            r, g, b = c, 0, x
+        
+        bg_color = (int((r+m)*255), int((g+m)*255), int((b+m)*255))
+        
+        # Create gradient background
+        for y in range(400):
+            ratio = y / 400
+            darker = tuple(int(c * (0.7 + 0.3 * ratio)) for c in bg_color)
+            draw.line([(0, y), (400, y)], fill=darker)
+        
+        if style == 'professional':
+            # Draw circle background for avatar
+            circle_color = tuple(min(255, int(c * 1.3)) for c in bg_color)
+            draw.ellipse([50, 50, 350, 350], fill=circle_color)
+            
+            # Add subtle border
+            draw.ellipse([50, 50, 350, 350], outline=(255, 255, 255, 128), width=3)
+            
+            # Get initials
+            parts = name.split()
+            initials = ''.join([p[0] for p in parts[:2]]).upper()
+            
+            # Draw initials with shadow
+            try:
+                font = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial Bold.ttf", 120)
+            except:
+                try:
+                    font = ImageFont.truetype("Arial Bold", 120)
+                except:
+                    font = ImageFont.load_default()
+            
+            # Text shadow
+            bbox = draw.textbbox((0, 0), initials, font=font)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+            
+            x = (400 - text_width) // 2
+            y = (400 - text_height) // 2 - 10
+            
+            # Shadow
+            draw.text((x+3, y+3), initials, fill=(0, 0, 0, 180), font=font)
+            # Main text
+            draw.text((x, y), initials, fill='white', font=font)
+            
+        elif style == 'silhouette':
+            # Create a silhouette-style portrait
+            # Head shape
+            draw.ellipse([100, 80, 300, 280], fill=(40, 40, 50))
+            # Shoulders
+            draw.polygon([(120, 280), (280, 280), (350, 400), (50, 400)], fill=(40, 40, 50))
+            # Add rim light effect
+            draw.arc([100, 80, 300, 280], 200, 340, fill=(200, 200, 255), width=3)
+        
+        return img
+
+    def create_text_overlay(self, segment: dict, duration: float):
         w, h = self.resolution
         overlays = []
-        if segment['places']:
-            loc = TextClip(segment['places'][0], fontsize=45, color='white',
-                         font='Arial-Bold', bg_color='rgba(200,0,0,0.9)')
-            overlays.append(loc.set_position((30, 30)).set_duration(duration))
-        subtitle = TextClip(segment['text'], fontsize=36, color='white',
-                          font='Arial', bg_color='rgba(0,0,0,0.85)',
-                          size=(w - 200, None), method='caption', align='center')
-        overlays.append(subtitle.set_position(('center', h - 180))
-                        .set_duration(duration).crossfadein(0.2))
+        if segment["places"]:
+            loc = TextClip(segment["places"][0], fontsize=45, color="white",
+                           font="Arial-Bold", bg_color="rgba(200,0,0,0.9)",
+                           method="caption").set_position((30, 30)).set_duration(duration)
+            overlays.append(loc)
+        subtitle = TextClip(segment["text"], fontsize=36, color="white",
+                            font="Arial", bg_color="rgba(0,0,0,0.85)",
+                            size=(w - 200, None), method="caption", align="center"
+                            ).set_position(("center", h - 180)).set_duration(duration)
+        overlays.append(subtitle.crossfadein(0.2))
         return overlays
 
-    def create_news_banner(self, duration, ticker_text="BREAKING NEWS ANALYSIS"):
-        w, h = self.resolution
-        def make_frame(t):
-            img = Image.new('RGB', (w, 90), (180, 0, 0))
+    def create_news_banner(self, duration: float, ticker: str = "BREAKING NEWS"):
+        w, _ = self.resolution
+
+        def make(t):
+            img = Image.new("RGB", (w, 90), (180, 0, 0))
             draw = ImageDraw.Draw(img)
             try:
                 f1 = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial Bold.ttf", 38)
                 f2 = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial.ttf", 24)
             except:
                 f1 = f2 = ImageFont.load_default()
-            draw.text((30, 25), ticker_text, fill='white', font=f1)
-            scroll = int(t * 100) % w
-            ticker = "● LIVE COVERAGE ● LATEST UPDATES ● " * 10
-            draw.text((w - scroll, 60), ticker, fill='yellow', font=f2)
+            draw.text((30, 25), ticker, fill="white", font=f1)
+            offset = int(t * 100) % w
+            txt = "● LIVE COVERAGE ● LATEST UPDATES ● " * 10
+            draw.text((w - offset, 60), txt, fill="yellow", font=f2)
             return np.array(img)
-        return VideoClip(make_frame, duration=duration).set_position(('center', 0))
 
-    # ---- final composer -----------------------------------------------------
-    def generate_video(self, article_text, output_video_path):
-        print("Parsing article...", file=sys.stderr)
+        return VideoClip(make, duration=duration).set_position(("center", 0))
+
+    # ---------- Final composer ----------
+    def generate_video(self, article_text: str, output_video_path: str,
+                       txt_entities: dict = None) -> None:
+        print("Parsing article …", file=sys.stderr)
         segments = self.parse_article(article_text)
         print(f"Found {len(segments)} segments", file=sys.stderr)
 
         video_clips, audio_clips = [], []
         t = 0
 
-        # hardware encoding opts
+        # ---------- hardware-encoding block (unchanged) --------------------
         ffmpeg_params = ['-preset', 'medium', '-crf', '18']
         if platform.system() == 'Darwin':
             try:
@@ -386,55 +433,59 @@ class NewsVideoGenerator:
                                    '-profile:v', 'high', '-allow_sw', '1']
             except:
                 pass
+        # -------------------------------------------------------------------
 
         for i, seg in enumerate(segments):
             print(f"\n=== Segment {i+1}/{len(segments)} ===", file=sys.stderr)
             audio_path = self.cache_dir / f"segment_{i}.wav"
+            
             try:
-                dur = self.generate_audio(seg['text'], audio_path)
-                if dur <= 0.1:
+                # Generate audio first
+                self.generate_audio(seg['text'], audio_path)
+                # Then, get its *exact* duration for perfect sync
+                with AudioFileClip(str(audio_path)) as ac:
+                    dur = ac.duration
+                if dur < 0.1:
                     print(f"⚠ Skipping segment {i+1} – audio too short ({dur:.2f}s)", file=sys.stderr)
                     continue
             except Exception as e:
                 print(f"⚠ Error generating audio for segment {i+1}, skipping: {e}", file=sys.stderr)
                 continue
 
+            # Now that we have the exact duration, build the video segment
             try:
-                bg = self.get_background_for_segment(seg, dur)
+                bg = self.get_background_for_segment(seg, dur, txt_entities)
+                bg = bg.fl_image(lambda fr: (fr * 0.7).astype('uint8'))
+                banner = self.create_news_banner(dur)
+                overlays = self.create_text_overlay(seg, dur)
+                person_ov = []
+                for j, person in enumerate(seg['people'][:2]):
+                    print(f"Creating portrait for: {person}", file=sys.stderr)
+                    pos = 'right' if j == 0 else 'left'
+                    person_ov.append(self.create_person_overlay(person, dur, pos))
+
+                all_clips = [bg, banner] + person_ov + overlays
+                video = CompositeVideoClip(all_clips, size=self.resolution).set_opacity(1)
+                video = video.set_duration(dur).set_start(t)
+                video_clips.append(video)
+
+                # Load audio and add to list
+                audio_clip = AudioFileClip(str(audio_path)).set_start(t)
+                audio_clips.append(audio_clip)
+
+                t += dur
             except Exception as e:
-                print(f"⚠ Error generating background for segment {i+1}, skipping: {e}", file=sys.stderr)
+                print(f"⚠ Error creating video segment {i+1}, skipping: {e}", file=sys.stderr)
                 continue
 
-            bg = bg.fl_image(lambda fr: (fr * 0.7).astype('uint8'))
-            banner = self.create_news_banner(dur)
-            overlays = self.create_text_overlay(seg, dur)
-            person_ov = []
-            for j, person in enumerate(seg['people'][:2]):
-                print(f"Creating portrait for: {person}", file=sys.stderr)
-                pos = 'right' if j == 0 else 'left'
-                person_ov.append(self.create_person_overlay(person, dur, pos))
-
-            all_clips = [bg, banner] + person_ov + overlays
-            video = CompositeVideoClip(all_clips, size=self.resolution).set_opacity(1)
-            video = video.set_duration(dur).set_start(t)
-            video_clips.append(video)
-
-            # ---- safe audio path – no bare arrays -----------------------------
-            tmp_audio = str(self.cache_dir / f'segment_{i}_tmp.wav')
-            shutil.copy(audio_path, tmp_audio)
-            aclip = AudioFileClip(tmp_audio).set_start(t)
-            audio_clips.append(aclip)
-            # ------------------------------------------------------------------
-            t += dur
-
         print("\n=== Compositing final video ===", file=sys.stderr)
-        final_audio = concatenate_audioclips(audio_clips)
-        # close all readers immediately
-        for ac in audio_clips:
-            ac.close()
 
-        final_video = CompositeVideoClip(video_clips, size=self.resolution)
-        final_video = final_video.set_audio(final_audio)
+        if not video_clips:
+            sys.exit("No video clips were generated. Exiting.")
+
+        final_video = CompositeVideoClip(video_clips)
+        final_audio = concatenate_audioclips(audio_clips)
+        final_video.audio = final_audio
 
         print(f"Writing video to {output_video_path}...", file=sys.stderr)
         final_video.write_videofile(
@@ -446,27 +497,39 @@ class NewsVideoGenerator:
         print("\n✓ Video generation complete!", file=sys.stderr)
 
 
-# ---------- CLI --------------------------------------------------------------
+# ------------------------------------------------------------------
+# CLI
+# ------------------------------------------------------------------
 def main():
-    if len(sys.argv) < 3:
-        print("Usage: ./news_video_gen.py <input_file|-> <output.mp4>", file=sys.stderr)
-        print("\n✨ 100% Local & Free – No API Keys Required", file=sys.stderr)
-        sys.exit(1)
+    parser = argparse.ArgumentParser(description="Local news-video generator")
+    parser.add_argument("input", help="Article text file or '-' for stdin")
+    parser.add_argument("output", help="Output .mp4")
+    parser.add_argument("--data", metavar="ENTITIES.txt",
+                        help="Newswire metadata (<entities> block) for object-level backgrounds")
+    args = parser.parse_args()
 
-    in_file, out_file = sys.argv[1], sys.argv[2]
-    print("=== System Configuration ===", file=sys.stderr)
+    print("=== System ===", file=sys.stderr)
     print(f"Platform: {platform.system()} {platform.machine()}", file=sys.stderr)
     print(f"PyTorch: {torch.__version__}", file=sys.stderr)
-    if platform.system() == 'Darwin':
-        print(f"Metal available: {torch.backends.mps.is_available()}", file=sys.stderr)
-    print("============================\n", file=sys.stderr)
+    if platform.system() == "Darwin":
+        print(f"Metal: {torch.backends.mps.is_available()}", file=sys.stderr)
 
-    text = sys.stdin.read() if in_file == '-' else Path(in_file).read_text(encoding='utf-8')
+    # read article
+    if args.input == "-":
+        text = sys.stdin.read()
+    else:
+        text = Path(args.input).read_text(encoding="utf-8")
+
+    # parse optional entity file
+    txt_entities = parse_entity_file(args.data) if args.data else None
+
+    # render
     t0 = time.time()
-    NewsVideoGenerator().generate_video(text, out_file)
-    print(f"\n⚡ Total generation time: {time.time() - t0:.1f}s", file=sys.stderr)
-    print(f"✓ Video saved to: {out_file}", file=sys.stderr)
+    gen = NewsVideoGenerator()
+    gen.generate_video(text, args.output, txt_entities)
+    print(f"\n⚡ Total: {time.time() - t0:.1f}s", file=sys.stderr)
+    print(f"✓ Saved: {args.output}", file=sys.stderr)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
