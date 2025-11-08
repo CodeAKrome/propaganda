@@ -657,13 +657,40 @@ class EnhancedNewsVideoGenerator:
         final_video.audio = final_audio
 
         print(f"Writing video to {output_video_path}...", file=sys.stderr)
-        final_video.write_videofile(
-            output_video_path, fps=30, codec='libx264', audio_codec='aac',
-            bitrate='8000k', temp_audiofile=str(self.cache_dir / 'temp_audio.m4a'),
-            remove_temp=True, ffmpeg_params=ffmpeg_params, threads=8, logger=None
-        )
-        final_video.close()
-        print("\n✅ Enhanced video generation complete!", file=sys.stderr)
+        try:
+            final_video.write_videofile(
+                output_video_path, fps=30, codec='libx264', audio_codec='aac',
+                bitrate='8000k', temp_audiofile=str(self.cache_dir / 'temp_audio.m4a'),
+                remove_temp=True, ffmpeg_params=ffmpeg_params, threads=8, logger=None
+            )
+            print("\n✅ Enhanced video generation complete!", file=sys.stderr)
+        finally:
+            # Close all clips safely to prevent bus errors
+            try:
+                for clip in audio_clips:
+                    if hasattr(clip, 'close'):
+                        clip.close()
+            except:
+                pass
+            
+            try:
+                for clip in video_clips:
+                    if hasattr(clip, 'close'):
+                        clip.close()
+            except:
+                pass
+            
+            try:
+                if final_audio and hasattr(final_audio, 'close'):
+                    final_audio.close()
+            except:
+                pass
+            
+            try:
+                if final_video and hasattr(final_video, 'close'):
+                    final_video.close()
+            except:
+                pass
 
 
 # ------------------------------------------------------------------
@@ -689,10 +716,22 @@ def main():
     # render with enhanced generator
     t0 = time.time()
     gen = EnhancedNewsVideoGenerator()
-    gen.generate_enhanced_video(segments, args.output)
-    print(f"\n⚡ Total: {time.time() - t0:.1f}s", file=sys.stderr)
-    print(f"✅ Saved: {args.output}", file=sys.stderr)
-    print(f"🎨 Enhanced with context-aware backgrounds!", file=sys.stderr)
+    try:
+        gen.generate_enhanced_video(segments, args.output)
+        print(f"\n⚡ Total: {time.time() - t0:.1f}s", file=sys.stderr)
+        print(f"✅ Saved: {args.output}", file=sys.stderr)
+        print(f"🎨 Enhanced with context-aware backgrounds!", file=sys.stderr)
+        
+        # Force immediate exit to avoid MoviePy cleanup bus errors on macOS
+        import os
+        os._exit(0)
+        
+    except Exception as e:
+        print(f"\n❌ Error during video generation: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc()
+        import os
+        os._exit(1)
 
 
 if __name__ == "__main__":
