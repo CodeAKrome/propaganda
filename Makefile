@@ -2,7 +2,7 @@ CONDA_MP3_ENV = kokoro
 DB_ENV = db/.venv
 SHELL := /bin/bash
 MLX_MODEL = mlx-community/Llama-4-Scout-17B-16E-Instruct-4bit
-NUMDAYS = -3
+NUMDAYS = -1
 TITLEFILE = output/titles.tsv
 
 .PHONY: build load back front vector query mp3 mgconsole testload thingsthatgo fini ner fner fnervector entity

@@ -5,7 +5,7 @@ Hybrid search:  MongoDB filter  →  temporary Chroma collection  →  vector se
 Uses the same DB/collection credentials as mongo2chroma.py
 """
 
-import os
+import os, uuid
 import sys
 import argparse
 from typing import List, Tuple, Dict, Optional
@@ -25,7 +25,10 @@ MONGO_DB = "rssnews"
 MONGO_COLL = "articles"
 
 CHROMA_PATH = "./chroma"  # same persistent path
-HYBRID_COLL = "hybrid_tmp"  # temporary collection – wiped each run
+
+# HYBRID_COLL = "hybrid_tmp"  # temporary collection – wiped each run
+HYBRID_COLL = f"hybrid_tmp_{os.getpid()}_{uuid.uuid4().hex[:8]}"
+
 EMBED_MODEL = "BAAI/bge-large-en-v1.5"
 # ------------------------------------------------------------------
 
