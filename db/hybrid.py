@@ -133,6 +133,10 @@ def main(argv=None):
         action="store_true",
         help="Use entity search results as the candidate pool for full-text search.",
     )
+    parser.add_argument(
+        "--ids",
+        help="File to write the MongoDB IDs of matched records to.",
+    )
     args = parser.parse_args(argv)
 
     and_entities = parse_entity_list(args.andentity)
@@ -221,6 +225,15 @@ def main(argv=None):
             for c in text_candidates:
                 candidate_dict[str(c["_id"])] = c
             candidates = list(candidate_dict.values())
+
+    if args.ids:
+        command_line_args = " ".join(sys.argv)
+        candidate_ids_to_write = [str(c["_id"]) for c in candidates]
+        with open(args.ids, "a") as f:
+            f.write(f"# {' '.join(sys.argv)}\n")
+            for mongo_id in candidate_ids_to_write:
+                f.write(f"{mongo_id}\n")
+        debug(f"Appended {len(candidate_ids_to_write)} MongoDB IDs to {args.ids}")
 
     if not candidates:
         debug("No candidates found.")

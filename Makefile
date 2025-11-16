@@ -13,7 +13,7 @@ fload: load ner vector entity fini
 fner: ner vector entity query mp3 fini
 fnervector: ner vector fini
 fquerymp3: entity query mp3 fini
-fquery: query mp3 fini
+fquery: load ner vector query fini
 fmp3: mp3 fini
 
 black:
