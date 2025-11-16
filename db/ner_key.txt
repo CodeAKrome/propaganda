@@ -1,0 +1,20 @@
+
+Entity Meaning Example
+<entity>CARDINAL</entity><meaning>cardinal value</meaning><example>1, 2, 3, ...</example>
+<entity>DATE</entity><meaning>date value</meaning><example>2023-12-25, January 1st</example>
+<entity>EVENT</entity><meaning>event name</meaning><example>Super Bowl, Olympics</example>
+<entity>FAC</entity><meaning>building name</meaning><example>Empire State Building, Eiffel Tower</example>
+<entity>GPE</entity><meaning>geo-political entity</meaning><example>United States, France</example>
+<entity>LANGUAGE</entity><meaning>language name</meaning><example>English, Spanish</example>
+<entity>LAW</entity><meaning>law name</meaning><example>Constitution, Copyright Act</example>
+<entity>LOC</entity><meaning>location name</meaning><example>New York City, Paris</example>
+<entity>MONEY</entity><meaning>money name</meaning><example>dollar, euro</example>
+<entity>NORP</entity><meaning>affiliation</meaning><example>Republican, Democrat</example>
+<entity>ORDINAL</entity><meaning>ordinal value</meaning><example>first, second, third</example>
+<entity>ORG</entity><meaning>organization name</meaning><example>NASA, Google</example>
+<entity>PERCENT</entity><meaning>percent value</meaning><example>50%, 75%</example>
+<entity>PERSON</entity><meaning>person name</meaning><example>John Doe, Jane Smith</example>
+<entity>PRODUCT</entity><meaning>product name</meaning><example>iPhone, MacBook</example>
+<entity>QUANTITY</entity><meaning>quantity value</meaning><example>10, 20</example>
+<entity>TIME</entity><meaning>time value</meaning><example>12:00 PM, 5:30 AM</example>
+<entity>WORK_OF_ART</entity><meaning>name of work of art</meaning><example>Mona Lisa, Star Wars</example>

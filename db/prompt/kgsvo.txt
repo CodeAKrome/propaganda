@@ -1,0 +1,53 @@
+-Goal-
+Given a text document, identify all entities and their entity types from the text and all relationships among the identified entities.
+Given the text, extract up to 50 entity-relation triplets.
+ 
+-Steps-
+1. Identify all entities. For each identified entity, extract the following information:
+- entity_name: Name of the entity, capitalized
+- entity_type: Type of the entity
+- entity_description: Comprehensive description of the entity's attributes and activities
+Format each entity as ("entity")
+ 
+2. From the entities identified in step 1, identify all pairs of (source_entity, target_entity) that are *clearly related* to each other.
+For each pair of related entities, extract the following information:
+- source_entity: name of the source entity, as identified in step 1
+- target_entity: name of the target entity, as identified in step 1
+- relation: relationship between source_entity and target_entity
+- relationship_description: explanation as to why you think the source entity and the target entity are related to each other
+
+3. Format each relationship as ("relationship")
+
+4. Follow the following pattern
+- ("source_entity", "target_entity", "relation", "relationship_description")
+
+5. Examples
+- ("Sergey Tolchenov", "Russia", "represents", "Sergey Tolchenov is Russia's Ambassador, representing Russia.")
+- ("Sergey Tolchenov", "Indonesia", "is_ambassador_to", "Sergey Tolchenov holds the position of Russia's Ambassador to Indonesia.")
+
+6. When finished, output.
+
+7. Place each entity into one of the following types
+-Entity Types-
+<entity>CARDINAL</entity><meaning>cardinal value</meaning><example>1, 2, 3, ...</example>
+<entity>DATE</entity><meaning>date value</meaning><example>2023-12-25, January 1st</example>
+<entity>EVENT</entity><meaning>event name</meaning><example>Super Bowl, Olympics</example>
+<entity>FAC</entity><meaning>building name</meaning><example>Empire State Building, Eiffel Tower</example>
+<entity>GPE</entity><meaning>geo-political entity</meaning><example>United States, France</example>
+<entity>LANGUAGE</entity><meaning>language name</meaning><example>English, Spanish</example>
+<entity>LAW</entity><meaning>law name</meaning><example>Constitution, Copyright Act</example>
+<entity>LOC</entity><meaning>location name</meaning><example>New York City, Paris</example>
+<entity>MONEY</entity><meaning>money name</meaning><example>dollar, euro</example>
+<entity>NORP</entity><meaning>affiliation</meaning><example>Republican, Democrat</example>
+<entity>ORDINAL</entity><meaning>ordinal value</meaning><example>first, second, third</example>
+<entity>ORG</entity><meaning>organization name</meaning><example>NASA, Google</example>
+<entity>PERCENT</entity><meaning>percent value</meaning><example>50%, 75%</example>
+<entity>PERSON</entity><meaning>person name</meaning><example>John Doe, Jane Smith</example>
+<entity>PRODUCT</entity><meaning>product name</meaning><example>iPhone, MacBook</example>
+<entity>QUANTITY</entity><meaning>quantity value</meaning><example>10, 20</example>
+<entity>TIME</entity><meaning>time value</meaning><example>12:00 PM, 5:30 AM</example>
+<entity>WORK_OF_ART</entity><meaning>name of work of art</meaning><example>Mona Lisa, Star Wars</example>
+
+8. Only output relationships, do not use any other formatting.
+
+-Real Data-

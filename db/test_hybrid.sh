@@ -1,0 +1,1 @@
+./hybrid.py "Summarize actions in Portland Oregon involving ICE, the Mayor and ANTIFA. Analize actions and motivations." --orentity "LOC/Portland,ORG/Portland" --showentity -n 13 --fulltext ICE --filter

@@ -1,0 +1,264 @@
+Model Name: models/embedding-gecko-001
+Description: Obtain a distributed representation of a text.
+Supported Methods: embedText, countTextTokens
+--------------------------------------------------
+Model Name: models/gemini-2.5-pro-preview-03-25
+Description: Gemini 2.5 Pro Preview 03-25
+Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+--------------------------------------------------
+Model Name: models/gemini-2.5-flash-preview-05-20
+Description: Preview release (April 17th, 2025) of Gemini 2.5 Flash
+Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+--------------------------------------------------
+Model Name: models/gemini-2.5-flash
+Description: Stable version of Gemini 2.5 Flash, our mid-size multimodal model that supports up to 1 million tokens, released in June of 2025.
+Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+--------------------------------------------------
+Model Name: models/gemini-2.5-flash-lite-preview-06-17
+Description: Preview release (June 11th, 2025) of Gemini 2.5 Flash-Lite
+Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+--------------------------------------------------
+Model Name: models/gemini-2.5-pro-preview-05-06
+Description: Preview release (May 6th, 2025) of Gemini 2.5 Pro
+Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+--------------------------------------------------
+Model Name: models/gemini-2.5-pro-preview-06-05
+Description: Preview release (June 5th, 2025) of Gemini 2.5 Pro
+Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+--------------------------------------------------
+Model Name: models/gemini-2.5-pro
+Description: Stable release (June 17th, 2025) of Gemini 2.5 Pro
+Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+--------------------------------------------------
+Model Name: models/gemini-2.0-flash-exp
+Description: Gemini 2.0 Flash Experimental
+Supported Methods: generateContent, countTokens, bidiGenerateContent
+--------------------------------------------------
+Model Name: models/gemini-2.0-flash
+Description: Gemini 2.0 Flash
+Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+--------------------------------------------------
+Model Name: models/gemini-2.0-flash-001
+Description: Stable version of Gemini 2.0 Flash, our fast and versatile multimodal model for scaling across diverse tasks, released in January of 2025.
+Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+--------------------------------------------------
+Model Name: models/gemini-2.0-flash-exp-image-generation
+Description: Gemini 2.0 Flash (Image Generation) Experimental
+Supported Methods: generateContent, countTokens, bidiGenerateContent
+--------------------------------------------------
+Model Name: models/gemini-2.0-flash-lite-001
+Description: Stable version of Gemini 2.0 Flash-Lite
+Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+--------------------------------------------------
+Model Name: models/gemini-2.0-flash-lite
+Description: Gemini 2.0 Flash-Lite
+Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+--------------------------------------------------
+Model Name: models/gemini-2.0-flash-preview-image-generation
+Description: Gemini 2.0 Flash Preview Image Generation
+Supported Methods: generateContent, countTokens, batchGenerateContent
+--------------------------------------------------
+Model Name: models/gemini-2.0-flash-lite-preview-02-05
+Description: Preview release (February 5th, 2025) of Gemini 2.0 Flash-Lite
+Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+--------------------------------------------------
+Model Name: models/gemini-2.0-flash-lite-preview
+Description: Preview release (February 5th, 2025) of Gemini 2.0 Flash-Lite
+Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+--------------------------------------------------
+Model Name: models/gemini-2.0-pro-exp
+Description: Experimental release (March 25th, 2025) of Gemini 2.5 Pro
+Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+--------------------------------------------------
+Model Name: models/gemini-2.0-pro-exp-02-05
+Description: Experimental release (March 25th, 2025) of Gemini 2.5 Pro
+Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+--------------------------------------------------
+Model Name: models/gemini-exp-1206
+Description: Experimental release (March 25th, 2025) of Gemini 2.5 Pro
+Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+--------------------------------------------------
+Model Name: models/gemini-2.0-flash-thinking-exp-01-21
+Description: Preview release (April 17th, 2025) of Gemini 2.5 Flash
+Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+--------------------------------------------------
+Model Name: models/gemini-2.0-flash-thinking-exp
+Description: Preview release (April 17th, 2025) of Gemini 2.5 Flash
+Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+--------------------------------------------------
+Model Name: models/gemini-2.0-flash-thinking-exp-1219
+Description: Preview release (April 17th, 2025) of Gemini 2.5 Flash
+Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+--------------------------------------------------
+Model Name: models/gemini-2.5-flash-preview-tts
+Description: Gemini 2.5 Flash Preview TTS
+Supported Methods: countTokens, generateContent
+--------------------------------------------------
+Model Name: models/gemini-2.5-pro-preview-tts
+Description: Gemini 2.5 Pro Preview TTS
+Supported Methods: countTokens, generateContent
+--------------------------------------------------
+Model Name: models/learnlm-2.0-flash-experimental
+Description: LearnLM 2.0 Flash Experimental
+Supported Methods: generateContent, countTokens
+--------------------------------------------------
+Model Name: models/gemma-3-1b-it
+Description: 
+Supported Methods: generateContent, countTokens
+--------------------------------------------------
+Model Name: models/gemma-3-4b-it
+Description: 
+Supported Methods: generateContent, countTokens
+--------------------------------------------------
+Model Name: models/gemma-3-12b-it
+Description: 
+Supported Methods: generateContent, countTokens
+--------------------------------------------------
+Model Name: models/gemma-3-27b-it
+Description: 
+Supported Methods: generateContent, countTokens
+--------------------------------------------------
+Model Name: models/gemma-3n-e4b-it
+Description: 
+Supported Methods: generateContent, countTokens
+--------------------------------------------------
+Model Name: models/gemma-3n-e2b-it
+Description: 
+Supported Methods: generateContent, countTokens
+--------------------------------------------------
+Model Name: models/gemini-flash-latest
+Description: Latest release of Gemini Flash
+Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+--------------------------------------------------
+Model Name: models/gemini-flash-lite-latest
+Description: Latest release of Gemini Flash-Lite
+Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+--------------------------------------------------
+Model Name: models/gemini-pro-latest
+Description: Latest release of Gemini Pro
+Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+--------------------------------------------------
+Model Name: models/gemini-2.5-flash-lite
+Description: Stable version of Gemini 2.5 Flash-Lite, released in July of 2025
+Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+--------------------------------------------------
+Model Name: models/gemini-2.5-flash-image-preview
+Description: Gemini 2.5 Flash Preview Image
+Supported Methods: generateContent, countTokens, batchGenerateContent
+--------------------------------------------------
+Model Name: models/gemini-2.5-flash-image
+Description: Gemini 2.5 Flash Preview Image
+Supported Methods: generateContent, countTokens, batchGenerateContent
+--------------------------------------------------
+Model Name: models/gemini-2.5-flash-preview-09-2025
+Description: Gemini 2.5 Flash Preview Sep 2025
+Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+--------------------------------------------------
+Model Name: models/gemini-2.5-flash-lite-preview-09-2025
+Description: Preview release (Septempber 25th, 2025) of Gemini 2.5 Flash-Lite
+Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+--------------------------------------------------
+Model Name: models/gemini-robotics-er-1.5-preview
+Description: Gemini Robotics-ER 1.5 Preview
+Supported Methods: generateContent, countTokens
+--------------------------------------------------
+Model Name: models/gemini-2.5-computer-use-preview-10-2025
+Description: Gemini 2.5 Computer Use Preview 10-2025
+Supported Methods: generateContent, countTokens
+--------------------------------------------------
+Model Name: models/embedding-001
+Description: Obtain a distributed representation of a text.
+Supported Methods: embedContent
+--------------------------------------------------
+Model Name: models/text-embedding-004
+Description: Obtain a distributed representation of a text.
+Supported Methods: embedContent
+--------------------------------------------------
+Model Name: models/gemini-embedding-exp-03-07
+Description: Obtain a distributed representation of a text.
+Supported Methods: embedContent, countTextTokens, countTokens
+--------------------------------------------------
+Model Name: models/gemini-embedding-exp
+Description: Obtain a distributed representation of a text.
+Supported Methods: embedContent, countTextTokens, countTokens
+--------------------------------------------------
+Model Name: models/gemini-embedding-001
+Description: Obtain a distributed representation of a text.
+Supported Methods: embedContent, countTextTokens, countTokens, asyncBatchEmbedContent
+--------------------------------------------------
+Model Name: models/aqa
+Description: Model trained to return answers to questions that are grounded in provided sources, along with estimating answerable probability.
+Supported Methods: generateAnswer
+--------------------------------------------------
+Model Name: models/imagen-3.0-generate-002
+Description: Vertex served Imagen 3.0 002 model
+Supported Methods: predict
+--------------------------------------------------
+Model Name: models/imagen-4.0-generate-preview-06-06
+Description: Vertex served Imagen 4.0 model
+Supported Methods: predict
+--------------------------------------------------
+Model Name: models/imagen-4.0-ultra-generate-preview-06-06
+Description: Vertex served Imagen 4.0 ultra model
+Supported Methods: predict
+--------------------------------------------------
+Model Name: models/imagen-4.0-generate-001
+Description: Vertex served Imagen 4.0 model
+Supported Methods: predict
+--------------------------------------------------
+Model Name: models/imagen-4.0-ultra-generate-001
+Description: Vertex served Imagen 4.0 ultra model
+Supported Methods: predict
+--------------------------------------------------
+Model Name: models/imagen-4.0-fast-generate-001
+Description: Vertex served Imagen 4.0 Fast model
+Supported Methods: predict
+--------------------------------------------------
+Model Name: models/veo-2.0-generate-001
+Description: Vertex served Veo 2 model. Access to this model requires billing to be enabled on the associated Google Cloud Platform account. Please visit https://console.cloud.google.com/billing to enable it.
+Supported Methods: predictLongRunning
+--------------------------------------------------
+Model Name: models/veo-3.0-generate-preview
+Description: Veo 3 preview.
+Supported Methods: predictLongRunning
+--------------------------------------------------
+Model Name: models/veo-3.0-fast-generate-preview
+Description: Veo 3 fast preview.
+Supported Methods: predictLongRunning
+--------------------------------------------------
+Model Name: models/veo-3.0-generate-001
+Description: Veo 3
+Supported Methods: predictLongRunning
+--------------------------------------------------
+Model Name: models/veo-3.0-fast-generate-001
+Description: Veo 3 fast
+Supported Methods: predictLongRunning
+--------------------------------------------------
+Model Name: models/veo-3.1-generate-preview
+Description: Veo 3.1
+Supported Methods: predictLongRunning
+--------------------------------------------------
+Model Name: models/veo-3.1-fast-generate-preview
+Description: Veo 3.1 fast
+Supported Methods: predictLongRunning
+--------------------------------------------------
+Model Name: models/gemini-2.0-flash-live-001
+Description: Gemini 2.0 Flash 001
+Supported Methods: bidiGenerateContent, countTokens
+--------------------------------------------------
+Model Name: models/gemini-live-2.5-flash-preview
+Description: Gemini Live 2.5 Flash Preview
+Supported Methods: bidiGenerateContent, countTokens
+--------------------------------------------------
+Model Name: models/gemini-2.5-flash-live-preview
+Description: Gemini 2.5 Flash Live Preview
+Supported Methods: bidiGenerateContent, countTokens
+--------------------------------------------------
+Model Name: models/gemini-2.5-flash-native-audio-latest
+Description: Latest release of Gemini 2.5 Flash Native Audio
+Supported Methods: countTokens, bidiGenerateContent
+--------------------------------------------------
+Model Name: models/gemini-2.5-flash-native-audio-preview-09-2025
+Description: Gemini 2.5 Flash Native Audio Preview 09-2025
+Supported Methods: countTokens, bidiGenerateContent
+--------------------------------------------------

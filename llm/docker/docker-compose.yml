@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  ollama-api:
+    build: .
+    ports:
+      - "8101:8101"
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: ["--port", "8101", "--model", "gpt-oss:20b", "--ollama-url", "http://host.docker.internal:11434"]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped

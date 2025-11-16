@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# usage:  parallel-run -n 8 commands.txt
+
+while getopts "n:" opt; do case $opt in
+  n) max=$OPTARG ;;
+  *) echo "Usage: $0 -n <jobs> <file>"; exit 1 ;;
+esac; done
+shift $((OPTIND-1))
+file=$1
+
+[[ -z $max || ! -f $file ]] && { echo "Usage: $0 -n <jobs> <file>"; exit 1; }
+
+echo "Running $(wc -l <"$file") commands, max $max parallel …"
+start=$EPOCHREALTIME
+
+# GNU xargs ships with macOS; -P gives parallelism
+xargs -P "$max" -I {} sh -c '{}' < "$file"
+
+printf "All done in %.2f s\n" $(($EPOCHREALTIME - start))

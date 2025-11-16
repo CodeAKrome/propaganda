@@ -1,0 +1,9 @@
+moviepy
+torch
+kokoro-tts
+soundfile
+numpy
+Pillow
+diffusers
+transformers
+accelerate

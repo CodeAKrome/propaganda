@@ -1,0 +1,10 @@
+Identify the named entities in the following articles.
+Show all the relationships between named entities.
+
+Format:
+Subject -> verb -> object
+
+Do not use tables.
+Use plain text only.
+Do not use markup.
+Output text describing the subject -> verb -> object relationships in the following articles:

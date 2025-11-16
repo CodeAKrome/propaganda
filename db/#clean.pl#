@@ -1,0 +1,28 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+# Read everything from STDIN
+local $/;
+my $html = <STDIN>;
+
+# 1. Strip <script …> … </script> blocks (non-greedy, case-insensitive)
+$html =~ s{<script[^>]*>.*?</script>}{}isg;
+
+# 2. Split into lines and filter
+my @out;
+$trig=0;
+
+for my $line (split /\n/, $html) {
+    if (/Text:/) {
+	$trig=1;
+    }
+
+    
+    # count words (sequences of non-white-space)
+    my $words = () = $line =~ /\S+/g;
+    push @out, $line if $words >= 5;
+}
+
+# 3. Output the surviving lines
+print join("\n", @out), "\n";

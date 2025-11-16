@@ -1,3 +1,12 @@
+TTS
+outputs
+out
+output_presvo
+output
+logs
+huggingface
+CLAUDE.md
+node_modules
 .github
 .vscode
 propaganda
@@ -5,7 +14,7 @@ ans
 tmp*
 .autoenv*
 .venv
-
+chroma
 chroma_db
 .DS_Store
 # If you prefer the allow list template instead of the deny list, see community template:

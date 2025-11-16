@@ -1,0 +1,175 @@
+-Goal-
+Given a text document, identify all entities and their entity types from the text and all relationships among the identified entities.
+Given the text, extract up to 50 entity-relation triplets.
+ 
+-Steps-
+1. Identify all entities. For each identified entity, extract the following information:
+- entity_name: Name of the entity, capitalized
+- entity_type: Type of the entity
+- entity_description: Comprehensive description of the entity's attributes and activities
+Format each entity as ("entity")
+ 
+2. From the entities identified in step 1, identify all pairs of (source_entity, target_entity) that are *clearly related* to each other.
+For each pair of related entities, extract the following information:
+- source_entity: name of the source entity, as identified in step 1
+- target_entity: name of the target entity, as identified in step 1
+- relation: relationship between source_entity and target_entity
+- relationship_description: explanation as to why you think the source entity and the target entity are related to each other
+ 
+Format each relationship as ("relationship")
+ 
+3. When finished, output.
+
+4. Place each entity into one of the following types
+-Entity Types-
+<entity>CARDINAL</entity><meaning>cardinal value</meaning><example>1, 2, 3, ...</example>
+<entity>DATE</entity><meaning>date value</meaning><example>2023-12-25, January 1st</example>
+<entity>EVENT</entity><meaning>event name</meaning><example>Super Bowl, Olympics</example>
+<entity>FAC</entity><meaning>building name</meaning><example>Empire State Building, Eiffel Tower</example>
+<entity>GPE</entity><meaning>geo-political entity</meaning><example>United States, France</example>
+<entity>LANGUAGE</entity><meaning>language name</meaning><example>English, Spanish</example>
+<entity>LAW</entity><meaning>law name</meaning><example>Constitution, Copyright Act</example>
+<entity>LOC</entity><meaning>location name</meaning><example>New York City, Paris</example>
+<entity>MONEY</entity><meaning>money name</meaning><example>dollar, euro</example>
+<entity>NORP</entity><meaning>affiliation</meaning><example>Republican, Democrat</example>
+<entity>ORDINAL</entity><meaning>ordinal value</meaning><example>first, second, third</example>
+<entity>ORG</entity><meaning>organization name</meaning><example>NASA, Google</example>
+<entity>PERCENT</entity><meaning>percent value</meaning><example>50%, 75%</example>
+<entity>PERSON</entity><meaning>person name</meaning><example>John Doe, Jane Smith</example>
+<entity>PRODUCT</entity><meaning>product name</meaning><example>iPhone, MacBook</example>
+<entity>QUANTITY</entity><meaning>quantity value</meaning><example>10, 20</example>
+<entity>TIME</entity><meaning>time value</meaning><example>12:00 PM, 5:30 AM</example>
+<entity>WORK_OF_ART</entity><meaning>name of work of art</meaning><example>Mona Lisa, Star Wars</example>
+
+5. Only output relationships, do not use any other formatting.
+
+-Real Data-
+---
+ID: 6900844e30885203850d9bc2
+Title: Trump forced Israel to relinquish its military advantage in Gaza
+Published: 2025-10-28T03:16:00
+Source: arutz-sheva
+<entities>
+CARDINAL: 40,000, Tens of thousands, billions, half, millions, one, thousands, two
+DATE: 10/7, 19-25 year old, 1920, 4,000 years, June’67, May 1948, October 7th, October 7th, 2023, another day, seventy seven years ago, the past decades, the very week, the years, twenty years ago, two years
+EVENT: 9/11, 9/11/2001, The Six Day War, War of Independence
+GPE: Afghanistan, America, American Samoa, California, Egypt, Gaza, Gaza City, Germany, Golan Heights, Guam, Hamas', Imperial Japan, Iran, Iraq, Israel, Jerusalem-Israel, Jordan, Judea, New Mexico, Pakistan, Palestine, Qatar, Samaria, Texas, USA, the American Virgin Islands
+LAW: UNSC Resolution 242
+LOC: Gaza, Golan, Lake Michigan, West Point, the Middle East
+MONEY: billions of dollars
+NORP: American, Americans, Arab, Arabs, Arafatian, Assyrians, Ayatollah, Gazan, Gazan Arabs, Islam, Islamist, Israeli, Jew, Jewish, Jews, Judenrein, Kurds, Muslim, Nazi, Nukhba, Qatari, Turk, Western, non-Democrat
+ORDINAL: first
+ORG: Allies, Fatah, Hamas, Hamas-enabling Turkey & Qatar, Hezbollah, IDF, The Jew of the Nations, UN, al-Qaeda, the Trump Corporation
+PERSON: Carter, Donald Trump, JD Vance, Jared Kushner, John Spencer, Mahmoud Abbas, Netanyahu, Osama bin Laden, Steve Witkoff, Sultan Erdogan-is, Trump, Yahya Sinwar, a Carl von Clausewitz
+QUANTITY: 9-15 mile
+WORK_OF_ART: Simchat Torah
+</entities>
+Text: Have you followed reports in the media regarding what has transpired in Hamas-ruled Gaza since President Trump forced Israel to accept a much flawed ceasefire “deal”?
+
+Any serious observer of the Middle East understands that Hamas, whose charter calls for total obliteration of Israel and Jews everywhere, never intended to live up to most of its end of the deal. For Hamas, it is what Arabs call a “hudna,” a temporary cessation of fighting to regroup, rearm, and live to fight another day to try to achieve victory-especially over kafir infidels.
+
+Question: What is the name of the only nation in history which has been denied victory after being repeatedly and viciously attacked, and instead has been forced by others not to bring its genocidal enemies to justice?
+
+Answer: The Jew of the Nations, Israel, of course.
+
+After the horrific invasion from Gaza on October 7th, 2023, which included thousands of ordinary so-called "civilian" Arabs in addition to thousands of Hamas Nukhba murderers who deliberately slaughtered the equivalent of 40,000 Americans , engaging in such atrocities as microwaving live Jewish infants, Israel was forced to act. It had endured such attacks for decades-blown up buses, pizza parlors, Passover Seders, etc.
+
+October 7th is Israel’s version of 9/11, only worse, given the proportion of dead suffered by its population.
+
+The resulting war has also taken its toll on civilian Gazan Arabs, as wars tend to do, but…
+
+The difference is that these people are killed because their heroes, whom they freely elected twenty years ago with Jimmy “Apartheid Israel” Carter overseeing the election, habitually use them as human shields.
+
+It is also becausd most still identify with Hamas, which therefore has no trouble recruiting. Many alleged Arab “innocents” partook in the atrocities which started this war, and posted their photos on the internet.
+
+They’ve ignored millions of leaflets, phone calls, and other methods warning them to move out of harm’s way. No other army, besides the IDF, has ever done this to protect its existential enemies’s non-combatants.
+
+There is no moral equivalency here. None…
+
+Leading experts on urban warfare, such as West Point’s Major John Spencer, marvel at how hard Israel has gone to avoid harming its foes’s civilians.
+
+The "Deal"
+
+Trump’s latest “deal,” forged in cooperation with Hamas-enabling Turkey & Qatar, was forced upon a war weary Israel against its own better wisdom.
+
+Israel, indigenous ancestral homeland of those many Arabs refer to as kilab yahud (Jew dogs), knows its enemies better than anyone else.
+
+Yet Donald Trump repeatedly acts as if it’s a beleaguered Israeli Prime Minister who is unreasonable because he refuses to acknowledge Trump’s alleged “better” comprehension of what’s actually happening in Gaza.
+
+Trump shamefully forced Prime Minister Netanyahu to eat crow, embarrassing him before millions watching on television, because he did what America did itself after being attacked on 9/11/2001.
+
+A bullying Trump forced Netanyahu to call Qatari leaders to apologize for attacking Hamas masterminds of butchery on October 7th to whom they had given refuge.
+
+Qatar, with Trump’s other good buddy, oppressor of Kurds, Assyrians, and others-Turkey’s would be Sultan Erdogan-is a major enabler of Hamas and other jihadis. It pours billions of dollars into universities to greatly prejudice how subjects related to the Middle East are taught. I witnessed this personally over the years.
+
+Israel’s earlier action in Qatar was a precision strike, not an attack against Qatari sovereignty. It was the catalyst for the ceasefire. And regarding the Qatar sovereignty issue, America didn’t ask permission of Pakistan, Afghanistan, or Iraq when it went after Osama bin Laden and al-Qaeda after 9/11.
+
+Sovereignty in Judea and Samaria
+
+Furthermore, if America is entitled to sovereignty over places like American Samoa, Guam, the American Virgin Islands, and other places as well (not to mention Texas, New Mexico, and California), how can Jews, with 4,000 years of sounding corroborated history, be denied it in at least a good portion of it in Judea and Samaria?
+
+See here if you question whose age-old ancestral homeland Israel truly is.
+
+The Six Day War and its aftermath
+
+Remember? In the wake of cries of “itbach al-Yahud”-slaughter the Jews-and the illegal blockade of Israel and, shelling of Jerusalem-Israel was forced to preempt in June’67.
+
+At the end of this conflagration and much debate, the normally hostile UN itself came up with a final accepted draft of UNSC Resolution 242 which guaranteed that Israel would never have to return to its 9-15 mile wide, zipper of a nation status again.
+
+Meaningful acquisition of at least some lands in Judea and Samaria and the Golan (all part of the original 1920 Mandate of Palestine in the first place-along with present day Gaza and Jordan) was to occur at last.
+
+So, where does the American administration now come off making threats to Israel over this same sovereignty issue?
+
+VP JD Vance’s are especially troubling. If it was up to him, Israel would have never attacked Iran, despite being blasted with powerful ballistic missiles, and the Ayatollah’s race to develop nukes to obliterate Israel (and the USA) once and for all. And he blatantly made these provocative remarks during the very week of the American election, when some of us were out there trying to gain more Jewish votes for a non-Democrat.
+
+Back to square one?
+
+Now that Israel has had its collective arm twisted by the Trump team to accept this non-ceasefire “ceasefire,” it’s back to square one, after losing the equivalent of 40,000 American dead 19-25 year old soldiers, older reservists, and a like number of civilians on 10/7.
+
+As has been noted many times, with billions of dollars in aid provided to Gaza over the years, it could have become prosperous if its funds weren’t devoted to constructing tunnels, enriching its leaders, acquiring weapons, teaching Jew hatred, and terrorist acts aiming to destroy its neighbor.
+
+Tens of thousands of rockets and even incendiary balloons were launched against Israel over the past decades by Hamas and other Gazan terrorist groups. Not to mention similar attacks blasting Israel in the north by Hezbollah.
+
+Gaza also has a rich Jewish history dating back millennia, and was part of the original 1920 Mandate until Egypt illegally seized it in Israel’s War of Independence in May 1948. It was never meant to be Judenrein.
+
+For the sake of others’s business deals with autocratic Arab petro-potentates by its “best friends,” Israel, once again, after being wantonly attacked, was forced by the new American leader, who was supposed to be not like his predecessor, to cease and desist.
+
+True, the Trump deal got some living hostages back, a wonderful accomplishment. And Trump accomplished some great things during his first term in office-Jerusalem, Golan Heights, Iran oil revenues greatly reduced, hostile UN agencies defunded, and so forth.
+
+But, in return, Israel was forced to release thousands of Arab butchers and wannabes, who’ll live to slaughter Jews another day-like Yahya Sinwar, who was released in a previous swap and then directed the Simchat Torah massacre on October 7th, 2023… Nice “deal.”
+
+When any army fights a war, gaining momentum is a top priority.
+
+The goal is to gain control of tempo and direction in conflict to rapidly build upon successes to maintain a hoped-for unstoppable advantage.
+
+Trump forced Israel to sacrifice this hard won momentum, just as it was about to conquer Gaza City, Hamas' last stronghold. Thata momentum was gained at great cost by going from house to booby-trapped house, and has already paid the price with the loss of two soldiers because the predictable happened, and Hamas broke the “deal.”
+
+Unlike Gaza or Arabs under control of latter day Arafatian terrorists in suits of “pay to slay (Jews)” Mahmoud Abbas’s Fatah, who pocket billions and spend funds on weapons and teaching youth to hate and murder “kilab yahud” Jew dogs, Israel is a nation in the forefront of technology, innovation, and assisting other countries, but has also been traumatized because of having to continually fight a multi-front war.
+
+No one in Israel wanted this tragedy.
+
+Jews cherish life, and too many Arabs idealize death and slaughter of Islam’s kafir infidel enemies-especially Jews, half in Israel who fled Arab/Muslim lands, the other side of the refugee coin no one hears about because an Israel didn’t stick its brethren into squalid camps as Arabs did with their own.
+
+The entire situation was created due to a combined unprovoked Arab attack seventy seven years ago.
+
+The inevitable has now happened.
+
+Hamas brazenly struts through Gaza stealing truckloads of aid, killing in broad daylight its rivals and those they suspect cooperated with Israel. New attempted arm shipments have been intercepted, with others probably already having arrived in areas Trump forced Israel to cede.
+
+It didn’t take a Carl von Clausewitz to figure out that this “deal” was extremely problematic, despite Trump, as usual, claiming that it was fantastic because it was his team’s concoction.
+
+The latest news is that the President is threatening Hamas with “hell to pay” if it doesn’t disarm and so forth. Don't hold your breath.
+
+Hamas is laughing because its Qatari and Islamist Turk enablers are best buddies with the Trump Corporation and are business partners with his, Steve Witkoff’s, Jared Kushner’s, and others business interests.
+
+Follow the money...
+
+So, after Israel was forced to lose its momentum, it will now have to be the one to carry out Trump’s threat.
+
+Will Israel have to sustain more casualties because it has lost the momentum it so painfully gained after two years of booby trapped, house to house fighting, and condemnation from Western hypocrites? None of them would have put up with what Israel endured for so long before finally acting to try to solve its existential crisis.
+
+Any nation faced with such a genocidal foe, whose charter calls for its total destruction, has no option but to settle for nothing less than absolute victory over its would be executioners, not a ceasefire which will only be repeatedly broken.
+
+America and the Allies wouldn’t settle for anything less from Imperial Japan and Nazi Germany.
+
+How can a nation which can fit twice into America’s Lake Michigan settle for anything less?

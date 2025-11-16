@@ -1,0 +1,452 @@
+Identify the named entities in the following articles.
+Show all the relationships between named entities.
+
+Format:
+Subject -> verb -> object
+
+Do not use tables.
+Use plain text only.
+Do not use markup.
+Output text describing the subject -> verb -> object relationships in the following articles:
+
+---
+ID: 68fb98493f0774626ab6b636
+Title: Polish town’s event honouring local Jewish composer cancelled after far-right backlash
+Published: 2025-10-24T13:22:07
+Source: notesfrompoland
+<entities>
+CARDINAL: 30,000, 97, One, one, seven
+DATE: 1821, 2014, 99, December 2023, July 24, 2025, Oct 18, 2025, Oct 20, 2025, Oct 24, 2025, October 20, 2025, last weekend, more than ten years, ten years, the early 20th century, the worst day, this weekend, this year, today, years
+EVENT: Hanukkah, Holocaust
+GPE: Bielsko-Biała, Israel, Kraków, Poland, Września
+LANGUAGE: German
+LOC: the Baltic Sea
+NORP: Catholic, Christian, European, German, Jewish, Polish, Polish-Jewish-German, Talmudic, anti-Jewish, anti-LGBT, anti-Ukrainian
+ORDINAL: first, fourth
+ORG: 2sides.pl  Notes, Brexit for New Statesman, Duży Format, Dziennik Gazeta Prawna, Energy & Climate, European Studies, Foreign Policy, Gazeta Wyborcza, Gazeta.pl, Goldsmiths, Hot news, Kultura Liberalna, Law, News, Midrasz, NGO, Notes, Notes from Poland, Notes from Poland.He, Oxford University, POLITICO Europe, Pawland  Biologists, Poland Foundation, Polish Studies, Politics  Poland, Reuters, Scott Trust Bursary, Taube Family Foundation  ARTICLES, The Independent, Tok FM, Tokfm.pl, University of Kent.  ARTICLES, YouTube, the Board of the Notes, the European Parliament, the Foundation for Września Children, the Global Europe Centre, the Institute of History of the Jagiellonian University  ARTICLES, the Institute of Political Studies, the Pedagogical University of Krakow, the Polish Academy of Science, the Polish Studies Programme, the University of Cambridge
+PERCENT: 6.3%
+PERSON: Agnieszka Wądołowska, Alicja Ptak, Braun, Daniel Tilles, Dawid Mysior, Grzegorz Braun, Jakub Stefek, Law, Lewandowski, Louis Lewandowski, Michael Smuss, Mysior, Stanley, Stanley Bill, Stefek, Weronika Strzyżyńska, Wysokie Obcasy
+</entities>
+Text: Oct 24, 2025 | Culture, History, Politics, Society
+A cultural event in a Polish town honouring a local Jewish composer has been cancelled after organisers said they received a “wave of hate and threats from antisemitic organisations”, stoked by far-right leader and member of the European Parliament Grzegorz Braun.
+Września, a town of 30,000 in central Poland, was this weekend set to hold a series of concerts and lectures celebrating Louis Lewandowski, who was born there in 1821. Lewandowski became famous for his work composing Jewish liturgical music, which continues to be used by Jewish communities today.
+Among the planned performances was a Hanukkah song sung in German by local children in a Catholic church. That sparked a backlash from some right-wing commentators.
+One, a conservative Catholic YouTuber called Dawid Mysior, complained about “Talmudic songs in German in a church”. He launched a campaign to have the event cancelled.
+Mysior argued that singing in German was particularly inappropriate because in the early 20th century, when Września was under German rule, local Polish children organised strikes and other protests against the Germanisation of local schools.
+“Now, children from the same city are being required to sing in German in a Catholic church, and what’s more, they are not singing Catholic songs, but Jewish ones,” he wrote. “Organising this event will dishonour the good name and memory of the strike participants.”
+That campaign was picked up by Braun, who shared Mysior’s appeal on social media and also complained about the event in Września at a rally last weekend, reports broadcaster Tok FM.
+Pod linkiem znajduje się treść wiadomości wyrażającej sprzeciw wobec koncertu prezentującego twórczość Louisa Lewandowskiego, na którym dzieci z Wrześni mają śpiewać żydowską pieśń po niemiecku.👉 https://t.co/TdcTghQFS8Wydarzenie pod honorowym patronatem Prymasa Polski abpa… pic.twitter.com/p7lXybxwUZ
+— Dawid Mysior ✝️🇵🇱 (@dawidmysior) October 20, 2025
+Following the backlash, one of the organisers of the event, an NGO called the Foundation for Września Children, announced that it had taken the decision to cancel it in order to protect “the wellbeing and safety of those performing and planning to attend”.
+It said there had been a “wave of hate, threats, and announcements of disruptions from antisemitic organisations directed at all co-organisers of the project”. The NGO said it found the criticism “incomprehensible and incompatible with Christian culture”.
+“We believed, and still believe, that it was worthwhile to showcase to the residents of Września the figure and music of Lewandowski, born in Września, his magnificent work known and admired worldwide,” they added. “Unfortunately, as we have learned, music can also divide if we don’t understand it.”
+Meanwhile, Jakub Stefek, the concert’s artistic director, condemned the “hysterical, antisemitic campaign, first unleashed on a far-right YouTube channel and then picked up by Grzegorz Braun”, which had led to the event being cancelled.
+“After ten years of creating projects that revive forgotten music, of telling and writing about values, of striving to build bridges between cultures and nations, of addressing the tragically scarred Polish-Jewish-German relations, this time we failed,” he added. “This is the worst day of my artistic life.”
+Braun, meanwhile, celebrated the event’s cancellation, sharing Stefek’s statement with the hashtag #StopJudaizacjiPolski, meaning “stop the Judaisation of Poland”.
+— Grzegorz Braun (@GrzegorzBraun_) October 20, 2025
+That was a slogan Braun used during his recent campaign for this year’s presidential elections, where he finished fourth with 6.3% of the vote. His campaign was littered with anti-Jewish, anti-Ukrainian and anti-LGBT sentiment.
+Braun is currently facing multiple charges in Poland from prosecutors who accuse him of various crimes, including inciting hatred, Holocaust denial, theft, criminal defamation, and destruction of property.
+Some of those alleged offences are related to an infamous incident in December 2023, when Braun used a fire extinguisher to put out Hanukkah candles during a parliamentary ceremony involving Jewish leaders.
+Far-right leader Grzegorz Braun has been indicted on seven counts, including for an incident in which he extinguished Hanukkah candles in Poland's parliament.
+The case will now go to trial and, if found guilty, Braun could face years in prison.https://t.co/Q7toBEhvEi
+— Notes from Poland 🇵🇱 (@notesfrompoland) July 24, 2025
+---
+ID: 68fb98403f0774626ab6b5ef
+Title: 'Watch Your Neck:' Leftist Student Threatens Turning Point USA Activists at U. of Arizona
+Published: 2025-10-23T21:35:39
+Source: breitbart
+<entities>
+DATE: September 10, Wednesday
+GPE: USA
+NORP: Christian, Conservatives, Nazi, Nazis
+ORDINAL: second
+ORG: ARmastrangelo, Breitbart News, Facebook, Instagram, Office of Public Safety, TPUSA, The Charlie Kirk Show, The University of Arizona, Turning Point USA, University of Arizona, Utah Valley University, the Dean of Students, the Office of Public Safety
+PERSON: Alana Mastrangelo, Andrew Kolvet, Charlie Kirk, Kirk
+</entities>
+Text: A pink-haired individual at University of Arizona called Turning Point USA activists “Nazis” and told them “watch your neck” — in blatant reference to the assassination of the organization’s founder, free speech martyr Charlie Kirk — while passing by a TPUSA display table on campus.
+“Hey, Nazis, can you set up somewhere where I can avoid you easily?” the individual states while approaching the Turning Point USA display table, to which a Charlie Kirk supporter replies, “Yeah, thank you, have a great day.”
+“Fuck you, Nazi. Watch your neck,” the pink-haired student responds in a blatant reference to Kirk’s assassination, before walking away.
+Ironically, the individual appears to try to claim moral high ground against “Nazis,” yet, in the same breath, resorts to issuing an apparent death threat over a difference in political views — mirroring the very tactics of Nazis, who systematically murdered and persecuted political opponents.
+A University of Arizona spokesperson told Breitbart News that the school’s Office of Public Safety and the Dean of Students has since been in contact with the conservative students, and are investigating the matter.
+“The University of Arizona does not tolerate harassing or threatening behavior,” the spokesperson said.
+“After learning of the social media post and video, the Office of Public Safety and the Dean of Students contacted the Turning Point USA students and are actively investigating the incident,” the spokesperson added.
+Andrew Kolvet, executive producer of The Charlie Kirk Show and Turning Point USA spokesman, reacted to the incident at University of Arizona in a Wednesday X post, writing the following:
+Conservatives have been called Nazis, fascists, bigots, racists, and every other name in the leftist grab-bag of pejoratives for so long, that we should not be surprised when some of them conclude they need to kill us.
+“Satan is the great accuser, and his adherents follow suit,” Kolvet added.
+Kirk, who advocated for free speech, campus conservatism, non-violent activism, and Christian ideals, was horrifically assassinated on September 10 at Utah Valley University, while having an open and respectful dialogue with a student on campus.
+The Turning Point USA founder’s murder rattled the world, sparking an outpouring of grief for Kirk.
+Reactions from leftists, however, sent a second shockwave throughout the globe, as people were able to witness firsthand the shocking depravity and degradation of society via what also a became major mask-off and watershed moment: the left celebrating and justifying the assassination of a free speech martyr — simply because his views had differed from their own.
+---
+ID: 68fcc16f541f2a82a97ce39a
+Title: Joe Rogan says he enjoys going to church, admires Jesus Christ and benefits of faith
+Published: 2025-10-25T01:31:09
+Source: fox-latest
+<entities>
+CARDINAL: one, three
+DATE: 2000, the early 2000s, thousands of years
+NORP: Christian, Christianity, Christians, New Atheist, Russian-British
+ORG: Fox News Digital, iStock, the Roman Catholic Mass
+PERSON: Alexander Hall, BUSY,IN, CHARLIE KIRK, DOLAN, Foster, Francis Foster, Joe Rogan, Kisin, Konstantin Kisin, Rogan, Vasil Dimitrov
+WORK_OF_ART: Bible, Triggernometry
+</entities>
+Text: 
+Podcaster Joe Rogan and Konstantin Kisin talked about how pleasant it is to go to church as part of a larger conversation about the spiritual value and religion and the historical basis of Christianity.
+Podcaster Joe Rogan praised the merits of religion, noting he enjoys going to a church and hearing about the Bible and its teachings.
+During his interview with "Triggernometry" hosts Francis Foster and Konstantin Kisin, the three commentators noted the benefits of inner peace and moral certainty religion provides. After Kisin noted that he started going to church services again and genuinely enjoys it, Rogan agreed.
+"I do too. It's a bunch of people that are going to try to make their lives better," he said. "They're trying to be a better person, and they're trying to — I mean for me at least, the place that I go to — they, you know, they read and analyze passages in the Bible. I'm really interested in what these people were trying to say because I don't think it's nothing."
+Rogan added that he has seen many self-professed intellectuals scoff at religion and minimize it as "fairy tales," arguing this is a shallow way to look at thousands of years of accumulated human experience.
+PRIEST SAYS US CATHOLIC COLLUMITY ‘BUSY,IN A GOOD WAY’ AS STATS SHOW MASSIVE WAVE OF YOUNG ADULTS CONVERTING
+Joe Rogan spoke about his experience going to church and learning about the Bible. (The Joe Rogan Experience YouTube channel)
+"There's a lot of, like, atheists and secular people that just like to dismiss Christianity as being foolish. You know, ‘It's just fairy tales.’ I hear that amongst, you know, self-professed intelligent people, like, ‘It's a fairy tale,’" Rogan said.
+"Like, I don't know if that's true. I think there's more to it. I think it's history, but I think it's a confusing history. It's a confusing history because it was a long time ago. And it's people telling things in an oral tradition, then writing things down in a language that you don't understand in the context of a culture that you don't understand. And I think there's something to what they're saying."
+Rogan noted the ubiquity of flood myths across the world and pointed out there appears to be scientific evidence for a prehistoric flood caused by comet impacts. He argued there clearly is some physical evidence for the claims made in Biblical stories.
+Rogan praised Jesus Christ in particular, noting he is both a philosophically remarkable and a historically valid figure.
+"Christianity in particular is the most fascinating to me because there's this one person that everybody agrees existed, that somehow or another had the best plan for how human beings should interact with each other and behave and was the best example of it and even died in a nonviolent way, like didn't even protest, died on the cross supposedly for our sins," Rogan said. "Like, it's a fascinating story."
+CHARLIE KIRK ASSASSINATION WILL SPARK FAITH REVIVAL AMONG YOUTH, CARDINAL DOLAN PREDICTS
+Many young people are returning to various denominations of Christianity as the New Atheist movement of the 2000's has declined. (iStock, courtesy of user Vasil Dimitrov)
+"It's a historically documented human being," Rogan later noted, speaking about the uniqueness of the Christian messiah. "That's where it gets weird because there's a there's a universal depiction of what this human being was like. That doesn't seem to vary that much between all the people that knew him. That gets weird."
+Francis Foster praised the part of the Roman Catholic Mass where worshipers wish each other peace, noting how powerful it is for some strangers to make a real human connection with a handshake and three words, "Peace be with you."
+Rogan agreed on what a powerful gesture this is, arguing that people need something outside themselves and their whims to offer guidance.
+"If you're just relying on your whims and your, you know, whatever you think is the moral thing to do, you know, then you know what you get? You get those people that are unable to answer the question of whether or not you should protect an unborn fetus or whether or not they have human rights," he said.
+"If you have religion, you go ‘Wow, that’s a good question.'"
+Russian-British comedian and political commentator Konstantin Kisin noted that he has been attending church recently and enjoys it.  (Screenshot/Youtube/OxfordUnion)
+Foster recalled the New Atheist movement that was popular in the early 2000s and its claim that people don’t need religion.
+"I think that’s fundamentally inaccurate," he said.
+Kisin and Rogan both noted they had once been interested in the New Atheist movement.
+"But a lot of those guys fell apart" Rogan said. "A lot of those guys get real persnickety; they don’t seem very enlightened. They don't seem like they're at peace, which is interesting."
+While Rogan noted he has met Christians he agrees and disagrees with politically, he called them some of the happiest and kindest people he has met in his life.
+Alexander Hall is an associate editor for Fox News Digital. Story tips can be sent to Alexander.hall@fox.com.
+---
+ID: 68fbf19ec267763d21bfb404
+Title: Turning Point USA Installs Wooden Cross at Headquarters in Honor of Charlie Kirk
+Published: 2025-10-23T22:42:37
+Source: breitbart
+<entities>
+DATE: Last month, September, September 21, about one month and a half, last month, the weeks, this week
+FAC: State Farm Stadium
+GPE: Arizona, Glendale, Ohio, Phoenix-area, Texas
+NORP: Americans, Christian, Christians
+ORDINAL: 32nd, first
+ORG: Breitbart News, TPUSA, Turning Point USA, the Christian Post, the TPUSA HQ
+PERCENT: 36 percent
+PERSON: Andrew Kolvet, Charlie Kirk, Charlie’s, Chris Tomlin, Donald Trump, Erika, Kirk, Rob McCoy, Tomlin
+WORK_OF_ART: Bible, Kirk the Presidential Medal of Freedom
+</entities>
+Text: Turning Point USA unveiled a new wooden cross outside its Phoenix-area headquarters this week, a tribute from supporters in Texas and Ohio honoring the late organization founder, Charlie Kirk, who was assassinated last month.
+“New addition to the TPUSA HQ!! God bless these amazing folks who came all the way from Texas and Ohio to gift this beautiful wooden cross to the team in Charlie’s honor,” Turning Point USA spokesperson Andrew Kolvet announced on X.
+The installation comes about one month and a half after the murder of Kirk, a prominent conservative activist and devout Christian whose faith was central to his public life.
+Kirk’s pastor and friend, Rob McCoy, said following the assassination that Kirk’s “life was secured eternally by his Savior Jesus Christ,” describing how his faith gave him courage in the face of threats. In the weeks since his death, observers have noted signs of a spiritual resurgence across the country.
+As previously reported by Breitbart News, Bible sales rose 36 percent in September, church attendance increased nationwide, and many faith leaders have referred to this movement as the “Charlie Kirk Effect.” During a memorial service held at State Farm Stadium in Glendale, Arizona, on September 21, Kirk’s widow, Erika, described witnessing a revival of faith among young Americans.
+Christian singer Chris Tomlin, who performed at the memorial, stated afterward that the event felt like a turning point in the nation’s spiritual life. “It felt like a shift,” Tomlin told the Christian Post, adding that many attendees were moved to return to church or explore their faith for the first time.
+Last month, President Donald Trump posthumously awarded Kirk the Presidential Medal of Freedom on what would have been his 32nd birthday, recognizing his influence on a generation of young conservatives and Christians.
+The new cross at TPUSA’s headquarters now stands as a physical reminder of Kirk’s faith and the spiritual legacy he left behind.
+---
+ID: 68fb97c53f0774626ab6b4fc
+Title: Almost 4,400 people abused by priests in Italy, victims’ group alleges
+Published: 2025-10-24T10:05:43
+Source: straits-times
+<entities>
+CARDINAL: 1,106, 1,250, 11, 156, 17, 18, 226, 4,108, 4,395, 4,451, 4,625, Five, Nearly 4,400, five, only 76, only 81, seven
+DATE: 2020, Oct 16, Oct 24, Oct 24, 2025, decades, last week, this week, under 18
+EVENT: The Italian Bishops Conference
+FAC: Vatican
+GPE: Italy, Vatican
+NORP: Catholic, Christian
+ORDINAL: first
+ORG: Church, Get ST's, Rete L’Abuso, The global Catholic Church
+PERSON: Francesco Zanardi, Leo XIV, Rete L’Abuso
+TIME: 06:05 PM, 06:42 PM
+</entities>
+Text: 
+The unofficial tally by Italy’s largest church abuse victims’ group is based on victims’ accounts, judicial sources and cases reported by the media.
+Updated Oct 24, 2025, 06:42 PM
+ROME – Nearly 4,400 people have been abused by Catholic priests in Italy in cases reported since 2020, a victims’ group alleged on Oct 24, renewing pressure on bishops to confront a crisis that has long plagued the world’s largest Christian faith.
+The unofficial tally by Rete L’Abuso, Italy’s largest church abuse victims’ group, is based on victims’ accounts, judicial sources and cases reported by the media, the founder of the association Francesco Zanardi said.
+Rete L’Abuso did not say how far back the alleged abuse cases occurred.
+The Italian Bishops Conference, which was criticised by the Vatican’s child protection commission last week, had no comment on the findings, a spokesperson said.
+The global Catholic Church has been shaken for decades by scandals involving paedophile priests and the cover-up of their crimes, but local church leaders in Italy have been less forthcoming in confronting the issue.
+New Pope Leo XIV, who met survivors of sexual abuse by clergy for the first time this week, has
+told the Church’s newest bishops not to hide misconduct allegations
+In an unusually critical report on the issue published on Oct 16, the Vatican’s child protection commission said only 81 of Italy’s 226 dioceses responded to a questionnaire about safeguarding practices it had drafted.
+Rete L’Abuso said it had documented 1,250 suspected cases of abuse – some with multiple victims – including 1,106 allegedly committed by priests, with the rest attributed to nuns, religion teachers, lay volunteers, educators and scout members.
+Its report contained cases related to 4,625 victims – or survivors, as the association calls them – including 4,395 abused by priests.
+The report said 4,451 of the survivors were under 18, and an almost equally large number – 4,108 – were male, Rete L’Abuso said, adding that five nuns, 156 vulnerable adults and 11 people with disabilities were also among the victims.
+According to the association, out of the 1,106 suspected predator priests, only 76 were subjected to church trials, with 17 temporarily suspended, seven moved to other parishes and 18 were defrocked or resigned from the priesthood. Five died by suicide, it added. REUTERS
+---
+ID: 68fb98d23f0774626ab6b7fe
+Title: Dems silent on progressive candidate’s Nazi-style tattoo after knocking Hegseth for Christian symbol
+Published: 2025-10-23T21:24:43
+Source: fox-politics
+<entities>
+CARDINAL: 2025, one, two
+DATE: 2007, 2024, 2025, June, Oct. 18., Sept. 30, 2025
+GPE: Croatia, D-Mass., D.C., I-Vt., Jerusalem, MAINE, Maine, Split, U.S., Va., Washington
+NORP: CHRISTIAN, Christian, D-Ill., Democratic, Democrats, Latin, Marines, Nazi, Nazi-style, SS
+ORDINAL: first
+ORG: AP, AP Photo, Andrew Harnik/Pool, Axios, Defense, ETF, FOX News Network, LLC, FactSet Digital Solutions.         Legal Statement. Mutual Fund, FactSet Digital Solutions. Legal Statement. Mutual Fund, Factset. Powered, Fox News, Fox News Digital, Fox News Digital's, GOP, Getty Images, Instagram, Marine, Marine Corps Base Quantico, Politico, Refinitiv Lipper, Reuters)  Platner, SENATE, Senate, WGME, the Marine Corps, the U.S. Senate
+PERSON: Anna Moneymaker, BERNIE SANDERS, Ben Margot, Bernie Sanders, Biden, Duckworth, Elizabeth Warren, Emma Woodhead, Graham Platner, Graham Platner's, Hegseth, Hitler, Jasmine Baehr, PETE HEGSETH’S, Pete Hegseth, Peter Pinedo, Platner, SUSAN COLLINS, Sanders, Sen, Tammy Duckworth, Warren
+PRODUCT: Totenkopf
+TIME: Wednesday afternoon, at least 15 minutes
+</entities>
+Text: 
+Democratic Senate candidate Graham Platner of Maine released a video of himself with a tattoo of what appeared to by a Nazi symbol on ‘Pod Save America.’
+Prominent Democrats who were highly critical of Secretary of War Pete Hegseth’s tattoos with crusader symbolism are now keeping silent on a progressive Senate candidate who had a Nazi-style symbol tattooed to his chest.
+Sen. Elizabeth Warren, D-Mass., and Sen. Tammy Duckworth, D-Ill., criticized Hegseth for his tattoos, one of which is a Jerusalem cross and another with the Latin phrase "Deus Vult" (God wills it), both of which are associated with the crusades and ancient Christian symbolism.
+Following their comments against Hegseth, Fox News Digital reached out to Warren and Duckworth for comment on the ongoing controversy over Maine Senate Democratic candidate Graham Platner having a "Totenkopf," Nazi "death's head" symbol tattooed to his chest.
+Warren has previously expressed enthusiasm for Platner’s candidacy, telling Politico, "I’m excited to see new people enter the race for the Senate … particularly those who have a strong voice they’re willing to use on behalf of people who are often ignored in the U.S. Senate."
+ARE PETE HEGSETH’S TATTOOS SYMBOLS OF ‘CHRISTIAN NATIONALISM’?
+Sen. Elizabeth Warren, D-Mass., left, and Sen. Tammy Duckworth, D-Ill., right, kept silent on progressive Senate candidate Graham Platner's controversial tattoo. (Ben Margot/AP Photo; WGME via AP; Anna Moneymaker/Getty Images)
+Fox News Digital asked whether Warren and Duckworth condemn Platner because of the tattoo and whether they believe he should drop out of the race. Neither immediately responded to Fox News Digital's request for comment.
+During Hegseth’s confirmation hearings, Warren sent him an extensive letter, in which, among other issues, she expressed concern about his "Deus Vult" tattoo.
+"You were also removed from President Biden’s inauguration because of concerns that you were an insider threat after reports that your ‘Deus Vult’ tattoo ‘was a Christian expression associated with right-wing extremism,’" Warren wrote. "We cannot have a Defense Secretary whose fellow servicemembers feel concerned enough about to report as a potential insider threat."
+Democrats have continued to give Hegseth a hard time over the tattoos. During a hearing in June, Duckworth accused Hegseth of "blowing through money like my fellow cadets and I did in our first liberty after basic camp. Luckily, I didn’t end up with a questionable tattoo."
+U.S. Secretary of War Pete Hegseth speaks to senior military leaders at Marine Corps Base Quantico, Va., Sept. 30, 2025.  (Andrew Harnik/Pool via Reuters)
+Platner, a Marine veteran and progressive endorsed by the likes of Sen. Bernie Sanders, I-Vt., has garnered widespread criticism over a skull-and-crossbones tattoo on his chest that strongly resembles the Totenkopf symbol used by Hitler’s SS forces.
+After the controversy erupted, Platner said he got the tattoo in 2007 during a "night of drinking" while on leave in Croatia in the Marine Corps and claimed he did not know its historical associations at the time. He has since covered the image with another tattoo of dogs.
+MAINE DEM SENATE HOPEFUL BACKED BY BERNIE SANDERS APOLOGIZES FOR NAZI-STYLE TATTOO, VOWS TO STAY IN RACE
+Sen. Bernie Sanders speaks at a "No Kings" rally in Washington, D.C., Oct. 18.  (Fox News Digital/Emma Woodhead)
+A spokesperson for Sanders shared an Axios interview with the senator in which he said, "I'm not overly impressed by a squad of media running around saying, 'What do you think about the tattoo on Graham Platner's chest'" and "between you and me there might be one or two more important issues."
+The spokesperson also shared another statement from Sanders in which he said of Platner, "I personally think he is an excellent candidate. I'm going to support him, and I look forward to him becoming the next senator in the state of Maine"
+Fox News Digital also reached out to Sanders and Platner’s campaign for comment but did not immediately receive a response.
+Fox News Digital's Jasmine Baehr contributed to this report.
+---
+ID: 68fb974f3f0774626ab6b40a
+Title: A Mystery in Trinidad as Bodies Wash Ashore After U.S. Strikes
+Published: 2025-10-23T21:59:07
+Source: nyt-world
+<entities>
+CARDINAL: 11, 37, about 1.5 million, dozens, hundreds, more than 20, two
+DATE: 23, 31, 63, Sept. 2, September, days later, decades, mid-October, the weekend, this month
+FAC: Port of Spain, TOBAGO  Cumana  Port
+GPE: America, Bolivia, Caracas, Colombia, Cumana, Guyana, India, Mexico, Mexico City, Peru, Port of Spain, Spain, Tobago, Trinidad, Trinidad’s, U.S., Venezuela, West Africa, the United States
+LOC: Atlantic  Ocean, Caribbean, Caribbean  Sea, Central America, Europe, Latin America, the Pacific Ocean
+NORP: Africans, American, Anglican, Caribbean, Christian, Colombian, Latinos, Muslim, Trinidadian, Trinidadians, Venezuelans
+ORDINAL: first
+ORG: Big Yard, CARICOM, Prior Beharry  Visuals, The New York Times, Times, Trinibad, United Nations
+PERSON: Allister Guevarro, Baker, Bishnu Ragoonath, Branil Lakhan, Chad Joseph, Delcy Rodríguez, Federico Rios, Garvin Heerah, Gustavo Petro, Kamla, Kamla Persad-Bissessar, Lincoln Baker, Nicolás Maduro, Persad-Bissessar, Petro, Prior Beharry, Ragoonath, Richard Lewis, Rishi Samaroo, Simon Romero, Trump, Vladimir Padrino López
+QUANTITY: 30 miles, 300 miles
+</entities>
+Text: The U.S. campaign targeting what it says is drug trafficking from Venezuela has exposed Trinidad to the fallout: unidentified bodies with burn marks and missing limbs showing up in its territory.
+The U.S. campaign targeting what it says is drug trafficking from Venezuela has exposed Trinidad to the fallout: unidentified bodies with burn marks and missing limbs showing up in its territory.
+Cumana in Trinidad and Tobago, where two bodies washed ashore.Credit...
+By Simon Romero and Prior Beharry
+Simon Romero and Prior Beharry traveled to Cumana on Trinidad’s northeastern coast to examine the mystery involving bodies cast up by the sea after U.S. attacks.
+The first body washed ashore on Trinidad’s northeastern coast soon after the United States carried out its first strike in September on a boat in the Caribbean. Villagers said the corpse had burn marks on its face and was missing limbs, as if it had been mangled by an explosion.
+The tides deposited another corpse on a nearby beach days later, drawing a wake of vultures. Its face was similarly unrecognizable, and its right leg appeared to have been blown off.
+The bodies have fueled a mystery that is gripping parts of Trinidad and Tobago, the Caribbean nation that is within sight of Venezuela’s coast: Who were they? Did a U.S. strike kill them? Will more bodies appear on Trinidad’s beaches?
+The intrigue lays bare how the fallout from the U.S. military campaign targeting Venezuela has reached Trinidad. In contrast to other Caribbean leaders, Trinidad’s prime minister, Kamla Persad-Bissessar, is explicitly supporting the strikes on boats that U.S. officials say are carrying drugs.
+But as the attacks draw claims in Latin America that the United States is violating international law by killing dozens of people who don’t pose an immediate military threat, some in Trinidad are questioning whether Ms. Persad-Bissessar’s hesitance to cross the Trump administration is keeping them from getting answers about the corpses being stored by their government.
+“There’s no question in my mind that these men are casualties of war,” said Lincoln Baker, 63, an employee of Trinidad’s water and sewage company in Cumana.
+Like many others in Cumana, a sleepy outpost with an Anglican school, food stores and Christian and Muslim houses of worship, Mr. Baker said he was convinced that the two corpses came from the first attack, on Sept. 2, that left 11 people dead.
+Since then, the bodies have emerged as part of the puzzle involving the U.S. military deployment in the region. The Trump administration publicly says the mission is to combat drug trafficking out of Venezuela, which is a relatively minor player in the global drug trade compared to Colombia, Mexico, Bolivia or Peru.
+But American officials have privately made clear that the objective is to drive President Nicolás Maduro of Venezuela from power. The campaign has led to the largest U.S. deployment in Latin America in decades, and it has expanded from the Caribbean to the Pacific Ocean, with the official death toll from the strikes standing at 37.
+Trinidad and Tobago, with about 1.5 million people, has faced various ramifications from the U.S. campaign, including attacks that may have killed its own citizens and heightened tensions with Venezuela.
+Separately from the unidentified corpses, the authorities are investigating reports that two Trinidadians were among those killed in a U.S. strike this month. Relatives of the men, identified as Chad Joseph and Rishi Samaroo, have disputed claims that they were involved in drug trafficking.
+Condemnation of the attacks is spreading, based on the assessment of legal specialists and independent United Nations experts that it is illegal for militaries to target in international waters civilians who do not pose an imminent threat.
+Colombia’s president, Gustavo Petro, over the weekend accused the United States of murdering a Colombian fisherman in an attack on a boat that the American authorities claimed had been carrying drugs. President Trump responded by halting aid to Colombia and saying that Mr. Petro, a leftist, had a “fresh mouth toward America.”
+Ms. Persad-Bissessar has adopted a starkly different strategy. Aligning with Mr. Trump, she is framing her position as a way to shield her country from drug violence.
+“I much prefer seeing drug and gun traffickers blown to pieces than seeing hundreds of our citizens murdered each year because of drug-fueled gang violence,” Ms. Persad-Bissessar told reporters when the U.S. campaign began.
+Regarding the mystery in Cumana, she said that Trinidad would not use state resources to search for the bodies of those killed because of U.S. military action and that the country’s duty ended with recovering any corpses that wash ashore.
+Ms. Persad-Bissessar’s office did not respond to requests for comment.
+Some analysts in Trinidad say she has legitimate reasons to support the U.S. campaign. Trinidad needs U.S. support to bolster its natural gas production, putting its economy on stronger footing.
+And while much of the world’s cocaine is produced in Colombia, it is sometimes smuggled through Venezuela into Trinidad, which serves as a hub where bulk shipments are received, stored, repackaged and prepared for movement to Europe, West Africa and the United States.
+“Trinidad serves as a staging ground within a larger, well-structured trafficking chain,” said Garvin Heerah, a Trinidadian security expert.
+Still, by supporting the U.S. deployment, Ms. Persad-Bissessar has set Trinidad apart from other countries in CARICOM, an organization of more than 20 Caribbean nations.
+In mid-October, all CARICOM members except for Trinidad reaffirmed the group’s position that the Caribbean should remain a “zone of peace” where disputes are resolved without foreign military intervention.
+As a result, Venezuela has grown increasingly antagonistic toward Trinidad. Venezuela’s defense minister, Vladimir Padrino López, vowed to respond with “legitimate defense” if an attack on Venezuela is conducted from Trinidad’s territory. (Before the U.S. strikes in the Caribbean, Ms. Persad-Bissessar said she would give American forces access to Trinidadian territory to defend neighboring Guyana, which has been threatened by Venezuela.)
+After the reports of two potential Trinidadian victims in the U.S. attacks, Vice President Delcy Rodríguez of Venezuela said the strikes supported by Trinidad’s leader had “also extrajudicially murdered humble citizens of her country.”
+Amid the feuding, Trinidadians are grasping for answers.
+After the bodies showed up in Cumana, the Trinidadian police commissioner, Allister Guevarro, noted they had “washed up with apparent injuries.” He said his force would try to investigate where the bodies had come from but that it could be complicated by the corpses’ state of decomposition.
+But at the public forensics center in the capital, Port of Spain, confusion reigned. Some employees said that no autopsies on the two corpses had been done, since bodies must be identified first. No one in a senior position could be reached to confirm this information.
+So far, no one has claimed the bodies and no foreign government has requested that they be repatriated. The bodies were being held at funeral homes in the Port of Spain area.
+Bishnu Ragoonath, a political analyst in Trinidad, said the government seemed eager to put the issue on the back burner because of its stance on the U.S. strikes.
+“To say that they would openly be concerned by those killed in the process would be counterintuitive,” Mr. Ragoonath said.
+Others in the country, especially those in Cumana, are arriving at their own conclusions. Various residents said corpses have been known to appear on beaches in the area, but usually because of drownings or boat accidents. Occasionally, a body shows up with gunshot wounds, they said.
+Several residents said this was the first time in memory that mangled bodies had drifted ashore. What is more, the corpses appeared to belong to men with ethnic backgrounds that are different from most Trinidadians, who descend largely from enslaved Africans and indentured servants from India.
+“They seemed to be Latinos — my guess is from Venezuela,” said Branil Lakhan, 23, who lives in a wooden shack near the beach where the first corpse was found. “This is a quiet place where things like this don’t happen.”
+Nearby, at a drinking establishment called Big Yard, speakers blared Trinibad, the country’s spin on dance hall music. Richard Lewis, 31, an employee at the bar, said he had no doubt that the bodies belonged to Venezuelans caught in the middle of “a war for Venezuela’s oil and gas.”
+“Kamla tells us nothing,” he said of the prime minister. “We live in a world where you can’t trust your own shadow.”
+---
+ID: 68fb98813f0774626ab6b67a
+Title: Why water is a battlefront in Pakistan
+Published: 2025-10-24T14:00:00
+Source: scrollin
+<entities>
+CARDINAL: 18 million, 20, 26, 30, 36, four, six, two
+DATE: 1930-2025), 1991, 2022, 30 years, April 2025, July to September, early 2015, early May, ten days, the previous month
+EVENT: The Sindh-Punjab water conflict
+GPE: Altafnagar, Andhra Pradesh, Balochistan, Balochistan province, Gujjar Nala, India, Israel, Karachi, Nicobar, Orangi, Orangi Town, Pahalgam, Pakistan, Palestine, Punjab, Punjab province, Sindh
+LAW: the Inter-provincial Water Accord
+LOC: Indus, Indus River, Kashmir, the Cholistan Desert, the Indus River
+NORP: Christian, Indian, Pakistani, Pashtun, Punjabi, Sindh, Sindhi, Urdu-speaking
+ORG: Bihar, Critical Geography, Doordarshan, King's College London, NDA
+PERCENT: 80%, 95%, up to 80%
+PERSON: Bihar SIR, Daanish Mustafa, Jini Dinshaw, Nitish Kumar, PM Modi, Ramachandra Guha, Shehbaz Sharif
+WORK_OF_ART: The Conversation
+</entities>
+Text: 
+For ten days in April 2025, Pakistan almost came to a standstill. No freight was moving from its only port city, Karachi, towards the population centres in the north. The cause was the government’s announcement of a project to build six canals to irrigate the Cholistan Desert in the east of the country.
+Protesters in the southern Sindh province, fearing diminished water supplies, demanded the immediate cancellation of the project and blocked all highways running northwards. The government soon relented, with prime minister Shehbaz Sharif announcing the project’s suspension in early May.
+This was probably, at least in part, because the government was anticipating Indian military action. India blamed Pakistan for the Pahalgam terrorist attack, in which 26 people were killed in Indian-administered Kashmir the previous month. Internal squabbles had to be diffused in the face of external threats.
+Geopolitics handed a temporary victory to the protesters. But the potential of water to cause conflict in Pakistan remains a live issue, from households using suction pumps to draw more than their share, to large inter-provincial disputes.
+As someone who has researched water scarcity in Pakistan for 30 years, I argue that water conflict there is entirely avoidable. It is largely a function of the state’s obsession with supply-side mega projects and a lack of attention to questions of equitable access and quality.
+At a time when the effects of climate change are becoming more severe, Pakistan can ill afford to continue its engineering-based approach to water if it is to ensure sufficient access for all.
+According to the Pakistani government’s own figures, more than 95% of the available water in Pakistan is devoted to agriculture. It is used to cultivate water-guzzling crops, including rice and sugarcane. Pakistan is the fifth-largest producer and fourth-largest exporter of these crops.
+Meanwhile the country’s teeming commercial centre of Karachi, with a population of 18 million, suffers from acute water shortages. Affluent neighbourhoods have water intensive date palms, exotic gardens, golf courses and swimming pools.
+But for more than 80% of the city’s poorer neighbourhoods, there is almost complete dependence on water from tankers at up to 30 times the price richer neighbourhoods pay for regular piped water.
+Water mains often become battle fronts in Karachi. My own research has documented many instances of violent conflict between different ethnicities and groups around manipulating water mains to gain access.
+The minority Christian community in the Gujjar Nala neighbourhood of Karachi, for example, has engaged in violent clashes with the neighbouring Pashtun community over the operation of the regulating valve for allocating water to the two communities.
+Conflict has also arisen between the city’s predominantly Urdu-speaking communities of Orangi Town and Altafnagar. Orangi residents attacked and destroyed the overhead water dispenser at the Altafnagar pumping station in early 2015 as it was siphoning water for Orangi to commercial water tankers.
+Pakistan is dependent on the Indus River and its tributaries for water. The system recharges the extensive Indus aquifer, which provides up to 80% of the water required for crops in the country.
+Inter-provincial conflict over the distribution of Indus River water between upstream Punjab province, where several of Pakistan’s largest cities are located, and downstream Sindh province is an ongoing saga.
+Sindh resents any new water mega projects in the powerful Punjab province. Along with the central government, Punjab wants to push forward dams and infrastructure projects in the name of development.
+The Sindh-Punjab water conflict had a resolution of sorts in 1991, when the Inter-provincial Water Accord was signed. The agreement allocated water from the Indus River system among Pakistan’s four provinces.
+However, Sindh’s civil society and government frequently accuse Punjab of violating the agreement by diverting water from the Indus River without the permission of the chief minister of Sindh, as required by the accord.
+Sindhi and Punjabi nationalist politics heavily feature the water conflict in their rhetoric, which is proving corrosive for the federation of Pakistan.
+Numerous dams and mining projects in the restive Balochistan province have also alienated the populace against the Pakistani government. They argue that dams are built with little local consultation and become hazards when they are swept away in flash floods. Around 30 dams in Balochistan were swept away during the 2022 floods.
+At the same time, massive amounts of water are appropriated by foreign-owned mining operations there. These operations are of little benefit to local populations. The ongoing insurgency in the province, and the associated human rights abuses by the Pakistani state, are not divorced from the politics of water.
+Pakistan’s water development paradigm is based on engineering and infrastructure. But under the greater uncertainty of climate change, what is needed is more adaptive and flexible management of water at the local scale.
+The current approach locks the state into fixed management based on assumptions underlying the design parameters of the infrastructure.
+During flood season, which typically runs from July to September, the design parameters of dams and other infrastructure are now routinely exceeded. Water has to be released to save the infrastructure, thereby accentuating flood peaks.
+The bulk of agricultural water also comes from groundwater, but all the investment is in surface water. It is a common lament in Pakistan that groundwater has been left for unregulated exploitation by private electric pumps, with all the attention devoted to surface water.
+In domestic water supply, the obsession for photogenic urban green spaces and mega supply projects also take away water from poor areas and resources from the much-needed maintenance of the distribution infrastructure.
+Climate change is a wicked problem that defies centralised decision making in a country the size and diversity of Pakistan. Local knowledge and democratic decision making are the best arbiter of adjustment to climate change and equitable water access.
+Yet, in a praetorian state like Pakistan, military-dominated governance is unfortunately moving in exactly the opposite direction.
+Daanish Mustafa is Professor in Critical Geography, King's College London.
+---
+ID: 68fb97c23f0774626ab6b4f4
+Title: Pope Leo offers olive branch in allowing traditional mass
+Published: 2025-10-24T11:05:01
+Source: straits-times
+<entities>
+DATE: 2021, Jubilee year, May 8, Oct 24, 2025, Oct 25, September, a few months ago, from 1962 to 1965, his 12 years, the 1960s, the afternoon of Oct 25, this weekend
+FAC: St Peter’s Basilica, Vatican
+GPE: France, US, VATICAN CITY
+LAW: the Vatican II
+LOC: Europe
+NORP: Argentine, Catholic, Catholics, Christian, Gregorian, Guinean, Latin, Tridentine
+ORG: AFP, Church, Geopolitical Observatory of Religion, Get ST's, the Catholic Church, the Research Institute for the Study of Religions, the Second Vatican Council
+PERSON: Burke, Francis, Francois Mabille, Leo, Leo XIV, Martin Dumont, Pope Francis, Pope Leo, Raymond Burke, Robert Sarah
+TIME: 07:05 PM, 07:09 PM, the afternoon
+</entities>
+Text: 
+The Tridentine, or so-called Latin mass, will take place in the afternoon of Oct 25.
+Published Oct 24, 2025, 07:05 PM
+Updated Oct 24, 2025, 07:09 PM
+VATICAN CITY - Pope Leo XIV has authorised a traditional mass to take place this weekend at the Vatican, lifting restrictions that angered conservatives in his latest attempt to heal splits within the Catholic Church.
+The Tridentine or so-called Latin mass was commonly used across the Church before it was modernised in the 1960s, and was further limited by Pope Francis in 2021.
+With Pope Leo’s approval, it will be celebrated in St Peter’s Basilica at the Vatican in the afternoon of Oct 25 by ultraconservative US cardinal Raymond Burke, a fierce opponent of the late pontiff.
+Conducted in Latin by a priest who keeps his back to the congregation, in a ceremony marked by the use of incense and Gregorian chants, the mass is preferred by many traditionalist Catholics.
+Pope Francis feared, however, that its use could undermine the legacy of the Second Vatican Council which ran from 1962 to 1965, a series of reforms that sought to bring the Catholic Church into the modern era.
+His papal decree restricting the use of the mass, “Traditionis Custodes”, sparked anger among Catholic conservatives who felt they were being sidelined.
+Pope Leo’s move to allow the mass in the Vatican sends a “very strong signal to the conservative fringe”, said Dr Francois Mabille, head of France’s Geopolitical Observatory of Religion.
+The action of Pope Leo suggests that “maybe the tensions within the church are stronger than we imagined a few months ago,” he told AFP.
+In his 12 years as pontiff, Pope Francis often irritated conservatives with his decisions, especially in the US. Cardinal Burke, who will lead Oct 25’s mass, was one of the Argentine pope’s strongest critics.
+Pope Leo has pursued many of the policies favoured by his predecessor, highlighting the need to help the poor and marginalised and to protect the environment.
+When the Vatican welcomed an LGBTQ+ pilgrimage as part of the church’s Jubilee year in September, critics renewed their attacks on the Holy See’s “ideological drift”.
+But Pope Leo has also given ground to conservatives.
+He named Guinean Cardinal Robert Sarah, who considers immigration a threat to Europe’s Christian identity, as a special envoy to a pilgrimage in France.
+And the return of the Tridentine mass to the Vatican is also “a gesture of appeasement,” said historian Martin Dumont, who is also secretary-general of the Research Institute for the Study of Religions.
+It signals that “everyone is a part of the Church – all sides must be accepted and received”, he told AFP.
+Pope Leo “would like to meet Catholic groups who want this form of rite” to understand their motives, he said, adding: “He is a man of peace, attentive to others.”
+Pope Leo appears to be sending the message that the traditional mass has a place, as long as it does not threaten the legacy of the Vatican II reforms.
+But the line between liturgy and politics is fraught.
+In an interview published in September, Pope Leo acknowledged that the debate over the mass was “very complicated” and had become part of the “polarisation” within the Church.
+“Some have used the liturgy as a pretext to advance other subjects. It has become a political tool and that is very regrettable,” he said. AFP
+---
+ID: 68fb983e3f0774626ab6b5dd
+Title: British royals pray with pope in historic step for churches and welcome respite from Epstein scandal
+Published: 2025-10-23T21:30:47
+Source: japantoday
+<entities>
+CARDINAL: 165, more than 85 million, one, six, two
+DATE: 1534, 2000, November 11, 2025, Thursday, decades, earlier this year, just weeks, this week
+EVENT: Holy Year, the 2025 Holy Year
+FAC: Vatican, Windsor Castle, the Chapel Royal of St. James’s Palace, the Sistine Chapel
+GPE: Britain, Canterbury, Fukui, Japan, Rome, Tokyo, U.K., Westminster, York, the United States
+LANGUAGE: English
+LOC: Africa
+NORP: Anglican, Anglicans, British, Catholic, Christian, Christianity, Latin
+ORDINAL: first
+ORG: Anglican Communion, Buckingham Palace, Duke of York, Facebook, GPlusMedia Inc, Gafcon, JapanToday, Sistine Chapel, St George’s Chapel, St. George’s Chapel, St. Paul, The Anglican Communion, The Associated Press, the Anglican Communion, the Catholic Church, the Church of England, the Episcopal Church, the Sistine Chapel
+PERSON: Andrew, Camilla, Charles, Charles III, Epstein, Giuffre, Henry VIII, Jeffrey Epstein, Leo, Mahatma Gandhi, Michelangelo, Mullally, Papal Confrater, Pope Francis, Pope Leo, Pope Leo XIV, Prince Andrew, Queen Camilla, Queen Elizabeth II, Royal Confrater, Sarah Mullally, Stephen Cottrell, Vincent Nichols, Virginia Giuffre
+TIME: 6PM to 7PM
+WORK_OF_ART: Japan Standard Time), Last Judgment
+</entities>
+Text: 					Japan
+Britain’s King Charles III and Queen Camilla prayed Thursday with Pope Leo XIV in an historic visit to the Vatican to forge closer relations between the Church of England and the Catholic Church, a welcome spiritual respite for the royals from the turmoil at home over the Epstein sex scandal.
+Charles, who is the titular head of the Church of England, and Camilla sat in golden thrones on the raised altar of the Sistine Chapel, in front of Michelangelo’s “Last Judgment,” while Leo and the Anglican archbishop of York presided over an ecumenical service.
+The event marked the first time since the Reformation that the heads of the two Christian churches, divided for centuries over issues that now include the ordination of female priests, have prayed together.
+The accompanying music reflected a shared Anglican and Catholic musical heritage: Hymns were sung by members of both the Sistine Chapel choir and visiting members of two royal choirs: the St. George’s Chapel choir of Windsor Castle and the children’s choir of the Chapel Royal of St. James’s Palace.
+The visit comes as the British royal family is once again under intense scrutiny over Prince Andrew’s ties with convicted sex offender Jeffrey Epstein. The scandal that has long dogged the king’s brother was reignited this week after a memoir by Epstein accuser Virginia Giuffre was published.
+The 65-year-old prince has said he will stop using his titles, including Duke of York, but has “vigorously” denied Giuffre’s claims. Buckingham Palace and the U.K. government are under pressure to formally strip Andrew of his dukedom and princely title, and kick him out of the 30-room mansion near Windsor Castle where he lives.
+Charles and Camilla’s visit and exchange of titles had actually been planned for earlier this year but was rescheduled after Pope Francis got sick and then died. Charles had strongly wanted to visit the Vatican during the 2025 Holy Year, a once-every-quarter-century celebration of Christianity.
+Anglicans split from the Catholic Church in 1534 when English King Henry VIII was refused a marriage annulment. While popes for decades have forged warm relations with the Church of England and the broader Anglican Communion on a path toward greater unity, the two churches remain divided.
+The Sistine Chapel service, though, marked a historic new step toward unity and included readings and prayers focused on the unifying theme of God the creator.
+Later Thursday, Charles was also to formally receive a new title and recognition at a pontifical basilica that has strong, traditional ties to the Church of England, St. Paul’s Outside the Walls. The title “Royal Confrater” is a sign of spiritual fellowship and was reciprocated by Charles: Leo was given the title of “Papal Confrater of St George’s Chapel, Windsor Castle.”
+At the basilica, Charles will be given a special chair decorated with his coat of arms, bearing the Latin exhortation “Ut Unum Sint” (That they may be one), the mantra for Christian unity. The chair will remain in the basilica for Charles and his heirs to use, officials said.
+Cardinal Vincent Nichols, the Catholic archbishop of Westminster, said the king’s visit strengthens the relationship forged by Queen Elizabeth II, who came to Rome six times during her reign, including during the 2000 Holy Year.
+“Pope Leo and King Charles coming together before God in prayer is an example of a genuine and profound co-operation,” he told The Associated Press. He recalled that Charles accepted his constitutional role as supreme governor of the Church of England, “but also his role in protecting freedom of religion and the important role of faith in society across his kingdom.”
+The visit comes just weeks after the election of the first female archbishop of Canterbury, Sarah Mullally. She did not join the king and queen at the Vatican since she hasn’t been formally installed as the Church of England’s spiritual leader. In her place was the archbishop of York, the Most. Rev. Stephen Cottrell.
+While the king copes with tensions over the Epstein scandal at home, Mullally's election has heightened tensions within the Anglican Communion abroad. The Anglican Communion has more than 85 million members spread across 165 countries, with the archbishop of Canterbury considered the “first among equals” among its bishops. But following Mullally's appointment, a long-building schism in the Anglican Communion appears close to a final rupture.
+An organization of conservative Anglican primates — representing a majority of the communion’s membership, primarily in Africa — announced it is rejecting all of the bureaucratic links that have historically connected the Anglican Communion.
+The Global Fellowship of Confessing Anglicans, known as Gafcon, says it’s forming a new structure, although it claims it represents the historic Anglican Communion in a “reordered” form.
+Its statement denounced the LGBTQ-affirming stances of some parts of the Anglican Communion as precipitating the break, a reference to positions taken by the Church of England and the Episcopal Church in the United States. But it closely followed another Gafcon statement lamenting Mullally’s appointment, saying that many believe only men can be bishops and rejecting her office as a defining point of Anglican unity.
+Epstein.  . . A name which is going to make the rich & powerful looking over their shoulders for the rest of their lives.
+With so many victims and survivors, more information has got to come out. Hopefully it’ll come out sooner rather than later.
+Prince Andrew’s must face the music and stand trial.
+Justice must be served no matter who or where you are.
+Prayer is not asking. It is a longing of the soul. It is daily admission of one's weakness. It is better in prayer to have a heart without words than words without a heart - Mahatma Gandhi
+Come on Andrew - open up about the guy with the orange makeup and bruised hands that sat next to you with an underage girl on his lap...
+---
+ID: 68fcc117541f2a82a97ce27a
+Title: Congress has no existence of its own in Kerala, has surrendered to IUML: Ezhava leader Vellappally Natesan
+Published: 2025-10-25T06:16:06
+Source: indiaexpress
+<entities>
+CARDINAL: 17, 20, 34, at least 17, one, six, three-four, zero
+DATE: 1962-1964, 23 years, 89, Sunday
+GPE: Kerala, League, Malappuram
+NORP: Christian, Christians, Ezhava, Hindus, Muslim
+ORG: Assembly, BDJS, BJP, Bharat Dharma Jana Sena, CM, CPI-M, Church, Congress, Congress-led UDF, IUML, Kerala BJP, Kerala Congress, LDF, League, LoP, MLA, Pinarayi Vijayan-led LDF, SNDP, Sree Narayana Dharma Paripalana Yogam, UDF, Union, the BJP-led NDA, the Indian Union Muslim League, the Kerala CM, the Muslim League
+PERCENT: 5%
+PERSON: Alphons Kannanthanam, Joseph, Liz Mathew, Lok Sa, Natesan, Oommen Chandy, P J Joseph, Padma Bhushan, Panakkad, Pinarayi Vijayan, R Shankar, Rajeev Chandrasekhar, Satheesan, Thangal, Thushar Vellappally, V D Satheesan, Varthamanam, Vellappally Natesan
+WORK_OF_ART: The Indian Express Malayalam
+</entities>
+Text: Liz Mathew
+The Congress in Kerala has surrendered itself to the Indian Union Muslim League (IUML) and it has no existence of its own and is bereft of any loyal community-based support, said prominent Ezhava community leader Vellappally Natesan.
+“The Congress has many leaders in Kerala. But the problem is that its existence is linked to the Muslim League. That’s their failure. They have surrendered themselves to the League (IUML). They dance to the tunes of the League,” Natesan said in the latest episode of the Varthamanam podcast of The Indian Express Malayalam that will be streamed on Sunday. “The Congress today cannot induct someone or make an appointment without approval from Malappuram (the IUML headquarters),” he said.
+“When Oommen Chandy, such a pure soul he was, became the CM, Panakkad (Thangal family that controls the decision making in the IUML) declared the portfolios. Has it ever happened in Kerala? Is it democracy or the dominance of one community? The key ministries were taken by them… PWD, Industry, Education… They (IUML leaders) are really arrogant…When I talk about such injustice, the entire community attacks me. They even burnt my effigies… But I am not scared of anything.”
+Natesan, general secretary of Sree Narayana Dharma Paripalana Yogam (SNDP), the leading social-reform organisation of the influential Ezhava community in Kerala, said that the Congress party does not have any loyal support. “The Christians are with Kerala Congress (currently an ally of the CPI-M led LDF), the upper caste Hindus prefer BJP, the Congress has some from every section. But without the League support, Congress is zero,” he said.
+Lauding the current Kerala BJP president Rajeev Chandrasekhar’s style of functioning, the Ezhava leader said the BJP had “resurged” in Kerala and it would cut into the Congress’s votes. “Their vote share will go up.. I cannot say anything about the seats… But when their vote share goes up, who is going to be at the loss? It’s the Congress. If the LDF loses 5%, the UDF will lose 20%.”
+Bharat Dharma Jana Sena (BDJS), a political party founded by Natesan and other SNDP leaders, is a constituent of the BJP-led NDA and his son Thushar Vellappally is its national president.
+Natesan, 89, criticised both the Christian and Muslim leaders in the previous governments for ignoring the Ezhava community at the cost of their own. Alleging bias against the Ezhava community on the education front, Natesan said: “Alphons Kannanthanam (a former civil servant who joined the BJP and was a Union minister) said that he cleared 34 educational institutions to the Christian community when he was in the Education ministry under P J Joseph. The minister (Joseph) had favoured the Church and the Christians… I raised objections to it, but that does not mean I am against Christians.”
+Natesan argued that the colleges run by the SNDP were sanctioned when R Shankar (who came from the Ezhava community) was the Kerala CM (1962-1964). “The minister (Joseph) should have done justice to all communities. When we raised our voice, they gave us three-four new courses which no one would want.”
+He said the IUML, with which the SNDP joined hands earlier to fight for the rights of the backward communities, had abandoned the (Ezhava) community once it became a key part of the successive Congress-led UDF governments. “We were together and calling each other bhai bhai.. But when the IUML had the Education ministry, we literally begged them to grant us a school or a college in Malappuram… The League has at least 17 colleges in Malappuram district itself… We have 17 all across Kerala… When we complain about such discrimination, they brand me as a casteist.”
+Natesan also criticised Congress leader and Leader of Opposition in the Assembly, V D Satheesan. According to him, Chief Minister Pinarayi Vijayan-led LDF government would win the next election too. “Satheesan is enough to make Pinarayi Vijayan win again. He was okay as an MLA but after becoming the LoP, he started behaving as if he was the CM,” the Ezhava leader said.
+Natesan, who is credited with redefining the role of the SNDP for political empowerment of his community, said rewards meant little to him. “I do not want Padma Bhushan… What value does it have? It has become a thing that can be purchased. There was a time when it had value,” he said.
+Have been in journalism covering national politics for 23 years. Have covered six consecutive Lok Sa...                     Read More
+---
+ID: 68fb98bc3f0774626ab6b73f
+Title: What to watch on OTT: Kathryn Bigelow’s A House of Dynamite & Ari Aster’s folk horror Midsommar
+Published: 2025-10-24T13:20:11
+Source: indiaexpress
+<entities>
+DATE: 1970s, 1980s, 2019, 2024, Season 1, This Season 2, those first few months
+EVENT: the Cannes Film Festival
+GPE: America, Delhi, India, Kerala, New York City, Pakistan, the United States
+NORP: Christian, Midwestern, Punjabi, Swedish
+ORDINAL: second
+ORG: External Affairs, House of Dynamite Netflix  A House of Dynamite, Midsommar MUBI, Netflix’s Tudum, Screen Digital, the UN Security Council
+PERSON: Adam Brody, Ali Abbasi, Ari Aster, Aster, Austin Butler, Benny, Dani, Donald Trump, Erin Foster, Florence Pugh, Gabriel Basso, Greta Lee, Idris Elba, Janhvi Kapoor, Jared Harris, Jeff Nichols, Jeremy Strong, Joanne, Jodie Comer, Johnny, Kathryn Bigelow, Kathy, Kristen Bell, Maria Bakalova, Michael Shannon, Mike Faist, Noah, Noah Oppenheim, Norman Reedus, Param, Param Sundari, Rebecca Ferguson, Roy Cohn, S Jaishankar, Sebastian Stan, Sidharth Malhotra, Sundari, Tom Hardy, Trump
+PRODUCT: Vandals
+WORK_OF_ART: Midsommar, The Apprentice, The Apprentice Lionsgate Play, The Bikeriders Amazon Prime Video, The Hurt Locker, Zero Dark Thirty
+</entities>
+Text: A House of Dynamite
+A House of Dynamite is the latest dramatic thriller from the Oscar-winning director Kathryn Bigelow, who has earlier made The Hurt Locker and Zero Dark Thirty, among others. Written by Noah Oppenheim, the film follows the actions that upfold when a single, unattributed missile is launched at the United States. Then, a race begins to determine who is responsible and how to respond. The film’s cast features Idris Elba, Rebecca Ferguson, Gabriel Basso, Jared Harris and Greta Lee.
+This crime drama captures a rebellious time in America when the culture and people were changing. After a chance encounter at a local bar, strong-willed Kathy is inextricably drawn to Benny, the newest member of the Midwestern motorcycle club, the Vandals, led by the enigmatic Johnny. The club begins to evolve, forcing Benny to choose between Kathy and his loyalty to the club. Directed by Jeff Nichols, the movie features a powerhouse ensemble led by Tom Hardy, Austin Butler, Jodie Comer, Michael Shannon, Norman Reedus, and Mike Faist.
+Written and directed by Ari Aster, this 2019 folk horror film propelled Florence Pugh to stardom thanks to her unforgettable role in Midsommar. The film sees her deal with devastating grief, a murderous Swedish cult, and a terrible boyfriend. Shockingly bright and subtly disturbing, Aster’s horror is an exquisitely crafted nightmare in broad daylight. It follows the story of Dani and Christian, a young couple, on the rocks. Dani invites herself to join Christian and his friends’ trip to a rural Swedish midsummer festival. The trip quickly turns violent and bizarre.
+Set against the scenic backwaters of Kerala, Param Sundari follows Param (Sidharth Malhotra), a lively Punjabi boy from Delhi, and Sundari (Janhvi Kapoor), an independent woman from Kerala, who find themselves caught in an unexpected romance. “What begins as a playful cultural clash soon blossoms into a tender journey filled with humour, emotion, and magic. As Param and Sundari learn to bridge their worlds, their story unfolds as a celebration of love that transcends boundaries,” its synopsis reads.
+The biographical drama The Apprentice, which premiered at the Cannes Film Festival, 2024, chronicles Donald Trump making a career as a real estate businessman in New York City in the 1970s and 1980s. Directed by Ali Abbasi, the film features Sebastian Stan, Maria Bakalova, and Jeremy Strong in a riveting political drama with a sly, sharp edge. The film also traces the rise of a young Trump, mentored by the ruthless Roy Cohn, as ambition, power, and morality collide. Blending tense drama with biting irony, it peels back the glossy façade of wealth to reveal the chaos beneath.
+Nobody Wants This Season 2
+After Season 1 captured the haze of Joanne (Kristen Bell) and Noah (Adam Brody) falling for each other. The series centered on an unlikely couple: Joanne, an agnostic and outspoken podcaster, and Noah, a kindhearted rabbi. Creator Erin Foster in the second season shifts his focus to explore how their relationship deepens. “It’s such an interesting part of every relationship when you now have to see if you can make it work with each other’s friends, day-to-day routines, and how you handle the milestones that come in those first few months together from holidays, birthdays, and what you each think the future should look like,” she tells Netflix’s Tudum.
