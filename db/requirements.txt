@@ -1,3 +1,4 @@
+voyageai
 graphviz
 groq
 google.generativeai
@@ -7,3 +8,4 @@ chromadb
 tqdm
 mlx-lm
 sentencepiece
+
