@@ -1,1 +1,2 @@
-./hybrid.py "Summarize actions in Portland Oregon involving ICE, the Mayor and ANTIFA. Analize actions and motivations." --orentity "LOC/Portland,ORG/Portland" --showentity -n 13 --fulltext ICE --filter
+startdate="-1"
+./report.sh "$startdate" israel "Israel" "Summarize current events in Sudan. Analize actions and motivations."

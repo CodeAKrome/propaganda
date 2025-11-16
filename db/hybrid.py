@@ -17,12 +17,6 @@ import chromadb
 from chromadb.config import Settings
 from sentence_transformers import SentenceTransformer
 
-try:
-    import voyageai
-    VOYAGE_AVAILABLE = True
-except ImportError:
-    VOYAGE_AVAILABLE = False
-
 # ------------------------------------------------------------------
 # Re-use the exact same configuration section from mongo2chroma.py
 # ------------------------------------------------------------------
@@ -290,49 +284,6 @@ def main(argv=None):
 
     debug(f"Vector search returned: {len(hit_ids)} hits")
     # debug("Vector _ids: " + ",".join(hit_ids))
-
-    # 5b. Optional: Rerank with Voyage AI
-    if os.getenv("VOYAGE_RERANK_ENABLED", "false").lower() == "true":
-        if not VOYAGE_AVAILABLE:
-            debug("Warning: Voyage AI reranking enabled but voyageai package not installed")
-            debug("Install with: pip install voyageai")
-        else:
-            voyage_api_key = os.getenv("VOYAGE_API_KEY")
-            if not voyage_api_key:
-                debug("Warning: VOYAGE_RERANK_ENABLED=true but VOYAGE_API_KEY not set")
-            else:
-                try:
-                    debug("Reranking results with Voyage AI...")
-                    vo = voyageai.Client(api_key=voyage_api_key)
-                    
-                    # Prepare documents for reranking
-                    rerank_docs = []
-                    for _id in hit_ids:
-                        doc = id_to_doc.get(_id)
-                        if doc:
-                            # Use title + article text for better reranking
-                            text = f"{doc.get('title', '')}\n{doc.get('article', '')}".strip()
-                            rerank_docs.append(text)
-                    
-                    if rerank_docs:
-                        # Rerank using Voyage AI
-                        query_text = fulltext_search_string if fulltext_search_string else args.text
-                        rerank_model = os.getenv("VOYAGE_RERANK_MODEL", "rerank-2")
-                        
-                        reranking = vo.rerank(
-                            query=query_text,
-                            documents=rerank_docs,
-                            model=rerank_model,
-                            top_k=min(args.top, len(rerank_docs))
-                        )
-                        
-                        # Update hit_ids with reranked order
-                        original_hit_ids = hit_ids[:]
-                        hit_ids = [original_hit_ids[r.index] for r in reranking.results]
-                        debug(f"Reranked to top {len(hit_ids)} results using {rerank_model}")
-                except Exception as e:
-                    debug(f"Warning: Voyage AI reranking failed: {e}")
-                    debug("Continuing with original vector search results")
 
     # 6. Build id→doc map and print
     id_to_doc = {str(c["_id"]): c for c in candidates}

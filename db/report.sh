@@ -21,6 +21,8 @@ cypher_prompt="cypher_prompt.txt"
 ner_key="ner_key.txt"
 titlefile="output/titles.tsv"
 topn=20
+svo_prompt="prompt/kgsvo.txt"
+
 
 printf "\n------------- $startdate days ----------------\n"
 
@@ -80,7 +82,7 @@ EOF
 reporter() {
     local model="$1"
     printf "Using model: $model\n"
-    ( cat prompt_svo.txt "$vec" ) | ollama run --verbose --hidethinking "$model" | egrep '\->' | sort | uniq > "$cypherfile"
+    ( cat "$svo_prompt" "$vec" ) | ollama run --verbose --hidethinking "$model" | egrep '\->' | sort | uniq > "$cypherfile"
     cypher=$(<"$cypherfile")
     echo "$reporter $cypher $query $footer" > "$reporterfile"
     ( cat "$reporterfile" "$vec" ) | ollama run --verbose --hidethinking "$model" > "$news"
@@ -88,7 +90,7 @@ reporter() {
 
 # -- Gemini
 reportergem() {
-    ( cat prompt_svo.txt "$vec" ) | ./gemini.py models/gemini-2.5-flash | egrep '\->' | sort | uniq > "$cypherfile"
+    ( cat "$svo_prompt" "$vec" ) | ./gemini.py models/gemini-2.5-flash | egrep '\->' | sort | uniq > "$cypherfile"
     cypher=$(<"$cypherfile")
     echo "$reporter\n<relations>\n $cypher \n</relations>\n$query $footer" > "$reporterfile"
     ( cat "$reporterfile" "$vec" ) | ./gemini.py models/gemini-2.5-flash > "$news"
@@ -98,13 +100,15 @@ reportergem() {
 reportermlx() {
     local model="$1"
     printf "Using model: $model\n"
-    ( cat prompt_svo.txt "$vec" ) | ./mlxllm.py - --model "$model" | egrep '\->' | sort | uniq > "$cypherfile"
+    ( cat "$svo_prompt" "$vec" ) | ./mlxllm.py - --model "$model" | egrep '\->' | sort | uniq > "$cypherfile"
     cypher=$(<"$cypherfile")
     echo "$reporter\n<relations>\n $cypher \n</relations>\n$query $footer" > "$reporterfile"
     ( cat "$reporterfile" "$vec" ) | ./mlxllm.py - --model "$model" > "$news"
 }
 
-reportergem
+#reportergem
+reporter reporterllama3370b:latest
+
 #reportermlx Wwayu/DarkIdol-Llama-3.1-8B-Instruct-1.2-Uncensored-mlx-6Bit
 # good, 38m long
 #reporter reportergptoss120b

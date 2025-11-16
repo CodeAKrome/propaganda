@@ -1,4 +1,4 @@
-voyageai
+cachetools
 graphviz
 groq
 google.generativeai
@@ -8,4 +8,5 @@ chromadb
 tqdm
 mlx-lm
 sentencepiece
+protobuf>=5.26.1,<6.0
 
