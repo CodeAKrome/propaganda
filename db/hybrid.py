@@ -17,6 +17,13 @@ import chromadb
 from chromadb.config import Settings
 from sentence_transformers import SentenceTransformer
 
+# Try to import rank_bm25 for reranking
+try:
+    from rank_bm25 import BM25Okapi
+    HAS_BM25 = True
+except ImportError:
+    HAS_BM25 = False
+
 # ------------------------------------------------------------------
 # Re-use the exact same configuration section from mongo2chroma.py
 # ------------------------------------------------------------------
@@ -136,6 +143,11 @@ def main(argv=None):
     parser.add_argument(
         "--ids",
         help="File to write the MongoDB IDs of matched records to.",
+    )
+    parser.add_argument(
+        "--bm25",
+        action="store_true",
+        help="Enable BM25 reranking on vector search results.",
     )
     args = parser.parse_args(argv)
 
@@ -268,9 +280,16 @@ def main(argv=None):
         tmp_coll.add(documents=docs, embeddings=embeddings, ids=ids)
 
     # 5. Vector search
+    
+    # If reranking, fetch a larger candidate pool (e.g., 10x the requested top N)
+    # This gives BM25 enough material to re-order meaningfully.
+    k_results = args.top * 10 if args.bm25 else args.top
+
+    search_text = fulltext_search_string if fulltext_search_string else args.text
+    
     query_emb = (
         encoder.encode(
-            f"Represent this sentence for searching relevant passages: {fulltext_search_string if fulltext_search_string else args.text}",
+            f"Represent this sentence for searching relevant passages: {search_text}",
             convert_to_tensor=True,
         )
         .cpu()
@@ -278,12 +297,38 @@ def main(argv=None):
         .tolist()
     )
     res = tmp_coll.query(
-        query_embeddings=[query_emb], n_results=args.top, include=["documents"]
+        query_embeddings=[query_emb], n_results=k_results, include=["documents"]
     )
     hit_ids = res["ids"][0]
+    hit_docs = res["documents"][0]
 
     debug(f"Vector search returned: {len(hit_ids)} hits")
-    # debug("Vector _ids: " + ",".join(hit_ids))
+
+    # --- BM25 Reranking Logic ---
+    if args.bm25:
+        if not HAS_BM25:
+            debug("WARNING: rank_bm25 not installed. Skipping BM25 reranking.")
+            # Fallback to slicing the original list if we fetched extra
+            hit_ids = hit_ids[:args.top]
+        else:
+            debug("Applying BM25 reranking...")
+            # Tokenize corpus and query (simple whitespace tokenization)
+            tokenized_corpus = [doc.lower().split() for doc in hit_docs]
+            tokenized_query = search_text.lower().split()
+
+            bm25 = BM25Okapi(tokenized_corpus)
+            doc_scores = bm25.get_scores(tokenized_query)
+            
+            # Combine ids and scores, then sort
+            # hit_ids and doc_scores are index-aligned
+            scored_results = list(zip(hit_ids, doc_scores))
+            
+            # Sort by score descending
+            scored_results.sort(key=lambda x: x[1], reverse=True)
+            
+            # Keep top N
+            hit_ids = [item[0] for item in scored_results[:args.top]]
+            debug("BM25 reranking complete.")
 
     # 6. Build id→doc map and print
     id_to_doc = {str(c["_id"]): c for c in candidates}

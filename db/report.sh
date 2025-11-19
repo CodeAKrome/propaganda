@@ -29,7 +29,7 @@ printf "\n------------- $startdate days ----------------\n"
 # -- Hybrid search
 if [[ -z "$fulltext" ]]; then
     printf "VECTOR %s Entity %s only search\n" "$filename" "$entity"
-    ./hybrid.py "$query" --orentity "$entity" --start-date "$startdate" --showentity -n "$topn" > "$vec"
+    ./hybrid.py "$query" --bm25 --orentity "$entity" --start-date "$startdate" --showentity -n "$topn" > "$vec"
 else
     if [[ $fulltext == +* ]]; then
         filter="--filter"
@@ -41,10 +41,10 @@ else
 
     if [[ -z "$filter" ]]; then
         printf "UNION %s Entity %s Full text %s search %s\t%s\t%s\n" "$filename" "$entity" "$text"
-        ./hybrid.py "$query" --orentity "$entity" --start-date "$startdate" --showentity -n "$topn" --fulltext "$text" > "$vec"
+        ./hybrid.py "$query" --bm25 --orentity "$entity" --start-date "$startdate" --showentity -n "$topn" --fulltext "$text" > "$vec"
     else
         printf "PREFILTER %s Entity %s Full text %s search %s\t%s\t%s\n" "$filename" "$entity" "$text"
-        ./hybrid.py "$query" --orentity "$entity" --start-date "$startdate" --showentity -n "$topn" --fulltext "$text" "$filter" > "$vec"
+        ./hybrid.py "$query" --bm25 --orentity "$entity" --start-date "$startdate" --showentity -n "$topn" --fulltext "$text" "$filter" > "$vec"
     fi
 
 fi

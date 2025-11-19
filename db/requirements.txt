@@ -1,3 +1,5 @@
+ollama
+rank-bm25
 cachetools
 graphviz
 groq

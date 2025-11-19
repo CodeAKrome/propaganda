@@ -1,3 +1,5 @@
+db/output/*
+__pycache__/
 ids.txt
 *.log
 TTS
