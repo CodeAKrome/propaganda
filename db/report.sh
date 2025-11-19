@@ -20,7 +20,7 @@ barenews="output/${filename}"
 cypher_prompt="cypher_prompt.txt"
 ner_key="ner_key.txt"
 titlefile="output/titles.tsv"
-topn=20
+topn=40
 svo_prompt="prompt/kgsvo.txt"
 
 
@@ -68,7 +68,7 @@ If something is irrelevant, ignore it.
 If you don't find anything relevant, just say 'Nothing relevant found.'
 Describe all the major themes.
 
-Relationships are shown in the <relations> section in subject -> verb -> object format.
+Relationships are shown in the <relations> section in (subject,object,verb,explanation) format.
 
 Respond as if you are a TV reporter on camera explaining to your audience.
 Use a professional newscaster tone like Walter Kronkite.
@@ -82,7 +82,7 @@ EOF
 reporter() {
     local model="$1"
     printf "Using model: $model\n"
-    ( cat "$svo_prompt" "$vec" ) | ollama run --verbose --hidethinking "$model" | egrep '\->' | sort | uniq > "$cypherfile"
+    ( cat "$svo_prompt" "$vec" ) | ollama run --verbose --hidethinking "$model" | sort | uniq > "$cypherfile"
     cypher=$(<"$cypherfile")
     echo "$reporter $cypher $query $footer" > "$reporterfile"
     ( cat "$reporterfile" "$vec" ) | ollama run --verbose --hidethinking "$model" > "$news"
@@ -90,7 +90,7 @@ reporter() {
 
 # -- Gemini
 reportergem() {
-    ( cat "$svo_prompt" "$vec" ) | ./gemini.py models/gemini-2.5-flash | egrep '\->' | sort | uniq > "$cypherfile"
+    ( cat "$svo_prompt" "$vec" ) | ./gemini.py models/gemini-2.5-flash | sort | uniq > "$cypherfile"
     cypher=$(<"$cypherfile")
     echo "$reporter\n<relations>\n $cypher \n</relations>\n$query $footer" > "$reporterfile"
     ( cat "$reporterfile" "$vec" ) | ./gemini.py models/gemini-2.5-flash > "$news"
@@ -100,14 +100,15 @@ reportergem() {
 reportermlx() {
     local model="$1"
     printf "Using model: $model\n"
-    ( cat "$svo_prompt" "$vec" ) | ./mlxllm.py - --model "$model" | egrep '\->' | sort | uniq > "$cypherfile"
+    ( cat "$svo_prompt" "$vec" ) | ./mlxllm.py - --model "$model" | sort | uniq > "$cypherfile"
     cypher=$(<"$cypherfile")
     echo "$reporter\n<relations>\n $cypher \n</relations>\n$query $footer" > "$reporterfile"
     ( cat "$reporterfile" "$vec" ) | ./mlxllm.py - --model "$model" > "$news"
 }
 
-#reportergem
-reporter reporterllama3370b:latest
+reportergem
+#reporter reporterllama3370b:latest
+#reportermlx mlx-community/Llama-3.3-70B-Instruct-8bit
 
 #reportermlx Wwayu/DarkIdol-Llama-3.1-8B-Instruct-1.2-Uncensored-mlx-6Bit
 # good, 38m long
