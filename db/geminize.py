@@ -24,6 +24,13 @@ try:
 except ImportError:
     OLLAMA_AVAILABLE = False
 
+try:
+    from mlx_lm import load, generate
+
+    MLX_AVAILABLE = True
+except ImportError:
+    MLX_AVAILABLE = False
+
 # ------------------------------------------------------------------
 # Config
 # ------------------------------------------------------------------
@@ -113,6 +120,7 @@ def process_articles(
     id_list: Optional[List[str]] = None,
     update_existing: bool = False,
     use_ollama: bool = False,
+    use_mlx: bool = False,
     dry_run: bool = False,
 ) -> dict:
     """
@@ -151,6 +159,14 @@ def process_articles(
             print("Error: ollama package not installed. Install with: pip install ollama")
             sys.exit(1)
         print(f"Using Ollama model: {model_name}")
+    elif use_mlx:
+        if not MLX_AVAILABLE:
+            print("Error: mlx_lm package not installed. Install with: pip install mlx-lm")
+            sys.exit(1)
+        try:
+            model, tokenizer = load(model_name)
+        except Exception as e:
+            print(f"Error initializing MLX model '{model_name}': {e}")
     else:
         if not gemini_configured:
             print("Error: GEMINI_API_KEY environment variable not set.")
@@ -182,6 +198,7 @@ def process_articles(
         "total_time": 0,
         "inference_time": 0,
         "use_ollama": use_ollama,
+        "use_mlx": use_mlx,
         "examined": 0,
     }
     
@@ -236,6 +253,17 @@ Article Content:
                     messages=[{"role": "user", "content": prompt}]
                 )
                 result_text = response["message"]["content"]
+            elif use_mlx:
+                # Use MLX
+                messages = [{"role": "user", "content": prompt}]
+                mlx_prompt = tokenizer.apply_chat_template(
+                    messages,
+                    tokenize=False,
+                    add_generation_prompt=True,
+                )
+                result_text = generate(
+                    model, tokenizer, prompt=mlx_prompt, verbose=False
+                )
             else:
                 # Use Gemini
                 response = model.generate_content(prompt)
@@ -263,7 +291,7 @@ Article Content:
             update_data = {
                 dst_field: result_text_cleaned,
                 f"{dst_field}_model": model_name,
-                f"{dst_field}_backend": "ollama" if use_ollama else "gemini",
+                f"{dst_field}_backend": "mlx" if use_mlx else ("ollama" if use_ollama else "gemini"),
                 f"{dst_field}_timestamp": update_timestamp,
                 f"{dst_field}_inference_time": inference_time,
             }
@@ -274,16 +302,16 @@ Article Content:
             print(f"Title: {title}")
             print(f"Source: {source}")
             print(f"Published: {published}")
-            print(f"Inference time: {inference_time:.2f}s")
-            print(f"\nPrompt sent to {'Ollama' if use_ollama else 'Gemini'} ({len(prompt)} chars):")
+            print(f"Inference time: {inference_time:.2f}s")            
+            backend_name = "MLX" if use_mlx else ("Ollama" if use_ollama else "Gemini")
+            print(f"\nPrompt sent to {backend_name} ({len(prompt)} chars):")
             print("-" * 70)
             print(prompt[:500] + "..." if len(prompt) > 500 else prompt)
             print("-" * 70)
-            print(f"\n{'Ollama' if use_ollama else 'Gemini'} Response ({len(result_text_cleaned)} chars):")
+            print(f"\n{backend_name} Response ({len(result_text_cleaned)} chars):")
             print("-" * 70)
             print(result_text_cleaned)
             print("-" * 70)
-            print(f"\n{'Would insert' if dry_run else 'Inserted'} into MongoDB:")
             print(f"  {dst_field}: {result_text_cleaned[:100]}..." if len(result_text_cleaned) > 100 else f"  {dst_field}: {result_text_cleaned}")
             print(f"  {dst_field}_model: {model_name}")
             print(f"  {dst_field}_backend: {'ollama' if use_ollama else 'gemini'}")
@@ -358,6 +386,11 @@ def main(argv=None):
         help="Use Ollama instead of Gemini for inference"
     )
     parser.add_argument(
+        "--mlx",
+        action="store_true",
+        help="Use MLX instead of Gemini for inference"
+    )
+    parser.add_argument(
         "--start-date",
         help="Start date: ISO format or negative days (e.g., '-7' for 7 days ago)"
     )
@@ -417,6 +450,10 @@ def main(argv=None):
     
     args = parser.parse_args(argv)
     
+    # Validate only one backend is chosen
+    if sum([args.ollama, args.mlx]) > 1:
+        parser.error("Cannot specify more than one backend (--ollama, --mlx)")
+
     # Validate --id and --idsource are mutually exclusive
     if args.id and args.idsource:
         parser.error("Cannot specify both --id and --idsource")
@@ -469,7 +506,11 @@ def main(argv=None):
     print("=" * 70)
     print("MongoDB to Gemini RAG Processor")
     print("=" * 70)
-    print(f"LLM Backend: {'Ollama' if args.ollama else 'Gemini'}")
+    backend = "Gemini"
+    if args.ollama: backend = "Ollama"
+    if args.mlx: backend = "MLX"
+    print(f"LLM Backend: {backend}")
+
     print(f"Model: {args.model}")
     print(f"Source field: {args.src}")
     print(f"Destination field: {args.dst}")
@@ -515,6 +556,7 @@ def main(argv=None):
         id_list=id_list,
         update_existing=args.update,
         use_ollama=args.ollama,
+        use_mlx=args.mlx,
         dry_run=args.dry_run,
     )
     
@@ -522,7 +564,10 @@ def main(argv=None):
     print("\n" + "=" * 70)
     print("Processing Report")
     print("=" * 70)
-    print(f"LLM Backend: {'Ollama' if stats['use_ollama'] else 'Gemini'}")
+    backend = "Gemini"
+    if stats['use_ollama']: backend = "Ollama"
+    if stats['use_mlx']: backend = "MLX"
+    print(f"LLM Backend: {backend}")
     print(f"Model used: {stats['model']}")
     print(f"Total documents in query: {stats['total']}")
     print(f"Documents examined: {stats['examined']}")
