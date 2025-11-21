@@ -1,5 +1,5 @@
 startdate="-1"
-./report.sh "$startdate" israel "Israel" "Summarize current events in Sudan. Analize actions and motivations."
+./report.sh "$startdate" israel "Israel" "Summarize current events in Israel. Analize actions and motivations." "+Israel"
 ./report.sh "$startdate" sudan "Sudan" "Summarize current events in Sudan. Analize actions and motivations."
 ./report.sh "$startdate" climate "Climate" "Summarize news about climate change and global warming. Analize actions and motivations." "climate change"
 ./report.sh "$startdate" milei "Milei" "Summarize actions taken by Javier Milei. Analize actions and motivations."

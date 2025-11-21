@@ -5,10 +5,11 @@ MLX_MODEL = mlx-community/Llama-4-Scout-17B-16E-Instruct-4bit
 NUMDAYS = -1
 TITLEFILE = output/titles.tsv
 
-.PHONY: build load back front vector query mp3 mgconsole testload thingsthatgo fini ner fner fnervector entity
+.PHONY: build load back front vector query mp3 mgconsole testload thingsthatgo fini ner fner fnervector entity fvector
 
-thingsthatgo: load ner vector query mp3 fini
+thingsthatgo: load ner vector entity query mp3 fini
 
+fvector: load ner vector fini
 fload: load ner vector entity fini
 fner: ner vector entity query mp3 fini
 fnervector: ner vector fini

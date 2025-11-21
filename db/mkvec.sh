@@ -8,13 +8,13 @@ fulltext=${5:-}
 # 3. Check input
 # -----------------------------
 if [[ -z "$query" ]]; then
-  echo "Usage: $0 <date offset> <filebase> <entities> <query>"
+  echo "Usage: $0 <date offset> <filebase> <entities> <query> <+fulltext> means prefilter"
   exit 1
 fi
 
 vec="output/${filename}.vec"
 topn=40
-idfile="output/article_ids.txt"
+idfile="output/${filename}.ids"
 
 printf "\n------------- $startdate days ----------------\n"
 
