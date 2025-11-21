@@ -26,7 +26,6 @@ except ImportError:
 
 try:
     from mlx_lm import load, generate
-
     MLX_AVAILABLE = True
 except ImportError:
     MLX_AVAILABLE = False
@@ -178,10 +177,11 @@ def process_articles(
             print(f"Error initializing Gemini model '{model_name}': {e}")
             sys.exit(1)
     
-    # Fetch documents
+    # Fetch documents with no_cursor_timeout to prevent timeout during long processing
     cursor = mongo_coll.find(
         mongo_query,
-        {"_id": 1, "title": 1, "source": 1, "published": 1, src_field: 1, dst_field: 1}
+        {"_id": 1, "title": 1, "source": 1, "published": 1, src_field: 1, dst_field: 1},
+        no_cursor_timeout=True
     ).sort("published", -1)
     
     # Note: We don't apply limit to cursor because we need to examine documents
@@ -205,33 +205,34 @@ def process_articles(
     # Start overall timer
     start_time = time.time()
     
-    # Process each document
-    for doc in tqdm(cursor, desc="Processing articles"):
-        stats["examined"] += 1
-        
-        _id = doc["_id"]
-        src_content = doc.get(src_field, "")
-        
-        # Skip if source field is empty
-        if not src_content or not src_content.strip():
-            stats["skipped"] += 1
-            continue
-        
-        # Skip if destination field already exists and has content (unless --update flag is set)
-        if not update_existing and dst_field in doc and doc[dst_field]:
-            stats["skipped"] += 1
-            continue
-        
-        # Build prompt with RAG input
-        title = doc.get("title", "")
-        source = doc.get("source", "")
-        published = doc.get("published", "")
-        
-        # Format published date if it's a datetime object
-        if isinstance(published, datetime):
-            published = published.isoformat()
-        
-        prompt = f"""Query: {query}
+    # Process each document - use try/finally to ensure cursor is closed
+    try:
+        for doc in tqdm(cursor, desc="Processing articles"):
+            stats["examined"] += 1
+            
+            _id = doc["_id"]
+            src_content = doc.get(src_field, "")
+            
+            # Skip if source field is empty
+            if not src_content or not src_content.strip():
+                stats["skipped"] += 1
+                continue
+            
+            # Skip if destination field already exists and has content (unless --update flag is set)
+            if not update_existing and dst_field in doc and doc[dst_field]:
+                stats["skipped"] += 1
+                continue
+            
+            # Build prompt with RAG input
+            title = doc.get("title", "")
+            source = doc.get("source", "")
+            published = doc.get("published", "")
+            
+            # Format published date if it's a datetime object
+            if isinstance(published, datetime):
+                published = published.isoformat()
+            
+            prompt = f"""Query: {query}
 
 Article Title: {title}
 Source: {source}
@@ -240,116 +241,119 @@ Published: {published}
 Article Content:
 {src_content}
 """
-        
-        # Process through LLM (Gemini or Ollama)
-        try:
-            # Time the inference
-            inference_start = time.time()
             
-            if use_ollama:
-                # Use Ollama
-                response = ollama.chat(
-                    model=model_name,
-                    messages=[{"role": "user", "content": prompt}]
-                )
-                result_text = response["message"]["content"]
-            elif use_mlx:
-                # Use MLX
-                messages = [{"role": "user", "content": prompt}]
-                mlx_prompt = tokenizer.apply_chat_template(
-                    messages,
-                    tokenize=False,
-                    add_generation_prompt=True,
-                )
-                result_text = generate(
-                    model, tokenizer, prompt=mlx_prompt, verbose=False
-                )
-            else:
-                # Use Gemini
-                response = model.generate_content(prompt)
-                result_text = response.text
-            
-            inference_time = time.time() - inference_start
-            stats["inference_time"] += inference_time
-            
-            # Clean up response - remove markdown code fences and common wrappers
-            result_text_cleaned = result_text.strip()
-            
-            # Remove markdown code blocks (```json, ```python, etc.)
-            if result_text_cleaned.startswith("```"):
-                lines = result_text_cleaned.split("\n")
-                # Remove first line if it's a code fence
-                if lines[0].startswith("```"):
-                    lines = lines[1:]
-                # Remove last line if it's a closing code fence
-                if lines and lines[-1].strip() == "```":
-                    lines = lines[:-1]
-                result_text_cleaned = "\n".join(lines).strip()
-            
-            # Prepare update data
-            update_timestamp = datetime.now()
-            update_data = {
-                dst_field: result_text_cleaned,
-                f"{dst_field}_model": model_name,
-                f"{dst_field}_backend": "mlx" if use_mlx else ("ollama" if use_ollama else "gemini"),
-                f"{dst_field}_timestamp": update_timestamp,
-                f"{dst_field}_inference_time": inference_time,
-            }
-            
-            # Print what will be/was updated
-            print(f"\n{'=' * 70}")
-            print(f"{'[DRY RUN] ' if dry_run else ''}Article ID: {_id}")
-            print(f"Title: {title}")
-            print(f"Source: {source}")
-            print(f"Published: {published}")
-            print(f"Inference time: {inference_time:.2f}s")            
-            backend_name = "MLX" if use_mlx else ("Ollama" if use_ollama else "Gemini")
-            print(f"\nPrompt sent to {backend_name} ({len(prompt)} chars):")
-            print("-" * 70)
-            print(prompt[:500] + "..." if len(prompt) > 500 else prompt)
-            print("-" * 70)
-            print(f"\n{backend_name} Response ({len(result_text_cleaned)} chars):")
-            print("-" * 70)
-            print(result_text_cleaned)
-            print("-" * 70)
-            print(f"  {dst_field}: {result_text_cleaned[:100]}..." if len(result_text_cleaned) > 100 else f"  {dst_field}: {result_text_cleaned}")
-            print(f"  {dst_field}_model: {model_name}")
-            print(f"  {dst_field}_backend: {'ollama' if use_ollama else 'gemini'}")
-            print(f"  {dst_field}_timestamp: {update_timestamp.isoformat()}")
-            print(f"  {dst_field}_inference_time: {inference_time:.2f}s")
-            print("=" * 70)
-            
-            if not dry_run:
-                # Store result in MongoDB
-                mongo_coll.update_one(
-                    {"_id": _id},
-                    {"$set": update_data}
-                )
-            
-            # Track modified ID
-            stats["modified_ids"].append(str(_id))
-            stats["processed"] += 1
-            
-            # Check if we've reached the limit of processed documents
-            if limit and stats["processed"] >= limit:
-                print(f"\n✅ Reached limit of {limit} processed documents")
-                break
+            # Process through LLM (Gemini or Ollama)
+            try:
+                # Time the inference
+                inference_start = time.time()
                 
-        except Exception as e:
-            print(f"\nError processing article {_id}: {e}")
-            stats["errors"] += 1
-            
-            # Store error in MongoDB
-            if not dry_run:
-                mongo_coll.update_one(
-                    {"_id": _id},
-                    {
-                        "$set": {
-                            f"{dst_field}_error": str(e),
-                            f"{dst_field}_error_timestamp": datetime.now(),
+                if use_ollama:
+                    # Use Ollama
+                    response = ollama.chat(
+                        model=model_name,
+                        messages=[{"role": "user", "content": prompt}]
+                    )
+                    result_text = response["message"]["content"]
+                elif use_mlx:
+                    # Use MLX
+                    messages = [{"role": "user", "content": prompt}]
+                    mlx_prompt = tokenizer.apply_chat_template(
+                        messages,
+                        tokenize=False,
+                        add_generation_prompt=True,
+                    )
+                    result_text = generate(
+                        model, tokenizer, prompt=mlx_prompt, verbose=False
+                    )
+                else:
+                    # Use Gemini
+                    response = model.generate_content(prompt)
+                    result_text = response.text
+                
+                inference_time = time.time() - inference_start
+                stats["inference_time"] += inference_time
+                
+                # Clean up response - remove markdown code fences and common wrappers
+                result_text_cleaned = result_text.strip()
+                
+                # Remove markdown code blocks (```json, ```python, etc.)
+                if result_text_cleaned.startswith("```"):
+                    lines = result_text_cleaned.split("\n")
+                    # Remove first line if it's a code fence
+                    if lines[0].startswith("```"):
+                        lines = lines[1:]
+                    # Remove last line if it's a closing code fence
+                    if lines and lines[-1].strip() == "```":
+                        lines = lines[:-1]
+                    result_text_cleaned = "\n".join(lines).strip()
+                
+                # Prepare update data
+                update_timestamp = datetime.now()
+                update_data = {
+                    dst_field: result_text_cleaned,
+                    f"{dst_field}_model": model_name,
+                    f"{dst_field}_backend": "mlx" if use_mlx else ("ollama" if use_ollama else "gemini"),
+                    f"{dst_field}_timestamp": update_timestamp,
+                    f"{dst_field}_inference_time": inference_time,
+                }
+                
+                # Print what will be/was updated
+                print(f"\n{'=' * 70}")
+                print(f"{'[DRY RUN] ' if dry_run else ''}Article ID: {_id}")
+                print(f"Title: {title}")
+                print(f"Source: {source}")
+                print(f"Published: {published}")
+                print(f"Inference time: {inference_time:.2f}s")            
+                backend_name = "MLX" if use_mlx else ("Ollama" if use_ollama else "Gemini")
+                print(f"\nPrompt sent to {backend_name} ({len(prompt)} chars):")
+                print("-" * 70)
+                print(prompt[:500] + "..." if len(prompt) > 500 else prompt)
+                print("-" * 70)
+                print(f"\n{backend_name} Response ({len(result_text_cleaned)} chars):")
+                print("-" * 70)
+                print(result_text_cleaned)
+                print("-" * 70)
+                print(f"  {dst_field}: {result_text_cleaned[:100]}..." if len(result_text_cleaned) > 100 else f"  {dst_field}: {result_text_cleaned}")
+                print(f"  {dst_field}_model: {model_name}")
+                print(f"  {dst_field}_backend: {'ollama' if use_ollama else 'gemini'}")
+                print(f"  {dst_field}_timestamp: {update_timestamp.isoformat()}")
+                print(f"  {dst_field}_inference_time: {inference_time:.2f}s")
+                print("=" * 70)
+                
+                if not dry_run:
+                    # Store result in MongoDB
+                    mongo_coll.update_one(
+                        {"_id": _id},
+                        {"$set": update_data}
+                    )
+                
+                # Track modified ID
+                stats["modified_ids"].append(str(_id))
+                stats["processed"] += 1
+                
+                # Check if we've reached the limit of processed documents
+                if limit and stats["processed"] >= limit:
+                    print(f"\n✅ Reached limit of {limit} processed documents")
+                    break
+                    
+            except Exception as e:
+                print(f"\nError processing article {_id}: {e}")
+                stats["errors"] += 1
+                
+                # Store error in MongoDB
+                if not dry_run:
+                    mongo_coll.update_one(
+                        {"_id": _id},
+                        {
+                            "$set": {
+                                f"{dst_field}_error": str(e),
+                                f"{dst_field}_error_timestamp": datetime.now(),
+                            }
                         }
-                    }
-                )
+                    )
+    finally:
+        # Always close the cursor to free server resources
+        cursor.close()
     
     # Calculate total time
     stats["total_time"] = time.time() - start_time
@@ -490,7 +494,7 @@ def main(argv=None):
     elif args.idsource:
         try:
             with open(args.idsource, "r") as f:
-                id_list = [line.strip() for line in f if line.strip()]
+                id_list = [line.strip() for line in f if line.strip() and not line.strip().startswith("#")]
         except FileNotFoundError:
             print(f"Error: ID source file '{args.idsource}' not found.")
             sys.exit(1)
