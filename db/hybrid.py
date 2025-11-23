@@ -205,7 +205,7 @@ def main(argv=None):
             candidates = list(
                 mongo_coll.find(
                     fulltext_filter,
-                    {"_id": 1, "title": 1, "source": 1, "published": 1, "ner": 1, "article": 1},
+                    {"_id": 1, "title": 1, "source": 1, "published": 1, "ner": 1, "article": 1, "bias": 1},
                 )
             )
     else:
@@ -215,7 +215,7 @@ def main(argv=None):
         candidates = list(
             mongo_coll.find(
                 mongo_filter,
-                {"_id": 1, "title": 1, "source": 1, "published": 1, "ner": 1, "article": 1},
+                {"_id": 1, "title": 1, "source": 1, "published": 1, "ner": 1, "article": 1, "bias": 1},
             ).sort("published", -1)
         )
         debug(f"Mongo filter matched: {len(candidates)} records")
@@ -228,7 +228,7 @@ def main(argv=None):
             text_candidates = list(
                 mongo_coll.find(
                     text_filter,
-                    {"_id": 1, "title": 1, "source": 1, "published": 1, "ner": 1, "article": 1},
+                    {"_id": 1, "title": 1, "source": 1, "published": 1, "ner": 1, "article": 1, "bias": 1},
                 )
             )
             debug(f"Full-text search matched: {len(text_candidates)} records")
@@ -348,6 +348,7 @@ def main(argv=None):
         print(f"Title: {doc.get('title', '')}")
         print(f"Published: {published_iso}")
         print(f"Source: {doc.get('source', '')}")
+        print(f"Bias: {doc.get('bias', '')}")
         if show_entities is not None:
             from mongo2chroma import extract_entities_from_doc, format_entities
 

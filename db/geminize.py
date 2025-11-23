@@ -297,8 +297,10 @@ Article Content:
                     f"{dst_field}_inference_time": inference_time,
                 }
                 
+                stats["processed"] += 1
+
                 # Print what will be/was updated
-                print(f"\n{'=' * 70}")
+                print(f"\n{f' {stats['processed']} '.center(70, '=')}")
                 print(f"{'[DRY RUN] ' if dry_run else ''}Article ID: {_id}")
                 print(f"Title: {title}")
                 print(f"Source: {source}")
@@ -329,7 +331,6 @@ Article Content:
                 
                 # Track modified ID
                 stats["modified_ids"].append(str(_id))
-                stats["processed"] += 1
                 
                 # Check if we've reached the limit of processed documents
                 if limit and stats["processed"] >= limit:

@@ -5,9 +5,10 @@ MLX_MODEL = mlx-community/Llama-4-Scout-17B-16E-Instruct-4bit
 NUMDAYS = -1
 TITLEFILE = output/titles.tsv
 
-.PHONY: build load back front vector query mp3 mgconsole testload thingsthatgo fini ner fner fnervector entity fvector
+.PHONY: build load back front vector query mp3 mgconsole testload thingsthatgo fini ner fner fnervector entity fvector bias mkvec fbias
 
-thingsthatgo: load ner vector entity query mp3 fini
+thingsthatgo: load ner vector entity mkvec bias query mp3 fini
+oldthingsthatgo: load ner vector entity query mp3 fini
 
 fvector: load ner vector fini
 fload: load ner vector entity fini
@@ -16,12 +17,14 @@ fnervector: ner vector fini
 fquerymp3: query mp3 fini
 fquery: load ner vector query fini
 fmp3: mp3 fini
+fbias: bias query mp3 fini
 
 black:
 	black db/*.py
 	black ner/*.py
 entity:
 	cd db && ./mongo2chroma.py title --start-date $(NUMDAYS) | sort -k4,4 > $(TITLEFILE)
+	cd db &&  cat $(TITLEFILE) | grep -v thehindu | grep -v indiaexpress > output/titles_nohindu.tsv
 	cd db && ./mongo2chroma.py dumpentity --start-date $(NUMDAYS) | egrep '(PERSON|GPE|LOC|EVENT)' > output/impentity.tsv
 	cd db && ./mongo2chroma.py dumpentity --start-date $(NUMDAYS)  > output/entity.tsv
 	cd db && ./mongo2chroma.py dumpentity --start-date -60  > output/entity_60days.tsv
@@ -46,6 +49,15 @@ vector:
 # Do NER
 ner:
 	cd ../ner && ./RUNME.sh $(NUMDAYS)
+
+# run before bias. Create .vec files to use for bias and generating articles
+mkvec:
+	source $(DB_ENV)/bin/activate && cd db && ./runmkvecbatch.sh
+
+# output/ids.txt to run geminize.py
+bias:
+	source $(DB_ENV)/bin/activate && cd db && ./runbias.sh
+
 # runseries of queries to generate db/output/*.md
 query:
 	find db/output -name "*.md" -delete
@@ -57,6 +69,8 @@ query:
 #	source $(DB_ENV)/bin/activate && cd db && ./runbatch.sh
 #	source $(DB_ENV)/bin/activate && cd db && ./run_parallel.sh
 # generate mp3 files into mp3/mp3 using files in db/output/*.md
+
+
 mp3:
 	find mp3/mp3 -name "*.mp3" -delete
 	cd mp3 && ./mkmkbatch.sh

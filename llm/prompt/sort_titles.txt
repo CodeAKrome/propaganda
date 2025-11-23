@@ -1,0 +1,33 @@
+Goal: A sorted, tab delimited, list of news article titles by category
+
+Method:
+
+1. Create a list of categories based on all article titles.
+
+2. Put each title into a category
+
+3. create 3 levels of categories
+
+4. keep id and title together.
+   
+Data format: id, article title
+
+This process involves parsing the provided data, creating a three-level categorical hierarchy for each news article, and then sorting the final list by these categories. The full, categorized list is provided below.
+
+The three-level categorization used is:
+
+1. **Level 1 (Broad Topic):** E.g., World, US Politics, Business/Economy.
+    
+2. **Level 2 (Geographic/Sector Focus):** E.g., Europe Politics, US Economy, Corporate News.
+    
+3. **Level 3 (Specific Subject/Event):** E.g., Immigration, UN Summit, Russia-Ukraine War.
+
+The output is sorted alphabetically by Level 1, then Level 2, then Level 3, and finally by the article title.
+
+Example output:
+Category Level 1        Category Level 2        Category Level 3        ID      Article Title
+Business/Economy        Africa Economy  Health/Trade    692262a8f58f79a697d31575        Egypt’s Unified Procurement Authority explores Pan-African digital platform to expand access to medicines
+Business/Economy        Asia Economy    Tourism/Trade   6922630ff58f79a697d315a0        Chinese cruise ships look to steer clear of Japan amid diplomatic dispute
+Business/Economy        Asia Economy    Tourism/Trade   6922630ff58f79a697d3159e        Japan businesses brush off worries over China tourists
+
+Data to sort:

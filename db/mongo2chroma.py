@@ -97,6 +97,17 @@ def parse_entity_list(entity_str: str) -> List[Tuple[str | None, str]]:
     return [parse_entity_spec(e.strip()) for e in entity_str.split(",")]
 
 
+def parse_id_file(filepath: str) -> List[str]:
+    """Read MongoDB IDs from a file, one per line. Lines starting with # are skipped."""
+    ids = []
+    with open(filepath, "r") as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#"):
+                ids.append(line)
+    return ids
+
+
 def build_mongo_entity_filter(
     and_list: List[Tuple[str | None, str]], or_list: List[Tuple[str | None, str]]
 ) -> Dict:
@@ -483,7 +494,7 @@ def export_articles(
         q.update(entity_filter)
 
     cursor = mongo_coll.find(
-        q, {"_id": 1, "title": 1, "source": 1, "published": 1, "ner": 1, "article": 1}
+        q, {"_id": 1, "title": 1, "source": 1, "published": 1, "ner": 1, "article": 1, "bias": 1}
     ).sort("published", -1)
 
     if limit:
@@ -500,11 +511,14 @@ def export_articles(
         if published_dt and isinstance(published_dt, datetime):
             published_iso = published_dt.isoformat()
 
+        bias = doc.get("bias", "")
+
         print("---")
         print(f"ID: {_id}")
         print(f"Title: {title}")
         print(f"Published: {published_iso}")
         print(f"Source: {source}")
+        print(f"Bias: {bias}")
 
         if show_entities is not None:
             entities = format_entities(extract_entities_from_doc(doc, show_entities))
@@ -614,6 +628,9 @@ def main(argv=None):
     )
     p_article.add_argument("--id", help="Comma-separated list of MongoDB _id strings")
     p_article.add_argument(
+        "--idfile", help="File containing MongoDB _id strings, one per line"
+    )
+    p_article.add_argument(
         "--start-date",
         help="Start date: ISO format or negative days (e.g., '-7' for 7 days ago)",
     )
@@ -708,7 +725,12 @@ def main(argv=None):
         return
 
     if args.cmd == "article":
-        id_list = [i.strip() for i in args.id.split(",")] if args.id else []
+        id_list = []
+        if args.id:
+            id_list = [i.strip() for i in args.id.split(",")]
+        if args.idfile:
+            id_list.extend(parse_id_file(args.idfile))
+        
         and_entities = parse_entity_list(args.andentity) if args.andentity else []
         or_entities = parse_entity_list(args.orentity) if args.orentity else []
 

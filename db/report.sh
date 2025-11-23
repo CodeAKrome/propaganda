@@ -27,27 +27,27 @@ svo_prompt="prompt/kgsvo.txt"
 printf "\n------------- $startdate days ----------------\n"
 
 # -- Hybrid search
-if [[ -z "$fulltext" ]]; then
-    printf "VECTOR %s Entity %s only search\n" "$filename" "$entity"
-    ./hybrid.py "$query" --bm25 --orentity "$entity" --start-date "$startdate" --showentity -n "$topn" > "$vec"
-else
-    if [[ $fulltext == +* ]]; then
-        filter="--filter"
-        text="${fulltext#+}"   # remove leading '+'
-    else
-        filter=""
-        text="$fulltext"
-    fi
+# if [[ -z "$fulltext" ]]; then
+#     printf "VECTOR %s Entity %s only search\n" "$filename" "$entity"
+#     ./hybrid.py "$query" --bm25 --orentity "$entity" --start-date "$startdate" --showentity -n "$topn" > "$vec"
+# else
+#     if [[ $fulltext == +* ]]; then
+#         filter="--filter"
+#         text="${fulltext#+}"   # remove leading '+'
+#     else
+#         filter=""
+#         text="$fulltext"
+#     fi
 
-    if [[ -z "$filter" ]]; then
-        printf "UNION %s Entity %s Full text %s search %s\t%s\t%s\n" "$filename" "$entity" "$text"
-        ./hybrid.py "$query" --bm25 --orentity "$entity" --start-date "$startdate" --showentity -n "$topn" --fulltext "$text" > "$vec"
-    else
-        printf "PREFILTER %s Entity %s Full text %s search %s\t%s\t%s\n" "$filename" "$entity" "$text"
-        ./hybrid.py "$query" --bm25 --orentity "$entity" --start-date "$startdate" --showentity -n "$topn" --fulltext "$text" "$filter" > "$vec"
-    fi
+#     if [[ -z "$filter" ]]; then
+#         printf "UNION %s Entity %s Full text %s search %s\t%s\t%s\n" "$filename" "$entity" "$text"
+#         ./hybrid.py "$query" --bm25 --orentity "$entity" --start-date "$startdate" --showentity -n "$topn" --fulltext "$text" > "$vec"
+#     else
+#         printf "PREFILTER %s Entity %s Full text %s search %s\t%s\t%s\n" "$filename" "$entity" "$text"
+#         ./hybrid.py "$query" --bm25 --orentity "$entity" --start-date "$startdate" --showentity -n "$topn" --fulltext "$text" "$filter" > "$vec"
+#     fi
 
-fi
+# fi
 
 count=$(fgrep 'ID:' "$vec" | wc -l | tr -d '[:space:]')
 
@@ -69,6 +69,26 @@ If you don't find anything relevant, just say 'Nothing relevant found.'
 Describe all the major themes.
 
 Relationships are shown in the <relations> section in (subject,object,verb,explanation) format.
+
+Bias Analysis:
+Each article, has a bias analysis in JSON format with the following structure:
+
+a. DIRECTION - The political leaning:
+- L = Left (liberal/progressive bias)
+- C = Center (balanced/neutral)
+- R = Right (conservative bias)
+
+b. DEGREE - The intensity of bias:
+- L = Low (minimal bias, mostly factual)
+- M = Medium (noticeable bias in framing or emphasis)
+- H = High (strong bias, significant editorializing)
+
+3. REASON - A brief explanation (2-4 sentences) justifying your direction and degree ratings based on specific evidence from the article.
+
+-Example-
+{"dir": {"L": 0.1, "C": 0.4, "R": 0.5}, "deg": {"L": 0.1, "M": 0.2, "H": 0.7}, "reason": "The article uses loaded language like 'radical agenda' and 'government overreach' while exclusively quoting conservative sources. It omits counterarguments and frames policy proposals in exclusively negative terms."}
+
+Analize the bias of the articles and summarize the bias findings in a concise paragraph at the end of your output.
 
 Respond as if you are a TV reporter on camera explaining to your audience.
 Use a professional newscaster tone like Walter Kronkite.
