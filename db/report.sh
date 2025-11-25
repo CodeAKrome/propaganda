@@ -1,3 +1,4 @@
+#!/bin/zsh
 startdate="$1"
 filename="$2"
 entity="$3"
@@ -23,37 +24,12 @@ titlefile="output/titles.tsv"
 topn=40
 svo_prompt="prompt/kgsvo.txt"
 
-
-printf "\n------------- $startdate days ----------------\n"
-
-# -- Hybrid search
-# if [[ -z "$fulltext" ]]; then
-#     printf "VECTOR %s Entity %s only search\n" "$filename" "$entity"
-#     ./hybrid.py "$query" --bm25 --orentity "$entity" --start-date "$startdate" --showentity -n "$topn" > "$vec"
-# else
-#     if [[ $fulltext == +* ]]; then
-#         filter="--filter"
-#         text="${fulltext#+}"   # remove leading '+'
-#     else
-#         filter=""
-#         text="$fulltext"
-#     fi
-
-#     if [[ -z "$filter" ]]; then
-#         printf "UNION %s Entity %s Full text %s search %s\t%s\t%s\n" "$filename" "$entity" "$text"
-#         ./hybrid.py "$query" --bm25 --orentity "$entity" --start-date "$startdate" --showentity -n "$topn" --fulltext "$text" > "$vec"
-#     else
-#         printf "PREFILTER %s Entity %s Full text %s search %s\t%s\t%s\n" "$filename" "$entity" "$text"
-#         ./hybrid.py "$query" --bm25 --orentity "$entity" --start-date "$startdate" --showentity -n "$topn" --fulltext "$text" "$filter" > "$vec"
-#     fi
-
-# fi
-
 count=$(fgrep 'ID:' "$vec" | wc -l | tr -d '[:space:]')
+
+printf "$filename\t$startdate\t$count\n"
 
 # check for 0 size.
 if [[ $count -eq 0 ]]; then
-    printf "zilch\t%s\t%s\n" "$filename" "$entity"
     exit 0
 fi
 
@@ -89,6 +65,11 @@ b. DEGREE - The intensity of bias:
 {"dir": {"L": 0.1, "C": 0.4, "R": 0.5}, "deg": {"L": 0.1, "M": 0.2, "H": 0.7}, "reason": "The article uses loaded language like 'radical agenda' and 'government overreach' while exclusively quoting conservative sources. It omits counterarguments and frames policy proposals in exclusively negative terms."}
 
 Analize the bias of the articles and summarize the bias findings in a concise paragraph at the end of your output.
+Do not menntion the bias numbers directly, just summarize the bias findings in a concise paragraph.
+Use the bias data to determine the overall bias of the articles and give that as a conclusion.
+Be specific when mentioning which sources are biuased and how.
+
+When reporting, speak in a professional newscaster tone like Walter Kronkite.
 
 Respond as if you are a TV reporter on camera explaining to your audience.
 Use a professional newscaster tone like Walter Kronkite.

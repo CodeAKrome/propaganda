@@ -17,7 +17,7 @@ fnervector: ner vector fini
 fquerymp3: query mp3 fini
 fquery: load ner vector query fini
 fmp3: mp3 fini
-fbias: bias query mp3 fini
+fbias: mkvec bias query mp3 fini
 
 black:
 	black db/*.py
@@ -50,8 +50,10 @@ vector:
 ner:
 	cd ../ner && ./RUNME.sh $(NUMDAYS)
 
-# run before bias. Create .vec files to use for bias and generating articles
+# run before bias. Create .vec and .ids files to use for bias and generating articles
 mkvec:
+	find db/output -name "*.vec" -delete
+	find db/output -name "*.ids" -delete
 	source $(DB_ENV)/bin/activate && cd db && ./runmkvecbatch.sh
 
 # output/ids.txt to run geminize.py
@@ -62,7 +64,7 @@ bias:
 query:
 	find db/output -name "*.md" -delete
 	find db/output -name "*.txt" -delete
-	find db/output -name "*.vec" -delete
+#	find db/output -name "*.vec" -delete
 	find db/output -name "*.cypher" -delete
 	find db/output -name "*.reporter" -delete
 	source $(DB_ENV)/bin/activate && cd db && ./runentitybatch.sh

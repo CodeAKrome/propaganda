@@ -49,6 +49,7 @@
 69226235f58f79a697d313b0	 Senator demands answers on Northwest fuel pipeline shutdown that could affect Thanksgiving travel
 69226235f58f79a697d313b3	 Senators want answers from Coast Guard on how it probes displays of swastikas or other hate symbols
 6922627bf58f79a697d31517	 Serbians mark anniversary of pro-government violence that spawned student strikes
+69226262f58f79a697d3146e	 Six, including police constable, arrested in ATM cash van robbery case
 69226236f58f79a697d313b6	 Supreme Court blocks order that found Texas congressional map is likely racially biased
 69226310f58f79a697d315a1	 Takaichi faces market tests from yen to stocks and bonds 
 6920f6e664a37efc5bbf90f0	 ‘Tampopo’ lives on in bowls of ramen around the world 
@@ -93,19 +94,40 @@
 69226277f58f79a697d314db	"You were a light for me" | Freed hostage hands heartfelt letter to President Trump
 69226279f58f79a697d314ff	175 GOP Lawmakers Call on FDA to Reverse Biden Admin’s ‘Mail-Order Abortion Scheme’
 6922631bf58f79a697d315e9	2 Robbers Overpower Guard and Steal Dozens of Ancient Gold Coins From Swiss Museum
+69226203f58f79a697d312c8	2 from Shivamogga IS module, whose handler is suspected to be linked to Red Fort blast, awarded 6 years’ jail for 2022 terror plot
+6922620ff58f79a697d3130d	2 months after announcement, Punjab yet to decide on Anandpur Sahib creation
 69226232f58f79a697d31395	20 Killed in Israeli Strikes as Israel and Hamas Trade Blame Over Truce
+69226201f58f79a697d312c7	25 years of Indian Cinema: 2015 was the year of Bajrangi Bhaijaan, Dil Dhadakne Do, Masaan
 6920f70f64a37efc5bbf9198	3 Children Are Injured in Grizzly Bear Attack in British Columbia
 6922629ff58f79a697d31560	3 Children, 1 Adult Taken to Hospital After Grizzly Bear Attack in BC
+692261fef58f79a697d312ba	3 reasons why Trump’s latest Russia-Ukraine peace deal favours Moscow
+6922620af58f79a697d312e9	350th martyrdom of Guru Tegh Bahadur: Anandpur Sahib turns white, gears up for historic observance
 69226254f58f79a697d31422	4 ways Victoria Beckham's wellness routine has changed since the early 2000s: I feel 'stronger than I did when I was 20,' she said
+692261f8f58f79a697d3127e	4 deaths in a week: 2 woman assistant BLOs die of heart attack in Gujarat, sparking fears on ‘SIR work pressure’
+692261faf58f79a697d3128d	4 accused remanded in police custody: Property dispute led to firing at real estate agent in Kandivali, say police
+69226207f58f79a697d312dc	4 dead, 3 injured as Shiv Sena candidate’s campaign car crashes into bikers on Thane flyover
 6920fb5b43a53e9495a10205	5 Takeaways From Trump’s Meeting With Mamdani
+692261fcf58f79a697d312a3	5 stories you must read today, November 22: From the death of another BLO in West Bengal to Spotify’s new feature and more
+69226209f58f79a697d312e8	5 items you will never spot at a dermatologist’s house
+69226261f58f79a697d3145a	50 booked, 3 held for disrupting flash mob
+692261faf58f79a697d3128e	500 delegates from 35 countries attend 10th Global Economic Summit in Mumbai
 69226319f58f79a697d315e3	56-year-old man got over $170,000 in student loan forgiveness under Trump: 'I could not believe it'
 6922625ef58f79a697d3142e	A Day Without Women
 69226232f58f79a697d31398	A Socialist Priest Embraces Venezuela’s Maduro, an Autocratic Leader
 69226229f58f79a697d3134d	A look at European countries that allow assisted dying as Slovenia heads for referendum
 69226217f58f79a697d31323	A cancer diagnosis for Tatiana Schlossberg brings a new season of grief to the Kennedy family
+69226261f58f79a697d3144d	‘A courtesy call’ 
+6922620ef58f79a697d31300	Aamir Khan attends ex-wife Reena Dutta’s art exhibition, she thanks him for his ‘continuous support’: ‘When your ex surprises you’
 6922631af58f79a697d315e7	Activist Ananym Capital sees upside if Baker Hughes spins off its oilfield services business
+69226205f58f79a697d312d6	Aditya Roy Kapur recalls the time he almost got inked at 18: ‘You know that famous one of him with both arms out…’
+69226261f58f79a697d3144e	Adversary making desperate attempts to disrupt peace: J&K L-G Manoj Sinha
+69226261f58f79a697d31458	Advocates’ bodies seek probe by High Court judge into killing of Maoists
 69226309f58f79a697d3158d	Africa's first G20 summit opens with an ambitious agenda and tries to move on from Trump's boycott
+69226208f58f79a697d312e0	African student shares honest experience of studying at IIT Bombay: ‘Underestimated what I was walking into’
 69226232f58f79a697d31394	After Russian Strike on Apartment Buildings, Ukraine’s Hope for Survivors Fades
+69226264f58f79a697d3147d	After poll drubbing, Prashant Kishor's Jan Suraaj Party dissolves all organisational units
+692261fdf58f79a697d312b1	Ahead of local body polls, Kerala gets EVM tracker — created by two BTech students
+692261fef58f79a697d312bc	Ahead of 27 years of jail, former Brazil President Jair Bolsonaro arrested
 69226253f58f79a697d3141f	AI Christmas: The latest devices from Amazon, Meta, Google and more
 6922624af58f79a697d3140d	Alawi grief and Fatimid tragedy on martyrdom anniversary
 6922629ef58f79a697d31557	Alberta Premier Says New Zealand Taking ‘Right Direction’ With Puberty Blocker Ban for Minors, Similar to Alberta
@@ -114,6 +136,8 @@
 6922624ff58f79a697d31417	Ali Jahanshahi appointed as Iran Army Ground Force commander
 69226288f58f79a697d3153d	All Blacks extend 72-year winning streak against spirited Wales in seven-try victory
 69226276f58f79a697d314d9	Amb. Leiter's emotional speech to captivity survivors: 'Carrying our ancestors’ prayers'
+69226264f58f79a697d3147a	Ande Sri is Telangana’s diamond, says Chief Minister
+69226262f58f79a697d31464	Andhra CM orders probe after pregnant woman dies at government hospital
 69226230f58f79a697d31379	Andrew Mountbatten-Windsor should help US investigators over Jeffrey Epstein, Sir Keir Starmer suggests
 6922631df58f79a697d3160f	Anna Kepner dies mysteriously during family vacation on Carnival cruise ship: Timeline of events
 69226276f58f79a697d314ca	Anna Kepner posted eerie TikTok lip-syncing to song about dying young in days before her death on Carnival cruise
@@ -125,19 +149,46 @@
 69226228f58f79a697d3134a	Any Ukraine peace plan must be accepted in Kyiv, says Polish president
 69226275f58f79a697d314c2	AOC email seeks donations for turkey giveaway — but money goes straight to her campaign coffers
 6920f73f64a37efc5bbf9246	Araghchi invites Lebanese counterpart to visit Tehran
+6922620ef58f79a697d312fc	Are you a dog owner in Lucknow? Follow this step-by-step guide on how to register dogs online and avoid a big fine
 69226233f58f79a697d3139f	Are Fighter Jets Canada’s ‘Bargaining Chip’ in Trade Talks?
+69226260f58f79a697d3143b	Are e-KYC norms excluding MGNREGA workers? | Explained
+6922620df58f79a697d312f7	Around Town: Inside ‘Malgudi’, Shankar Mahadevan’s vegetarian South Indian all-day resto-cafe with its own Kaapi programme
+69226260f58f79a697d3144a	Arrested couple accused of ₹23 crore fraud brought to city by CCS on transit warrant
+69226263f58f79a697d31477	Art has to ask difficult questions: T.M. Krishna
+692261f4f58f79a697d31255	Art as play: How process-driven activities are changing the way children are learning art in India
 6920f70a64a37efc5bbf9160	As Trump Pushes on Russia-Ukraine Peace Plan, Zelensky’s Options Are Narrowing
+692261fff58f79a697d312bd	As Delhi chokes, 16 power units around the capital run without SO₂ controls
 6922627ef58f79a697d3152a	As climate migration rises, rich countries are ramping up spending to police their borders
+69226205f58f79a697d312d7	Ashes 2025-26: WATCH as Jamie Smith was given out in controversial DRS decision on Day 2 of first Australia versus England Test at Perth
+692261fcf58f79a697d312a5	Ashes: Michael Vaughan says it will be ‘amateurish’ if England don’t play pink ball warm-up before second Test
 6920f76764a37efc5bbf92e5	At Least 52 Kidnapped From Nigeria School in Second Mass Abduction This Week
 69226251f58f79a697d31419	At least 67 Palestinian children killed after Gaza ceasefire
+69226262f58f79a697d3146d	Attempt to sell seven-day-old baby boy foiled; five, including baby’s mother, arrested
 69226277f58f79a697d314e1	Attorney General clashes with government on reservist law
+6922620ef58f79a697d312ff	Australia cricket chief clarifies speculation of Usman Khawaja’s back stiffness due to playing golf
+6922620af58f79a697d312ea	Australian Open Super 500: How Lakshya Sen won a 85-minute thriller against Chou Tien Chen with dazzling defensive retrieves to reach final
 6920f6e364a37efc5bbf90dd	Bald eagle drops cat mid-flight, sending carcass careening through moving car:  ‘I have guts all over me’
+69226260f58f79a697d31441	Battle for the ballot a burden on the pocket
+69226208f58f79a697d312e1	Behind Trump’s call to ‘execute’ Democrat lawmakers, concerns about illegal military action
 69226231f58f79a697d31386	Benefits fraudster admits pocketing £7k council tax support while holidaying in Greece and Spain
+692261f4f58f79a697d3125b	Bengal CM against SIR as it doesn’t suit her appeasement politics: BJP
 6922627ff58f79a697d3152c	Bengal: Another BLO found hanging, Mamata asks how many more lives will be lost due to SIR
 6922631cf58f79a697d31602	Bengals' Joe Burrow out for Week 12 despite full practices, Joe Flacco to start sixth straight game: report
+69226205f58f79a697d312d4	Bengaluru cash-van heist: Constable, 2 others held, 3 detained; over 6 cr of 7.11 cr stolen seized
+69226210f58f79a697d3130e	Bengaluru stadium stampede: Karnataka HC dismisses event management firm DNA’s plea against Justice D’Cunha report
+69226205f58f79a697d312d5	Between ‘Communist’ Mamdani and ‘Despot’ Trump, the common ground is the city
 69226239f58f79a697d313c4	BIG reforms in India's labour laws: Free health check-ups to overtime pay, how will newly implemented codes benefit young workers?
 6920f63e64a37efc5bbf8ef4	Bill Belichick addresses report of UNC players amassing dozens of traffic violations under his leadership
 6922631cf58f79a697d315f7	Bill Maher hits back at Larry David's 'dumb' NYT op-ed criticizing his dinner with Trump
+692261f4f58f79a697d3125a	Bill on civil nuclear sector among 10 listed for Winter Session
+69226203f58f79a697d312c9	‘Bit shell-shocked’: Ben Stokes reacts to England’s eight-wicket hammering to Australia in first 2025-26 Ashes Test
+692261f8f58f79a697d31278	BJP relying heavily on ‘family welfare scheme’, intimidation: Oppn
+692261fdf58f79a697d312b5	BJP flags ‘disproportionate’ increase of Muslim voters in Bengal; TMC calls claim ‘baseless’
+6922625ff58f79a697d31432	BJP criticises T.N. Deputy CM Udhayanidhi Stalin for calling Sanskrit a ‘dead language’
+692261f9f58f79a697d3128b	BJP, RSS spreading poison in the name of language: Uddhav Thackeray
+692261faf58f79a697d3128c	BJP’s first Bihar Home Minister: Rise and rise of Samrat Choudhary amid rows, shifting loyalties
+69226261f58f79a697d31456	BJP’s women’s wing protests against AAP govt.’s unkept promise
+69226261f58f79a697d3145d	‘Black sheep’
 69226274f58f79a697d314bb	Bodycam footage shows Nevada stepdad scream ‘my kid is dead’ after 11-year-old is killed in road-rage shooting
 69226267f58f79a697d3149a	Bolsonaro moved to police custody over escape concerns
 69226217f58f79a697d31322	Boos, blowups and last-minute pause as a chaotic COP30 closes out
@@ -152,8 +203,12 @@
 69226230f58f79a697d31380	Britain is becoming more racist, says Shabana Mahmood as she describes abuse faced by her family
 69226231f58f79a697d31385	British and Irish shoppers warned over popular herbs that may contain stalk, bark, and plastic
 69226230f58f79a697d31383	Britons plant bulbs in tribute to Queen Elizabeth II in iconic London park
+69226211f58f79a697d31314	BSEAP SSC Board Exam 2025 Datesheet: Andhra Pradesh Class 10th timetable out
+69226262f58f79a697d31468	BSWML pins high hopes on waste collection kiosks to clean up Bengaluru
 69226277f58f79a697d314de	Bus driver who drove off without infant's mother to be investigated
 6920f6e364a37efc5bbf90e1	Bystander, 38, knifed in back by driver who confronted him for recording road rage clash: cops, sources
+6922625ff58f79a697d31434	CAG urges trainee civil servants to play transformative role
+69226261f58f79a697d3144c	CAG exposed lies of Revanth Reddy govt. on debt, monthly interest payments: KTR
 69226240f58f79a697d313e2	California gubernatorial hopeful Eric Swalwell embraces role as Trump's loudest critic amid new DOJ probe
 69226230f58f79a697d31381	Campaigner brands Sadiq Khan 'absolute snake' while Keir Starmer vows to investigate London grooming gangs
 6922629ff58f79a697d3155c	Canada Post Reaches Deal in Principle With Union, Strike Suspended
@@ -165,11 +220,17 @@
 69226226f58f79a697d31345	‘Carbonara sauce’ at EU Parliament causes stir with Italy
 69226225f58f79a697d31343	Catholic bishop in Spain resigns after abuse allegation
 69226277f58f79a697d314dc	Cave of the Patriarchs utilities shifted to Israeli control
+6920f74564a37efc5bbf9264	Centre for Heat Resilience in Tamil Nadu has a big roadmap:  Supriya Sahu
+692261f8f58f79a697d31284	Centre proposes Bill to take control over Chandigarh by appointing an L-G; AAP, Cong oppose move
+692261fdf58f79a697d312ad	Centre’s panel grants preliminary nod for pumped hydro project near Malshej Ghat in Maharashtra
+6922620ff58f79a697d31305	Chadwick Boseman honoured with Hollywood Walk of Fame star; actor’s wife places his shoes on the star, Black Panther director Ryan Coogler breaks down
+69226210f58f79a697d31310	‘Changing rules of game after admission process’: Telangana HC halts local quota in PG medical management seats
 69226285f58f79a697d3153a	Chaos and drama mark Springboks' first win in Dublin in 13 years
 69226279f58f79a697d314f5	Charlie Kirk's Security Chief: Campus Police Failed to Cover Rooftops as Promised Before Assassination
 6920f77464a37efc5bbf92f4	Chicago rejects DOJ grants tied to Trump's immigration policies
 6922631cf58f79a697d315ff	Chicago train fire attack shows why ‘decarceration’ policies are putting lives at risk: expert
 69226245f58f79a697d31403	Chile launches intl. campaign to expel Israel from UN
+692261faf58f79a697d31291	China building world’s first floating artificial island designed to withstand nuclear blasts: Report
 69226293f58f79a697d3154a	China takes spat with Japan over Taiwan to U.N.; vows to defend itself
 69226307f58f79a697d31589	China spurns Japan's trilateral summit plan over Takaichi's Taiwan remarks
 69226245f58f79a697d31404	China to continue rising high-quality urban renewal: official
@@ -182,23 +243,41 @@
 69226231f58f79a697d3138c	Christian persecution: More than 300 Catholic schoolchildren abducted by masked gunmen in Nigeria
 6920f70d64a37efc5bbf9186	Christmas chaos: Major delivery company could see delivery strike over holidays
 69226230f58f79a697d31382	Christmas mural urgently removed from London neighbourhood after serious errors pointed out
+69226262f58f79a697d31466	CJI releases Collegium data on High Court judge appointments
+69226264f58f79a697d3148b	CJI-designate identifies chipping away at 90,000-strong arrears in Supreme Court as his first priority
 6922629ff58f79a697d3155b	Class-Action Lawsuit in Plant-Based Milk Recall Settled at $6.5M
 69226282f58f79a697d31534	Class, caste, collapsing public universities: Why Indian researchers publish in predatory journals
+692261fdf58f79a697d312b6	CLAT 2026 Admit Cards Out: Hall-tickets released for CLAT UG, PG at consortiumofnlus.ac.in
 69226220f58f79a697d31338	Climate activists dye Venice’s Grand Canal green amid UN summit
 6922627af58f79a697d3150c	Clyburn: Dems Didn't Cave on Shutdown, They Got Attention for Issue, Election Wins in VA and NJ
+692261f7f58f79a697d31272	CM Fadnavis launches ‘Maha-Deva’ intiative to boost school-level football
+69226262f58f79a697d31470	CM writes to PM on steep crash in maize prices
 6920f6fa64a37efc5bbf9128	Cobolli wins epic tie-break to send Italy into Davis Cup final
 69226318f58f79a697d315d2	Cold plunges and kombucha: Do winter wellness trends really work?
+69226264f58f79a697d31479	Collector lauds efforts of artists, writers in preserving art for posterity
 6920f63e64a37efc5bbf8eee	College football team entices students with free beer, ice cream ahead of big game
 6922622ff58f79a697d31371	Colombian scientists recover cannon, coins and porcelain cup from 300-year-old Spanish shipwreck
 6922631df58f79a697d31609	Comey blasts ‘reckless and ill-conceived’ prosecution – argues charges should be dismissed ‘twice over’ in latest court filing
+69226261f58f79a697d31455	Cong., AAP, Akalis oppose Chandigarh plan of Central govt.
+6922620cf58f79a697d312f0	Congress questions effectiveness of ‘repackaged’ 4 labour codes, asks Centre to ‘learn from Karnataka’
+6922625ff58f79a697d31435	Congress appoints Vinay Kumar as new Himachal PCC chief
+69226262f58f79a697d31460	Congress ignored Sardar Patel’s contribution, says BJP chief
+69226264f58f79a697d31480	Congress high command should clearly say who is CM of State: Ashok 
 6920f6d964a37efc5bbf9085	Conservatives Plan to Propose Stricter Asylum Rules in Amendments to Border Bill
+69226262f58f79a697d3146b	Consumer panel orders compensation for not repairing faulty air conditioner unit
+69226264f58f79a697d31485	Contract teachers demand job security
 69226295f58f79a697d3154c	COP30 climate summit deadlocked as EU rejects draft deal
 69226221f58f79a697d3133a	COP30 seals uneasy climate deal that sidesteps fossil fuels
 692261ddf58f79a697d3124c	COP30 extended due to rift over future of fossil fuel: ‘Clown show’
 6922631ef58f79a697d31620	COP30 - Five key takeaways from a deeply divisive climate summit 
 69226267f58f79a697d31499	COP30: No fossil fuel deal after protests, chaos and compromise
+69226207f58f79a697d312db	Court imposes fine of Rs 90,000 on kiosk outside PU for selling shakes, sandwiches without licence
+69226260f58f79a697d31439	CPI (Maoist) | The guns fall silent
+69226264f58f79a697d3147b	CPI(M) criticises Supreme Court response on Presidential reference
+69226262f58f79a697d31462	CPI(ML) New Democracy leader demands halt to  Operation Kagar
 6922631bf58f79a697d315e8	Cramer's week ahead: Earnings from Burlington, Best Buy, Kohl's and Dell
 6922622bf58f79a697d31352	Crew evacuated after fire on container ship at Los Angeles port, officials said
+69226265f58f79a697d3148f	Cruise season kicks off amid hopes of revival
 6920f76864a37efc5bbf92e7	Cryptology Group Held an Election, but Can’t Decrypt the Results
 6922622ff58f79a697d3136a	Cyber pals? Russian, North Korean hackers may be sharing resources, programs: experts
 69226318f58f79a697d315d7	Daily Mail publisher agrees to buy Daily Telegraph for £500m
@@ -207,21 +286,34 @@
 6922622af58f79a697d3134e	Dark and cold, Kyiv prepares for another winter under Russian attack
 69226242f58f79a697d313fd	Daughter of Jailed Chinese Church Leader Calls on US to ‘Stand With Us’
 69226238f58f79a697d313c0	Days after Delhi blast, major arms racket busted: China-made weapons were supplied to India from Pakistan
+6922620ff58f79a697d3130b	Days after finding man’s body near railway tracks in Delhi, police arrest his former girlfriend’s father, cousin for murder
 69226255f58f79a697d31424	Deepak Chopra: If you have at least 6 one-on-one conversations a day, 'everything improves in your life'—here's why
+6920f66664a37efc5bbf8f54	Delhi student’s suicide: On his last ride to Metro station, teen spoke of ‘torture by teachers’
 69226238f58f79a697d313be	Delhi blast case: J-K Police make another arrest linked to 'white-collar' terror module, Pulwama man held
 69226239f58f79a697d313c2	Delhi blast UPDATE: Kashmiri PhD student from IIT Kanpur goes MISSING, probe underway as links with Dr Shaheen, Dr Parvez Ansari found...
+692261f5f58f79a697d31262	Delhi chokes, but 15 of 35 power units in 300-km radius don’t treat sulphur dioxide
+692261f4f58f79a697d31252	Delhi govt declares public holiday on Nov 25 to commemorate Guru Tegh Bahadur’s 350th Shaheedi Diwas
 6922623bf58f79a697d313c9	Delhi-NCR pollution: Air quality remains 'very poor' despite slight improvement in AQI
 6920fb3a43a53e9495a101f4	Dem House hopeful exposed as far-left activist pushing to abolish police weeks before special election
 6922627af58f79a697d31505	Democrat-Run Chicago: 9 Shot After Downtown Christmas Tree Lighting
 69226268f58f79a697d3149c	Despite a changing economic and political relationship, German companies are still tied to China. Why can’t they walk away?
+6922625ff58f79a697d31433	Devotees barred from climbing Arunachala Hills in Tiruvannamalai for Maha Deepam festival
+6920f66664a37efc5bbf8f4f	Dharmasthala case: SIT files report for perjury case against complainant
+6922620ef58f79a697d31301	Did you know that cats can develop dementia, too? Researchers find striking similarities with Alzheimer’s in humans
+69226209f58f79a697d312e6	Didn’t get your SIR enumeration form from BLO? Here’s what you can do now
 69226253f58f79a697d3141e	Does Berkshire's big tech bet signal a new risk tolerance in Omaha?
 69226317f58f79a697d315c8	Does religion still matter in Polish politics?
 6920f70b64a37efc5bbf9168	Donald Trump blasts Keir Starmer and Ed Miliband's 'out of control energy problems' in damning blow to Labour
 69226240f58f79a697d313eb	Doubling Down: Top House Democrat says focus on high prices ‘absolutely going to continue’
 6922627cf58f79a697d31521	Dozens of Firefighters Battle Blaze on Container Ship Docked at LA Port
+692261f8f58f79a697d3127c	Dr Suman Singh gets one-year extension as Chandigarh DHS
 69226231f58f79a697d3138a	Driver pulled over by 'Grinch' police for covering car in Christmas lights amid Highway Code warning
+692261f4f58f79a697d31259	Drone sightings near Dutch city of Eindhoven suspends traffic at airport
 6922631ef58f79a697d3161b	Drones sightings halt air traffic near Dutch city of Eindhoven
 69226230f58f79a697d3137b	Drug dealer pleads with police to hand back 'National Lottery winnings' after admitting 'drug dealing is bad'
+692261fbf58f79a697d3129f	Drug-terror nexus a global threat, G20 needs to counter: PM at Johannesburg summit
+692261faf58f79a697d3129a	Dubai airshow Tejas fighter jet crash: IAF’s Namansh Syal lauded for bravery as his Himachal village grieves
+6922625ff58f79a697d31431	Dust to dust
 6922627af58f79a697d31508	Dutch Military Opens Fire at Unidentified Drones over Volkel Air Base
 69226242f58f79a697d313ff	Earthquake Jolts Bangladesh, Killing 5 and Injuring Around 100
 6920f6d964a37efc5bbf9081	Eby Open to Pipeline Expansion Through BC ‘If It’s Needed,’ Against Lifting Oil Tanker Ban
@@ -232,8 +324,12 @@
 69226258f58f79a697d31427	Egypt, Finland hold talks on UN agenda and regional crises
 692262a8f58f79a697d31575	Egypt’s Unified Procurement Authority explores Pan-African digital platform to expand access to medicines
 69226256f58f79a697d31426	Egypt’s army is more than capable of protecting national security: Spox
+69226261f58f79a697d3144b	Eight, including constable, arrested for abducting CEO of BPO for ransom
+692261f4f58f79a697d31257	Ek Omkar: On the oneness we keep forgetting
 69226278f58f79a697d314e9	Elon Musk's Vision of the Future: Work Is 'Optional,' Money Is Irrelevant as AI and Robots Take Over Everything
+692261fdf58f79a697d312b3	Enormous prehistoric Maya site found in Mexico reveals early understanding of the universe
 69226230f58f79a697d3137e	Enzo Maresca issues verdict on VAR controversy as Chelsea beat Burnley: 'Chaos inside the box!'
+69226260f58f79a697d31440	Ernakulam Revenue District School Kalolsavam to start on Nov. 25
 692262a8f58f79a697d31576	Ethiopia’s ‘unpredictable’ GERD releases trigger major Blue Nile swings: Egypt’s irrigation ministry
 69226244f58f79a697d31401	EU to convene to discuss Trump’s 28-point plan for Ukraine
 6922627af58f79a697d3150f	European Leaders Meet in South Africa to Counter Trump Ukraine Peace Deal
@@ -241,15 +337,21 @@
 6922622ff58f79a697d31367	European leaders push back on US plan to end war in Ukraine, hope to amend it at Geneva meeting
 6922621ff58f79a697d31336	European, Ukrainian and US officials to hold Geneva talks on Trump’s plan to end war
 6922623ff58f79a697d313d6	EV grant scheme boost worth £1.3bn expected in Budget
+69226265f58f79a697d3148e	Every citizen should be aware of existing laws, says DLSA Chairman
 6922631cf58f79a697d315f6	Everyday spice may be key to fighting fat and high cholesterol, scientists say
 6922622ef58f79a697d31361	Ex-general says Saudis unlikely to leak F-35 tech, but China 'could exploit through intel'
 6920f6e364a37efc5bbf90df	Ex-New York state trooper acquitted of murder in highway chase that killed 11-year-old girl
 69226278f58f79a697d314e5	Exclusive — Jenn Pellegrino on Trump Meeting Zohran Mamdani: Middle Ground Comes Down to Common Sense
 69226278f58f79a697d314ec	Exclusive – Jenn Pellegrino: Defend Forgotten America Aims to Extend MAGA Movement Beyond Trump's Second Term
+692261f5f58f79a697d31261	Exclusive: As cracks emerged in terror module, Umar Nabi skipped co-conspirator’s wedding but rushed to Kashmir later to mend bridges
 6920f63f64a37efc5bbf8efe	EXCLUSIVE: FBI concludes Trump shooter Thomas Crooks acted alone after unprecedented global investigation
 69226240f58f79a697d313e7	EXCLUSIVE: Bondi DOJ transfers death row inmates commuted by Biden to 'supermax' prison
+69226260f58f79a697d3143a	Experts call for strengthening wetland monitoring
+69226265f58f79a697d31492	Experts hail project to conserve natural resourses by involving communities
+692261f3f58f79a697d31250	Explained: What is GRAP and how is it implemented
 6922621df58f79a697d31332	Explainer-What's behind Nigeria's latest school kidnappings, church attack?
 6922631cf58f79a697d315f2	Explosion rocks senior living apartment building in Ohio, multiple people injured
+6920f66664a37efc5bbf8f59	Express at COP30: Countries reject draft text as it skips roadmap on fossil fuel phase-out
 6920f6e464a37efc5bbf90e3	FAA says Thanksgiving travel will be busiest in 15 years with over 360,000 flights
 692262a0f58f79a697d31561	FAA Urges Pilots to Proceed With Caution in Venezuelan Airspace as Security Situation Deteriorates
 6922622ef58f79a697d31360	FAA warns airlines about flying over Venezuela: 'Potentially hazardous situation'
@@ -260,6 +362,7 @@
 69226275f58f79a697d314c0	Familiar Ring: NYPD sleuth’s stolen ring makes it back to family after 4 decades
 6920f6e064a37efc5bbf90c1	Family of missing Colombian seek answers after US strike on alleged drug boat
 6920f6e464a37efc5bbf90e4	Family of NYC bartender stabbed to death in ‘gut-wrenching’ attack rips ‘coward’ boyfriend at his sentencing
+692261f8f58f79a697d31279	‘Fascist’? ‘Communist’? For an afternoon, they were just 2 guys from Queens.
 6920f6e464a37efc5bbf90e2	Fashion designer found dead on LI yacht had only ‘trace amount of cocaine’ in system, family claims — contradicting cops
 69226307f58f79a697d31587	Fatima Bosch's Miss Universe 2025 win echoes in Mexico where women fight for equality
 6920fb3b43a53e9495a101f7	FBI restricted agents from working with CAIR years before Texas branded group a terrorist organization
@@ -267,42 +370,57 @@
 6920f65e64a37efc5bbf8f28	Federal Judge Blocks IRS From Releasing Tax Data to Assist in Deportations
 692262a6f58f79a697d3156e	Federal Judge Orders End to National Guard in DC
 69226278f58f79a697d314eb	Fetterman: New Dem Candidates Making Being Anti-Israel 'Front and Center in Their Campaign'
+692261f7f58f79a697d31273	FIDE World Cup: Semifinals to be decided in tie-breaks
 69226217f58f79a697d31324	Fifth police officer dies after Brazil’s deadliest anti-drug raid
 6922622ef58f79a697d3135e	Figure AI sued by whistleblower who warned that startup's robots could 'fracture a human skull'
 6922631df58f79a697d31612	Fire on ship docked at Port of Los Angeles prompts evacuation of crew, officials say
 69226251f58f79a697d3141a	Fire breaks out on cargo ship in Port of Los Angeles
 6920f70d64a37efc5bbf9188	First standalone Superman comic sells for record $9.12million after attic discovery
+6920f66664a37efc5bbf8f4c	First G20 summit in Africa: PM Modi in SA for G20, says will present ‘One Future’ vision
 69226318f58f79a697d315d5	First Sycamore Gap tree 'offsprings' planted
 69226213f58f79a697d31319	First year of Israel-Hezbollah ceasefire marred by violations
+69226209f58f79a697d312e4	Flipkart Black Friday Sale 2025 from tomorrow: Grab lucrative deals on smartphones, laptops and more
 6920f63e64a37efc5bbf8ef1	Florida deputy with 25 years on force killed serving eviction notice; suspect, locksmith also shot: sheriff
 6922631df58f79a697d31615	Florida to use hundreds of confiscated Chinese drones as target practice for US military
 69226279f58f79a697d314f8	Fmr CIA Ops Officer: Slotkin 'Knew Exactly What She Was Putting Together with Her Little Propaganda Video'
+692261f3f58f79a697d3124f	For the Rangpuri allottees, piled-up fatigue, an offer they are forced to refuse
 6922628df58f79a697d31543	Foreign population in 10 prefectures more than doubles in decade
 6922631cf58f79a697d315f3	Former NBA, Wake Forest star Rodney Rogers dead at 54
 69226224f58f79a697d31342	Former British PM Boris Johnson hits back at 'incoherent' Covid-19 inquiry report
+69226261f58f79a697d3145f	Former RBI Governor to deliver talk on November 25 in Vijayawada
 6922627af58f79a697d31502	Four Injured in Shootout at North Carolina Christmas Tree Lighting Ceremony
 6920f63e64a37efc5bbf8ef5	Fox News Politics Newsletter: Trump, Mamdani set for Oval Office face-off
 6920f63f64a37efc5bbf8ef9	Fox News True Crime Newsletter: Cruise ship death mystery, Brian Walshe's plea, Karen Read's courtroom clash
 69226284f58f79a697d31539	France holds off Australia 48-33
+692261f7f58f79a697d31271	France’s Macron says peace deal proposal needs to be revisited
 6922631cf58f79a697d315f0	Franklin Graham shares ‘first gift’ of Christmas as Samaritan’s Purse prepares to deliver 13M shoebox gifts
+69226264f58f79a697d31482	Fraudster duo from Hyderabad nabbed by Dharwad police
 6922627af58f79a697d31504	Freed Sex Offender Poses as Doctor to Allegedly Assault a Young Girl at Phoenix, AZ Elementary School
 6922631df58f79a697d31614	Freed sex offender allegedly poses as doctor, sexually assaults student at Arizona elementary school: police
 69226222f58f79a697d3133d	French President Macron, who called NATO brain-dead, warns of end to G-20
 69226228f58f79a697d3134b	French lawmakers reject income part of budget bill as it heads to Senate
 6920f70b64a37efc5bbf9166	Frida Kahlo Portrait Sells for $55 Million, Setting Her Auction Record
 69226276f58f79a697d314d4	From the White House to the Ohel | Hostage survivor visits grave of Lubavitcher Rebbe
+6922620bf58f79a697d312ed	From Bandra to Tokyo: The making of Chef Lakhan Jethani and Mizu Izakaya
 69226308f58f79a697d3158c	Frustrations grow in Russia over cellphone internet outages that disrupt daily life
 6922621bf58f79a697d3132d	G-20 summit in South Africa adopts declaration despite US boycott, opposition
 6922623cf58f79a697d313cb	G20 Summit: Russia denounces 'illegitimate, unilateral' sanctions
 6922623cf58f79a697d313cd	G20 summit in South Africa adopts declaration despite US boycott
 69226213f58f79a697d31318	G20 adopts declaration despite US absence
+692261f4f58f79a697d3125c	G20 declaration barely mentions Ukraine, terrorism, skips Gaza plan
+692261f9f58f79a697d31289	G20 Summit: European leaders say US 28-point peace plan for Ukraine needs more ‘work’
+692261fcf58f79a697d312a8	G20 summit in South Africa adopts declaration without US input
+692261fff58f79a697d312c1	G20 Summit: In Johannesburg, PM Modi proposes four initiatives, including one to counter drug-terror nexus
 69226306f58f79a697d31585	G20 summit vows to tackle "unilateral trade measures" amid US absence
 69226232f58f79a697d31396	G20 Leaders Push Back on Trump’s Ukraine Peace Plan
 69226229f58f79a697d3134c	G20 leaders meet in South Africa seeking agreement, despite US boycott
 6922629ef58f79a697d31559	G7 Security Ministers in Ottawa to Talk Organized Crime, Migrant Smuggling, Drugs
+69226261f58f79a697d31450	Gandhian ideals regain relevance, says Hassan
 6922627df58f79a697d31527	Garlic can benefit heart and immune system, suggests research
 6922631bf58f79a697d315ea	Gary Mounfield, Former Stone Roses Bassist, Dies at 63
+692261f4f58f79a697d31254	Gastroenterologist suggests top non-vegetarian, low-calorie protein sources for muscle gain
 69226314f58f79a697d315b0	Gen Zers Are Becoming Political Kingmakers. But No One Speaks Their Language.
+692261f8f58f79a697d3127b	Geoffrey Boycott rips into ‘stupid’ England team after 1st Ashes Test loss: ‘They never learn, because they never listen to anyone outside their own bubble’
 69226232f58f79a697d31399	Germans Are Going Off Beer. That’s Forcing Brewers to Adapt or Go Bust.
 69226276f58f79a697d314d0	Germany weighs ban on, 'From the river to the sea'
 69226214f58f79a697d3131a	Germany's Merz, Brazil's Lula reconcile after Belem comments
@@ -310,8 +428,12 @@
 69226275f58f79a697d314c1	Ghislaine Maxwell filmed bizarrely carrying umbrella on sunny day at Texas prison: video
 69226317f58f79a697d315cd	Girl, 13, arrested on suspicion of murdering woman
 69226278f58f79a697d314e8	Gmail Explainer: How to Stop Google AI from Snooping Through Your Emails
+692261fcf58f79a697d312a7	‘Go to your country’: Foreign DJ claims Goa police officer misbehaved with her, probe initiated
+69226265f58f79a697d31493	Goddess rides Sarvabhoopala Vahanam and Swarna Ratham on sixth day of Brahmotsavam in Tiruchanur
+69226260f58f79a697d31438	Gold, silver objects stolen at temple near Arakkonam
 69226240f58f79a697d313e5	GOP Senate hopeful reveals how Dems are making America 'weaker' in viral video ahead of Thanksgiving
 69226317f58f79a697d315c7	Govt To Propose Bill For Hiking Insurance Sector FDI To 100% In Parliament's Winter Session
+69226262f58f79a697d31473	Govt. schools to have on-grid solar power soon
 69226286f58f79a697d3153b	Granollers and Martínez help Spain stun Germany to reach Davis Cup final
 69226280f58f79a697d3152e	GRAP restrictions made more stringent in Delhi-NCR as air quality remains ‘very poor’
 6922623af58f79a697d313c5	GRAP-4 restrictions activated in Delhi-NCR? Delhi authorities takes BIG step amid 'very poor' AQI, measures of GRAP-4 are being implemented under...
@@ -320,33 +442,63 @@
 6922626df58f79a697d314a6	Grizzly bear attack on school group in Canada leaves 4 seriously hurt
 69226218f58f79a697d31326	Guinea-Bissau holds close vote, Embalo seeks rare second term
 6922622ef58f79a697d31363	Gunmen Abduct More Than 200 Schoolchildren and 12 Teachers in Attack on Nigerian Catholic School
+69226260f58f79a697d31447	Had there been Operation Sindoor after 26/11, nobody would have dared to attack India: CM Fadnavis
 69226277f58f79a697d314dd	Hadrian’s Curse returns - Palestine is Judea
 6920f6fa64a37efc5bbf9129	Haiku in English: Nov. 22, 2025
+692261fbf58f79a697d312a1	‘Half a chance for the next game’: Pat Cummins gives an update about playing second 2025-26 Ashes Test against England
+69226208f58f79a697d312e3	Harbour Line services hit as fire breaks out near railway track between Bandra–Mahim
+69226260f58f79a697d31446	Harish Rao demands Assembly debate on sale of prime lands at throwaway rates
+69226261f58f79a697d31452	HC deserves credit for probe by SIT into Sabarimala gold theft, says Chennithala
+69226264f58f79a697d3147e	HDK predicts ‘explosive political developments’ 
 69226222f58f79a697d3133e	He was shot during Brazil's deadliest police raid. Now his wife is fighting to clear his name
 692262a8f58f79a697d31577	Health minister opens upgraded emergency units, inspects major infrastructure projects
 6920f68564a37efc5bbf9034	Here are real AI stocks to invest in and speculative ones to avoid
+6922620ff58f79a697d31306	Hidden Stories: Amid Pune’s construction frenzy, an archive that remembers those who built it
+692261f9f58f79a697d3128a	Himachal Pradesh excise dept seizes more than 21,000-litre illicit liquor, 33,000-litre lahan since April
 69226278f58f79a697d314e4	Holiday Joy: Thanksgiving Meal Costs Decline To Lowest In Four Years
 69226316f58f79a697d315c2	Honasa Consumer's CFO Ramanpreet Sohi Backs Govt's New Labour Codes
+692261f7f58f79a697d31267	Horoscope Today – November 23, 2025: What Do the Stars Hold for Leo, Pisces, Virgo, Aquarius and Taurus Today? Your Complete Astrological Guide
 69226319f58f79a697d315df	How Forest exploited Liverpool's weaknesses
 69226319f58f79a697d315e2	How much space $2,000 a month in rent gets you in the 25 biggest U.S. cities
 692262a6f58f79a697d3156d	How UK Drug Dealing Fueled Russia’s War Machine
+69226264f58f79a697d31483	How a police constable turned into a key conspirator in ATM cash van looting case
 69226230f58f79a697d31376	How one 17-year-old Briton took his severe eczema struggles into his own hands - and become an entrepreneurial success by age 22
+69226211f58f79a697d31313	‘How art could also mean livelihood – that question became the seed of Cholamandal’: Akkitham Narayanan
 69226319f58f79a697d315dd	Howe finally beats Guardiola - how Newcastle stopped Man City
 6920f70d64a37efc5bbf9185	Hundreds of children set to be enrolled in NHS-backed puberty blocker trial following Cass Review
 69226255f58f79a697d31425	I asked couples who’ve been married 40+ years for relationship advice—these brilliant tips kept them happy for decades
 69226275f58f79a697d314bc	ICE arrests illegal immigrant selling counterfeit goods on Canal Street
 69226276f58f79a697d314d1	IDF eliminates two Hezbollah terrorists in southern Lebanon
+692261f7f58f79a697d31276	If you reject, I will too… You have votes, I have funds: Ajit Pawar to voters
 6922627df58f79a697d31528	If we don’t control the AI industry, it could end up controlling us, warn two chilling new books
+692261fcf58f79a697d312a2	‘If he is in police custody, I want to know,’ brother of top Maoist leader
+692261f8f58f79a697d3127d	IFFI opening party moves to the streets as Goa aims to expand scale
+692261fdf58f79a697d312aa	IGNOU launches two micro-credential courses with GIZ on 40th Foundation Day
+692261fff58f79a697d312c0	IIM Nagpur launches its flagship ‘Blended MBA’ programme, receives 373 applications
 69226231f58f79a697d31391	Illegal migrants 'went berserk and smashed up office' at RAF Wethersfield, shocking footage reveals
 69226276f58f79a697d314cc	Illegal alien kills 8-year-old girl in car crash, given license by sanctuary state
+69226208f58f79a697d312dd	IMD forecasts heavy rain, squally weather for Andaman and Nicobar
+692261f4f58f79a697d3125f	IMF flags Pakistan’s corruption, eroding public trust, system favouring elite
 6920f6d964a37efc5bbf9082	Immigration Minister Extends Pause on New Private Refugee Sponsorships to 2027
+6920f66664a37efc5bbf8f50	In Gujarat’s ‘epicentre of cow slaughter convictions’, silence over life to 3 of a family
 69226254f58f79a697d31423	In a one-sided relationship with an AI chatbot? Here's 2025's Word of the Year
+692261f4f58f79a697d31260	In accommodating some, ignoring others, COP30 signals important shift in power equations
+692261f6f58f79a697d31263	In Maharashtra, strange case of missing pomegranates leaves farmers clueless
+6922625ff58f79a697d31436	In the name of the cow | Maharashtra’s cow vigilantes fuel fear among meat traders, cattle rearers
+692261faf58f79a697d31293	India vs South Africa, 2nd Test: How Kuldeep Yadav foxed his Delhi Capitals teammate Tristan Stubbs with flight and guile
 69226316f58f79a697d315be	India, Israel Discuss Ways To Enhance Cooperation In Agriculture Sector
 69226216f58f79a697d3131f	India: Unions call for nationwide action over labor reforms
 69226240f58f79a697d313de	Indian Tejas Fighter Jet Crashes in a Ball of Fire at Dubai Airshow, Killing Pilot
+692261f6f58f79a697d31266	Indian Railways crosses 1-billion-tonne freight loading, records over 3% year-on-year growth
+69226201f58f79a697d312c6	Indian businessman with Rs 32,000 crore net worth shares how you can change your own destiny
+6922620df58f79a697d312fa	Indian woman studying at NYU takes a stand against Nikhil Kamath’s ‘idiot’ jibe on MBA students: ‘Not everyone wants to be a hustler’
 6920f70c64a37efc5bbf9184	Inside the surge in 'cyber pick-pocketing': Identity of hundreds of thousands of Britons stolen as criminals deploy sinisterly effective new methods
+692261f4f58f79a697d31258	Inside India’s new wave of culture-first toys  — from Harappan digs to folk-art puzzles
 69226275f58f79a697d314c7	Insomniacs anonymous: Do you live in one of America’s sleepiest states?
+69226264f58f79a697d3148c	Integrate service with professional excellence, Vice-President exhorts students
+69226200f58f79a697d312c2	International weapons trafficking racket with links to Pakistan’s ISI busted in Delhi, 4 arrested
 69226250f58f79a697d31418	International community failed to protect Gaza children
+69226261f58f79a697d31454	International chess tournament inaugurated at Stella College
 69226252f58f79a697d3141c	Intl. session on children rights held by Iranian institute
 69226230f58f79a697d31378	Investigation into mysterious death of British expat in Spain closed without explanation as family vent their fury
 6922624df58f79a697d31413	Iran moves up 3 spots in global ranking of steelmakers
@@ -355,11 +507,13 @@
 6922624af58f79a697d3140e	Iraqi ministry plans increase in trade with Iran to $20b
 69226319f58f79a697d315e1	IRS crackdown on popular crypto 'tax cheat' begins with 2025 filing year
 69226318f58f79a697d315d6	Is time running out for BBC chair Samir Shah after latest resignation?
+692261f8f58f79a697d31283	ISB forum: Azim Premji honoured with research catalyst award
 6922625ff58f79a697d3142f	Israel continues raiding West Bank amid extrajudicial killings of Palestinians
 6922628af58f79a697d31540	Israel launches strikes in Gaza; hospitals say 24 killed
 69226248f58f79a697d3140a	Israel kills 7 Palestinians in Gaza over past 48 hours
 69226302f58f79a697d3157f	Israeli strikes across Gaza kill 22 Palestinians, medical and civil defence officials say
 6922625bf58f79a697d3142a	Israeli strikes across Gaza kill at least 32 Palestinians, as Hamas warns of ‘dangerous escalation’
+692261f8f58f79a697d31281	Israeli airstrikes kill at least 20 people in Gaza, medics say
 69226248f58f79a697d31409	Israeli forces torture Iranian Tasnim's journalist in prison
 69226249f58f79a697d3140b	Israeli military martyrs five Palestinians in strike in Gaza
 69226249f58f79a697d3140c	Israeli regime warplanes conduct airstrikes in S. Lebanon
@@ -368,32 +522,44 @@
 69226316f58f79a697d315bf	ISSA, ILO Among International Bodies Who Welcome New Labour Codes
 69226241f58f79a697d313ed	It won’t get any better: Washington faces another looming government shutdown
 6922622ff58f79a697d31374	Italian captain handed light sentence for speedboat crash that killed ‘Harry Potter’ publishing executive Adrienne Vaughan
+6922620df58f79a697d312fb	Italy’s Flavio Cobolli wins marathon tie-break to take his side into final
+69226260f58f79a697d31449	iTNT Hub starts operations in Coimbatore
 69226313f58f79a697d315aa	Jack Nicklaus to Oversee Golf Course Renovations at Joint Base Andrews, Trump Says
 69226239f58f79a697d313c1	Jagdeep Dhankhar's FIRST public remarks since resignation, says, 'Narrative ke chakkar mein...'
 6922631ef58f79a697d3161d	Jair Bolsonaro arrested after being deemed a flight risk
 69226231f58f79a697d31393	Jair Bolsonaro Arrested in Brazil Amid Fears He Might Flee to Avoid Prison
 6920f77564a37efc5bbf92fa	Jamaica reports deadly leptospirosis outbreak after Hurricane Melissa
+69226204f58f79a697d312d0	Jamia Millia Islamia opens admissions for short-term, skill-based certificate courses for January 2026 cycle
 6922630af58f79a697d3158f	Japan Ground Self-Defense Force member arrested over stabbing in Tokyo's Akasaka
 6922630af58f79a697d31590	Japan releases crime data, counters Chinese claim of deteriorating safety
 6922622ff58f79a697d31370	Japan suffered deadliest month of bear attacks in history, with 7 deaths and 88 maulings in October
 69226297f58f79a697d3154f	Japan's first female leader faces a taboo over entering the male-only sumo ring
 69226294f58f79a697d3154b	Japanese businesses brush off worries over China tourists
+69226205f58f79a697d312d2	Japan’s first female leader faces a taboo over entering the male-only sumo ring
+692261fef58f79a697d312b7	Jasmin Bhasin reveals her DIY fix for dry, itchy and flaky scalp: ‘Made my hair feel so shiny and hydrated’
 6922631df58f79a697d3160c	Jasmine Crockett is on a cringe streak, and I’m here for it
 6920f6d964a37efc5bbf9083	JD Vance Wades Into Canadian Immigration Debate
+69226262f58f79a697d31461	JD(S) will never sever ties with NDA, declares Deve Gowda
 6922627af58f79a697d3150a	Jeffries on if Shutdown Worked: Dems Didn't Shut Government Down
 6922627af58f79a697d3150b	Jeffries: Without Tax Credits, Health Care Under Affordable Care Act 'Will Be Unaffordable'
 6922631cf58f79a697d31601	Jets quarterback Justin Fields offers blunt reaction to benching
 69226259f58f79a697d31428	Jets, chips and a clean slate: Saudi Arabia’s crown prince got almost everything he wanted from Trump
 6922631df58f79a697d3161a	JFK's granddaughter shares terminal cancer diagnosis
 6922631cf58f79a697d315ef	JFK's granddaughter, Tatiana Schlossberg, reveals terminal cancer diagnosis in heartbreaking essay
+692261f4f58f79a697d31256	JFK’s granddaughter reveals terminal cancer diagnosis, criticizes cousin RFK Jr.
 692261a3f58f79a697d31245	Joe Spagnolo: Political whispers as end of year looms 
 6922631cf58f79a697d315fc	John Fetterman rips James Carville over court-packing plan, tells Democrats to 'win more elections'
 69226231f58f79a697d3138b	Jose Mourinho gives astonishing interview ripping into his own players despite winning match
 6920f6e464a37efc5bbf90e5	Judge was warned not to free violent firebug before he allegedly set woman ablaze on train: ‘Real and present threat’
 69226313f58f79a697d315ac	Judge Blocks Trump Admin From Placing Conditions on Federal Disaster Funds
 69226241f58f79a697d313f1	‘Just say yes’: Trump cuts in as NYC Mayor-elect Mamdani dodges on calling him a ‘fascist’ at Oval Office
+69226261f58f79a697d3145b	Kadamakudy shocker for Congress as candidate’s nomination gets rejected
 69226289f58f79a697d3153f	Kagiyama wins men's title in Finlandia Grand Prix
+69226203f58f79a697d312cd	Kannada star Dr Rajkumar sang ‘Bheege Honth Tere’ at 75 despite not knowing Hindi, recalls Kunal Ganjawala; passed away a few months later
+69226208f58f79a697d312de	Karan Johar was told to leave the country if he wanted to find love, believes humans are ‘meant to be a unit of two’: ‘Rab ne jodi nahi banayi’
+6920f66664a37efc5bbf8f57	Karnataka High Court sets aside charge of outraging modesty against H D Revanna
 6922623bf58f79a697d313ca	Karnataka SHOCKER: Two arrested for sharing Indian navy's 'secret' information to Pakistan through WhatsApp, Facebook
+69226210f58f79a697d3130f	Karnataka HC fixes December 7 as Karnataka State Cricket Association election date
 69226283f58f79a697d31535	Karnataka HC sets aside charge of outraging woman’s modesty against HD Revanna
 69226284f58f79a697d31538	Kashmir Times: A Jammu newspaper that stood up for the Valley
 69226283f58f79a697d31536	‘Keeru’: Punjabi writer Fauzia Rafique’s novel is a queer-feminist invitation to hope and resilience
@@ -401,24 +567,45 @@
 69226278f58f79a697d314e6	Kennedy Tragedy: JFK Granddaughter, 35, Reveals She Has Terminal Cancer on the Anniversary of His Assassination
 69226299f58f79a697d31551	Kennedy Center says it's being paid $7.4 million to hold World Cup draw
 69226275f58f79a697d314c8	‘Kennedy curse’ strikes again: Tatiana Schlossberg’s leukemia diagnosis extends brutal tragedy timeline
+69226205f58f79a697d312d3	Key cases before new Supreme Court Chief Justice Surya Kant
 6920f63f64a37efc5bbf8efd	Kimmel fires back at Trump’s demand to take him off the air, says 'I'll go when you go'
+69226260f58f79a697d3143e	Kin of policeman killed in road accident to get ₹30 lakh
+6922620ff58f79a697d31309	‘Kitna kha rahi hai’: Neetu Kapoor asked Kareena Kapoor to not eat ‘too much’ during her pregnancy
+692261f7f58f79a697d3126b	KL Rahul opens up on his diet secrets and reveals one eating habit he follows diligently wherever he is in the world
+6922620ef58f79a697d31302	Knowledge Nugget: What happened at COP30 in Brazil? 10 key takeaways for your UPSC Exam
+69226209f58f79a697d312e7	Kochi man ‘beats sex worker to death, dozes off while trying to dispose body’
 6922629bf58f79a697d31554	‘KPop Demon Hunters’ is officially eligible for the Oscars
+69226262f58f79a697d31469	KTR’s allegations on Chief Minister aimed at diverting  attention from Formula-E case
+692261f7f58f79a697d3126c	Kuldeep Yadav bowled the best ball to beat me in drift and my hands followed: Tristan Stubbs on his dismissal
+692261fdf58f79a697d312b0	Kuldeep Yadav and Jasprit Bumrah’s jugalbandi restricts South Africa on opening day in Guwahati Test
 6922624ff58f79a697d31416	Kuwait calls for inspecting Israel nuclear facilities
 6922622ff58f79a697d3136b	Kyiv bracing for toughest winter of war, as 60% of natural gas production lost to Russian strikes
 69226317f58f79a697d315ce	La Voix drops out of Strictly after injury
 6920f70b64a37efc5bbf9167	Labour support continues to fall as Reform steals triple by-election victory across Britain
+692261fbf58f79a697d3129b	Labour codes and MSMEs: Gains from cut in compliance obligations likely to offset any cost increase
 69226230f58f79a697d31377	Labour's freedom of speech rules in tatters as university professor suspended and deemed 'potential risk to colleagues' after using n-word on campus
+692261f3f58f79a697d3124e	Land near Vasant Kunj lies vacant, more than 150 Dalit families await their plots promised 40 yrs ago
+692261faf58f79a697d31295	‘Large-scale hill cutting and illegal tree felling’ case: NGT directs HP pollution panel to file compliance report on recovery of environmental compensation
 6920f6e564a37efc5bbf90ec	Larry Summers forced out of consulting gig at ‘woke’ hedge fund DE Shaw after Jeffrey Epstein scandal
+69226261f58f79a697d31451	LDF claims win in 10 wards in Kannur, Kasaragod
 69226243f58f79a697d31400	Leader attends 2nd night of Fatemieh mourning ceremony
 69226253f58f79a697d3141d	Leader attends Fatemieh mourning ceremony
 6920f70d64a37efc5bbf9187	Lee Anderson 'disgusted' by migrant crimes while GB News guest DEFENDS asylum seekers
 69226241f58f79a697d313f8	Lemurs in Madagascar Face an Unexpected Killer
 6922631df58f79a697d31618	Life jackets meant to save lives could expose a killer in Florida teen’s cruise ship mystery
+69226264f58f79a697d31488	Light to moderate rain likely in Rayalaseema as low-pressure area forms in the Bay
 6920f63e64a37efc5bbf8ef3	Lions' top offensive weapon unlikely to return this season after undergoing back surgery
 69226231f58f79a697d3138e	Lisa Nandy could block BBC licence fee hike as deadline looms for £181 decision
 6920f6fa64a37efc5bbf9127	Littler wins as Van Veen comeback stuns Humphries
+692261f7f58f79a697d31275	Liverpool suffer another setback, lose 0-3 to Nottingham Forest
 69226289f58f79a697d3153e	Liverpool stunned by Forest; Newcastle damages Man City title push
+69226264f58f79a697d31481	Local body polls: 2261 nominations rejected, shows latest update from State Election Commission
+6922620ff58f79a697d3130a	Lost your Aadhaar Card? Here’s a step-by-step guide to retrieve your card
+69226211f58f79a697d31315	Lucknow Municipal Corporation conducts another early-morning campaign against unlicensed dog ownership
 69226224f58f79a697d31341	Lukashenko pardons 31 Ukrainians jailed in Belarus, under pact with Trump
+69226262f58f79a697d31465	Madhya Pradesh HC grants interim stay on action against ancestral house of Al-Falah group chairperson
+692261f4f58f79a697d3125e	Maharashtra: 4.75 lakh candidates to appear for TET amid fear among in-service teachers
+6922620df58f79a697d312f3	Mahavatar Narsimha to be considered for Best Animation Oscar, in competition with 35 films; Homebound competing with 86 films
 69226279f58f79a697d314f9	Maher, ABC's Brazile Remark She's in 'Bubble' for Not Knowing About Mississippi's Education Success
 69226278f58f79a697d314ea	Maher: White Dems So 'Afraid of Being Called Racist' They Move to Fringe, Pritzker Can't Call Out Lefty Excess as Well
 69226279f58f79a697d314f6	Maher: Trump's 'Most Supportive President Israel and the Jews Ever Had'
@@ -426,6 +613,8 @@
 69226276f58f79a697d314d6	Mali’s fuel blockade Is a regional time bomb - and a direct threat to American interests.
 6920f6e464a37efc5bbf90e7	Mamdani, Trump’s expected slugfest turns into a lovefest as president says socialist will make NYC ‘greater than ever before’
 692262a7f58f79a697d31572	Man Who Injured Footballer by Throwing Seat on Pitch Warned He Could Face Prison
+692261faf58f79a697d31292	Man gets one-year jail term for flashing at teen girl in first class compartment
+6922620cf58f79a697d312f2	Man steps out of car to recharge FASTag, crushed to death by truck at Kherki Daula toll plaza
 69226296f58f79a697d3154e	Man arrested for placing urine-filled plastic bottle on convenience store shelf
 69226280f58f79a697d3152f	Manipur Police forwarded edited clips to lab instead of full recording: Kuki group tells SC
 69226276f58f79a697d314d2	Marjorie Taylor Greene resigns following Trump critiques online
@@ -433,18 +622,23 @@
 69226217f58f79a697d31321	Marjorie Taylor Greene resigns after public feud with Trump
 69226241f58f79a697d313f0	Marjorie Taylor Greene announces resignation from Congress after President Trump withdraws endorsement
 69226241f58f79a697d313f7	Marjorie Taylor Greene announces resignation from Congress after Trump feud
+692261f8f58f79a697d31280	‘Marjorie went bad’: Trump calls Greene a ‘traitor’ after she announces resignation
 69226230f58f79a697d3137a	McDonald's presents 2025 Christmas menu filled with 'magic and mischief' – 18 festive sweets and savouries
+69226200f58f79a697d312c3	Meet BJP MLA who accused cops of ‘corruption’ at police station in Lucknow; inquiry ordered
 69226305f58f79a697d31582	Meet your match? Spot the difference #175: Art museum
 6922624cf58f79a697d31411	Membership in "BRICS, SCO" economic opportunities for Iran
 69226230f58f79a697d31375	Met Office issues yellow weather alert for fog as Britons warned of travel delays
 6922622ff58f79a697d31373	Mexican woman gets 20 years for role in killings of US, Australian surfers
+6922620ef58f79a697d31303	MHT CET PCM from April 11; Maharashtra CET Cell releases 2026 tentative schedule
 69226278f58f79a697d314e7	Michelle Obama Shares 'Rare' Casual Image by Iconic Portrait Photographer Annie Leibovitz
 69226275f58f79a697d314be	Michigan dad, 2 sons and Ford worker nabbed in multi-million dollar auto parts theft ring
 69226313f58f79a697d315ab	Millions Pour Into Tennessee Special Election as Race for Vacant US House Seat Intensifies
 692261abf58f79a697d31249	Millions of Aussies to have $16b wiped from student debt
 69226276f58f79a697d314d5	Ministers hold special debate on the Hilltop Youth
 69226240f58f79a697d313e0	Minneapolis police chief issues apology for linking Somali youth to local crime
+6920f66664a37efc5bbf8f56	Missing piece in manufacturing, execution needs political hardsell
 6922631df58f79a697d31616	Missouri judge who wore Elvis wigs in courtroom agrees to resign after 'integrity' concerns
+69226264f58f79a697d3148a	Money laundering: eight trusts with PFI links under ED scanner
 6922631cf58f79a697d31604	More Kennedy tragedy strikes as Tatiana Schlossberg, granddaughter of JFK, discloses terminal leukemia diagnosis at age 35
 6922621bf58f79a697d3132e	More than 300 children, staff taken from Nigeria school, in one of worst mass abductions
 692261a9f58f79a697d31248	More than 21,000 new homes to be delivered in latest round of Albanese government’s $10bn housing fund
@@ -454,24 +648,42 @@
 692262d5f58f79a697d3157b	MSMEDA injects EGP 22.7bn since 2022, funding 493k projects: Rahmy
 692261ddf58f79a697d3124d	Muhammed Kendirci: Teen apprentice dead after horrific prank involving high pressure hose in Turkey 
 6922631df58f79a697d31611	Multiple Chicago police officers attacked in downtown violence in which several victims were shot
+69226260f58f79a697d31442	Munnar hopes for stability after a term of defections, power struggle
 6922627cf58f79a697d31524	My polemic against the Left's loathing of the working class has renewed urgency five years on - Paul Embery
+69226265f58f79a697d3148d	Nara Bhuvaneshwari opens ‘Chai Raasta’ outlet in Kuppam
 6922631cf58f79a697d315f9	NBA great Chris Paul to end storied career after Hall of Fame-worthy run: report
+692261faf58f79a697d3128f	NCP (SP) wants MVA’s ‘united fight’ against BJP for BMC polls
+6920f66664a37efc5bbf8f4d	Nehru archives launched, Rahul Gandhi says his words remain a powerful compass
+6920f66664a37efc5bbf8f58	Nepal plans to deploy Army for polls as Oli forms party security unit
 69226307f58f79a697d31588	Netanyahu convenes cabinet on settler violence in the West Bank that continues unabated
 6922623af58f79a697d313c7	Netra Mantena wedding: Donald Trump Jr attends Netra-Vamsi's wedding festivities, check full itinerary here
+69226204f58f79a697d312d1	Netra Mantena-Vamsi Gadiraju wedding: Know the couple, their net worth; Jennifer Lopez, Justin Bieber perform at wedding reminiscent of Ambani festivities
 6920f63e64a37efc5bbf8ef2	New Jersey elementary school has kids punch Cowboys player posters out of Eagles loyalty
 6922631df58f79a697d3160e	New Orleans not taking crime 'seriously enough,' says carjacking victim's daughter as federal operation looms
+692261faf58f79a697d31297	New Labour Law: What changes in gratuity contribution and who stands to benefit?
+692261fef58f79a697d312b8	New labour codes are welcome. They are a crucial first step in untangling the regulatory maze that constricts the Indian economy
+69226204f58f79a697d312cf	New Aravalli definition may open low hills to mining: Activists
 69226275f58f79a697d314c5	New Ohio law could require Walmart, Costco to accept cash for payments
+69226261f58f79a697d3144f	New DCC presidents appointed
+69226262f58f79a697d31463	New labour codes aimed at creating ‘trade union free-atmosphere’: Elamaram Kareem
+69226264f58f79a697d3147c	New labour codes lead to confusion over Karnataka’s minimum wage revision
 692261a9f58f79a697d31247	New NSW Opposition Leader Kellie Sloane heckled on first day in Parramatta
+6920f66664a37efc5bbf8f51	NGT reserves order on petitons over Nicobar project clearances
 69226241f58f79a697d313f5	Nigel Farage blasts Donald Trump’s ‘unacceptable’ Ukraine peace plan in rare rebuke
 6922623df58f79a697d313d0	Niger: Thousands of people welcome General Tchiani back to Niamey after nationwide tour
 69226318f58f79a697d315d8	Nigeria sees one of worst mass abductions as 315 taken from school
 6920f67a64a37efc5bbf9014	Nigeria: Over 200 students abducted from Catholic school
 6922623cf58f79a697d313cc	Nigeria: Number of children abducted in school attack raised to over 300
 69226215f58f79a697d3131e	Nigeria: At least 315 taken in school abduction — report
+69226264f58f79a697d31478	NIT-C students develop autonomous drone for disaster-relief operations
+6922620df58f79a697d312f5	No prayers at Sanjauli mosque, protesters end indefinite hunger strike
 69226309f58f79a697d3158e	No quick solution likely for China-Japan row, Tokyo needs calm approach
+692261faf58f79a697d31290	‘No explanation on why they allowed scammers to use bank account’
 69226279f58f79a697d314fd	Nolte Sends Up Warning to GOP: Rank and File Voters Care About Price of Gas, Eggs and Their Income
 69226279f58f79a697d314fe	Nolte Calls on Trump to Use Congress to Go After Democrats
+69226262f58f79a697d3146c	Nomination of transpersons to contest from women’s wards accepted
 6922631df58f79a697d31610	North Carolina driver says bald eagle dropped cat through her windshield: 'You may not believe me'
+69226261f58f79a697d31457	Nuapada bypoll: BJD alleges discrepancies in voting pattern, to approach poll body
 6922622ef58f79a697d3135f	Number of children abducted from Catholic school in Nigeria explodes to over 300
 69226291f58f79a697d31548	Number of children abducted in Nigerian school attack raised to more than 300
 6920f68464a37efc5bbf9031	Nvidia sales are 'off the charts,' but Google, Amazon and others now make their own custom AI chips
@@ -486,31 +698,52 @@
 6922625df58f79a697d3142d	Olympi SC wins the ‘Egyptian Gymnastics Cup for All’ 2026
 6920f6e464a37efc5bbf90e6	On-duty NYPD school safety agent busted for groping girl, 16, during photo op inside school
 6922627af58f79a697d31503	One Florida Sheriff's Deputy Shot and Killed, a Second Wounded
+692261f6f58f79a697d31265	One handler behind Red Fort blast suspected to be based in Afghanistan, another linked to ISI
+6922620bf58f79a697d312ee	OnePlus hints ‘New Watch’ debut alongside the global launch of OnePlus 15R
+69226263f58f79a697d31475	Operation Sindoor was trusted orchestra where every musician played synergistic role: Army Chief
 69226214f58f79a697d3131b	Ornella Vanoni, iconic voice of Italian music, dies at 91
+69226203f58f79a697d312ce	‘OTT platform backed out of their deal after watching 12th Fail, claimed they didn’t have money,’ says Vidhu Vinod Chopra
 6922631ef58f79a697d31622	Our babies were taken after 'biased' parenting test - now we're fighting to get them back
+692261f8f58f79a697d3127f	Out of FIDE World Cup, into the spotlight: Why legendary Peter Leko chose to stay back in Goa despite elimination
 6922622ff58f79a697d3136f	Over 300 children, 10 teachers abducted by gunmen in Nigerian school attack
+69226261f58f79a697d31453	Over 200 students take part in neurology conference in Vijayawada
 69226277f58f79a697d314e2	Pageant Winner on Beauty, Tradition, and Fighting Tyranny
+692261f7f58f79a697d31269	Pakistan vs Zimbabwe T20 Tri-Series Match 4 Live Streaming: When and Where How to Watch PAK vs ZIM Match Live on TV and Online
+692261f7f58f79a697d3126f	Pakistan rout Sri Lanka by 7 wickets in tri-series game
+692261fdf58f79a697d312b4	Pakistan Defence Minister Asif condoles Indian pilot’s death in Dubai Air Show crash
+69226200f58f79a697d312c4	Pakistan vs Sri Lanka Live Cricket Score, Tri-Series 2025: Sahibzada Farhan scores 80 as PAK defeat SL by 7 wickets
 6920f68264a37efc5bbf902a	Paramount, Comcast, Netflix submit bids for Warner Bros. Discovery
 69226275f58f79a697d314bd	Parents of toddler who plunged to her death out of open cruise ship window divorce
+69226264f58f79a697d31487	Parliament Winter Session: Bill on civil nuclear sector among 10 proposed legislations
+6922620df58f79a697d312f9	Passenger on Air India’s Vancouver-Delhi flight complains of chest pain, declared dead after deboarding in Kolkata
 6922631cf58f79a697d315f4	Pat McAfee begs Lane Kiffin, college football's top coaching candidate, to remain at Ole Miss
 6920f6f864a37efc5bbf9114	Peers trying to block assisted dying, claims MP behind bill
 6920f77564a37efc5bbf92fb	Peru orders arrest of ex-prime minister under Mexico asylum in Lima
 69226241f58f79a697d313f3	Petrol and diesel drivers set to face 'final blow' as Rachel Reeves' Budget could send fuel prices soaring
+692261f7f58f79a697d3126e	PHOTOS: Barcelona back at Camp Nou after more than 900 days with emphatic win – less than half-capacity, massive cranes in the background
 69226236f58f79a697d313ba	PM Modi highlights India's human-centric vision at G20 summit: 'Building a resilient world...'
 69226237f58f79a697d313bc	PM Modi's BIG statement after meeting France's Emmanuel Macron on sidelines of G20 Summit: 'Force for...'
 69226237f58f79a697d313bd	PM Modi addresses G20 Summit in Johannesburg: 'NOW is the right moment for...'
+692261f4f58f79a697d3125d	PM Modi at G20 Leaders’ Summit: Trilateral tech alliance with Canada and Australia
+692261faf58f79a697d31299	PM Modi announces new trilateral technology and innovation partnership with Australia, Canada
 69226316f58f79a697d315bc	PM Modi Meets UN Chief Guterres, British PM Starmer In Johannesburg
 69226303f58f79a697d31580	PM Takaichi's Taiwan remarks cloud prospects for new pandas in Japan
 69226231f58f79a697d31389	Police launch manhunt after man shot and stabbed on his own driveway in horror attack
 69226295f58f79a697d3154d	Police officer nabbed for taking voyeuristic images; 6th Shizuoka officer to be arrested this year
 6922627cf58f79a697d31523	POLL: Is Keir Starmer great on the world stage?
+6922620df58f79a697d312f6	‘Poori raat main table ke neche…’: When Preity Zinta hid under a table after hitting brother; psychologists explain why children hide in fear
 6922627af58f79a697d3150e	Pope Leo Accepts Resignation of Spanish Bishop Accused of Abuse
+69226265f58f79a697d31490	Power tussle tarnishing State’s reputation, says MLC Vishwanath
 69226240f58f79a697d313df	President says Chicagoans are 'chanting bring in Trump' after violent downtown riot leaves 8 shot, 1 dead
 69226230f58f79a697d3137c	Prince William heaps praise on UK county describing it as 'a beacon of creativity, imagination and achievement'
 6922622ff58f79a697d3136c	Prince Andrew, Fergie may never step foot on US soil again due to Epstein scandal: report
 69226318f58f79a697d315d4	Princess Diana's personal designer Paul Costelloe dies aged 80
 6922629ef58f79a697d31556	Proposed peace plan for Ukraine leaves country in a delicate position between U.S. and Russia
 69226220f58f79a697d31337	Protesters in Serbia demand accountability for attacks on students
+692261fbf58f79a697d312a0	PSPCL functioning with only 2 full-time directors; key posts remain vacant amid ongoing employee unrest
+692261fdf58f79a697d312ac	Psychology can change way food tastes – here’s how to use it to make most of your meals
+692261f9f58f79a697d31287	Pune police swoop down on ‘village of pistols’ in Madhya Pradesh; 36 detained, 50 kilns destroyed
+69226261f58f79a697d3145e	Pune cops bust arms-making units in M.P. village; 47 detained
 69226233f58f79a697d3139e	Pushing Off
 6920f70364a37efc5bbf9140	Putin signals openness to US peace proposal as Ukraine warns of pivotal moment
 6920fb3d43a53e9495a101fb	Putin envoy Dmitriev: Peace plan seeks to end Ukraine losses of land, lives
@@ -522,6 +755,10 @@
 69226279f58f79a697d31500	Raskin: Trump's 'Threats of Assassination' of Lawmakers Is an 'Impeachable Offense'
 69226279f58f79a697d314fc	Raskin: Congressional Republicans and Trump 'Moving in Completely Opposite Directions'
 6922622ff58f79a697d3136e	‘Ready to fight’: Hamas reportedly says it’s pulling out of Gaza cease-fire over alleged Israeli violations
+692261fef58f79a697d312bb	‘Real life Vivah’: Kerala bride injured in car crash gets married in hospital to keep ‘muhurtam’
+69226260f58f79a697d31448	Real-life ‘Manjummel Boy’ in the fray in Kerala local body polls
+692261f6f58f79a697d31264	Reducing case backlog will be my priority as CJI: Justice Surya Kant
+69226260f58f79a697d3143d	Registration open for Bharathi Pasarai competitions
 69226276f58f79a697d314d7	Released hostage reveals: I endured brutal sexual violence
 69226298f58f79a697d31550	Rep Marjorie Taylor Greene of Georgia, former Trump loyalist, says she is resigning from Congress
 6920f6e364a37efc5bbf90de	Rep. Eric Swalwell seemingly used DC house at center of mortgage fraud allegations for California governor campaign launch
@@ -530,6 +767,7 @@
 6922631df58f79a697d3160a	Rep. Marjorie Taylor Greene leaving Congress after feud with Trump
 69226279f58f79a697d31501	Report: Pro-Life Pregnancy Centers Provided $452 Million in Support in 2024
 69226240f58f79a697d313e1	Reporter's Notebook : A 'letter' to Zelenskyy about the peace plan
+6922620df58f79a697d312f8	Residents hold ‘Dashakriya Vidhi’ protest in Pune’s accident-prone Navale Bridge area; warn of blockade over poor safety measures
 69226304f58f79a697d31581	Retro Japan in Photos: Kobe University library built in 1933 features stately reading room
 69226305f58f79a697d31584	Retro Japan: Stately library at Kobe University looks like world of 'Harry Potter'
 69226281f58f79a697d31531	Review: ‘Dining with the Kapoors’ is bland fare
@@ -544,43 +782,70 @@
 6922624ef58f79a697d31414	Russian troops capture over 15 villages in eastern Ukraine
 69226232f58f79a697d3139b	Russian Exiles See Europe Visa Rule as Blow Against Them, Not Putin
 6922625df58f79a697d3142c	Russia’s drone revolution heaps pressure on Ukrainian defenses
+6922620ff58f79a697d31308	Salim Khan-Helen grew close over daily drinks during Don shoot; 10-year-old Salman watched his mother Salma get hurt: ‘There was hostility’
 69226240f58f79a697d313ea	Sanctuary state under fire for granting license to illegal alien who allegedly killed young girl with car
+692261fff58f79a697d312bf	Scammers use Union FM Nirmala Sitharaman’s photo to gain trust, defraud retired Mahim doctor of Rs 1.47 crore
+692261f7f58f79a697d31277	School abductions in Nigeria zoom past 300, Christmas holiday declared in key state
 6920f6f864a37efc5bbf9116	Scotland fans caused 'extremely small earthquake' in World Cup qualifier win
+692261f9f58f79a697d31288	Scotland fans shake the earth after win over Denmark to qualify for World Cup after 1998
 6922629ef58f79a697d31558	Search Continues for Grizzly That Attacked Students, Teachers at BC Trail
+6920f66664a37efc5bbf8f4e	Searching videos of pilot son’s air show, father came across Tejas crash reports
 69226275f58f79a697d314c9	Second person linked to death of teen Celeste Rivas Hernandez, whose body was found in D4vd’s Tesla
+69226262f58f79a697d31471	Security in Srinagar improving, all measures in place to maintain peace: CRPF IG
 6920f65e64a37efc5bbf8f2a	Sen. Graham Blocks House Bid to Overturn Law Allowing Senators to Sue DOJ
 6920f63f64a37efc5bbf8efc	Sen. John Fetterman accuses Trump of 'dangerous rhetoric'
 69226240f58f79a697d313e3	Sen. Slotkin's home targeted with bomb threat days after she told troops to defy 'illegal' orders
 6920f6f964a37efc5bbf911f	Serbian president denies involvement in alleged Bosnia 'sniper tourism'
+6922620cf58f79a697d312ef	‘Serious fire risk’: Railways to take action after woman seen cooking noodles in electric kettle in train’s AC coach
+692261fef58f79a697d312b9	Set up temporary detention centres in each district to lodge ‘infiltrators’: UP CM Yogi Adityanath
 6922631ef58f79a697d3161f	Seven bodyguards arrested over Mexican mayor's murder
 6922621af58f79a697d3132c	Several international airlines cancel their flights in Venezuela after US warning
+6922620ff58f79a697d31307	Sex racket busted at hotel in Pune’s Koregaon Park; woman from Turkmenistan on medical visa among 3 rescued
+69226261f58f79a697d31459	Shashi Tharoor praises Trump-Mamdani meet; BJP takes a jibe at Rahul Gandhi
 6922622ff58f79a697d31366	Shipwreck that could date back to the early 1800s found completely intact
+69226261f58f79a697d3145c	Shiv Sena (UBT) rebukes Congress, says they don’t need anybody’s permission on MNS alliance
 69226276f58f79a697d314d8	Shocking vandalism at synagogue in Kadima-Zoran
 6922631df58f79a697d31613	Shooting at North Carolina Christmas tree lighting leaves 4 people wounded
 6922631bf58f79a697d315eb	Shoppers Take Advantage of Bargains to Save on Holiday Turkey
+69226260f58f79a697d3143f	SI, two others booked for alleged blackmailing, extortion of money in Kochi
+69226263f58f79a697d31476	Siddaramaiah meets Kharge on resolving impasse over Cabinet reshuffle, power sharing
 69226241f58f79a697d313f6	Sir Keir Starmer’s Chief Whip ‘admitted he does not want the job’ ahead of Budget
 6922631cf58f79a697d315ed	SJSU volleyball team fails to make conference tournament in first season after trans athlete scandal
+6922620ff58f79a697d31304	Solving Crime: No mobile data, no CCTV, no leads—how a brown tape led Bengaluru cops to solve a Malayali PG owner’s murder
 6922623df58f79a697d313d1	South African women protest gender-based violence ahead of G20 summit
 69226292f58f79a697d31549	South Africa says declaration was adopted at start of the G20 summit despite U.S. opposition
 6922622af58f79a697d3134f	Spain coal mine accident kills two workers
+6922620ff58f79a697d3130c	Spotify rolls out new ‘Import Your Music’ feature to simplify playlist transfers
+69226264f58f79a697d31486	Stalin reviews 100 T.N. constituencies, exudes confidence
+69226260f58f79a697d31443	Stamp of election on T-shirts, caps
 692262a6f58f79a697d3156f	Starmer to Use G20 Summit to Shore up Support for Ukraine and Make Deals
 6922627af58f79a697d31506	State Dept. Warns Mass Migration an 'Existential Threat' to Western Civilization, U.S. Embassies to Monitor 'Two-Tiered' Justice in Europe
 6922622cf58f79a697d3135b	State Department Says US, Japan Alliance ‘Unshakable’ as CCP Ramps Up Threats
+69226263f58f79a697d31474	State will not take anti-worker position, says Minister on new Labour Codes
+69226264f58f79a697d3147f	State govt. forms committee to address sugarcane farmers’ issues
 6922630bf58f79a697d31593	Steel firm's improved bear trap lures customers after surge in sightings, attacks in Japan
 6922627af58f79a697d31510	Stephen Colbert Worries: Trump Wasn’t on Camera -- Did He Actually Sign Bill to Release Epstein Files?
 6922628ef58f79a697d31544	Stokes says 'shell-shocked' England must move on fast from crushing loss
 69226233f58f79a697d313a1	Stopping the Greatest Threat to the Amazon, One Fire at a Time
+69226260f58f79a697d31444	Student leaders give a campus vibe for local body elections in Kerala
 69226306f58f79a697d31586	Sumo: Aonishiki beats Hoshoryu to regain share of lead as Onosato falters
 69226314f58f79a697d315b1	Supreme Court Blocks Ruling Striking Down Texas Congressional Map
 6922631df58f79a697d31607	Supreme Court blocks order that found Texas congressional map is likely racially biased
+69226262f58f79a697d31467	Suraksha Kavach safety clubs launched in 30 schools in  Serilingampally
 69226279f58f79a697d314fa	Swalwell: California Has a Lot of Economic Problems, Dodges on if Cost Problems Are Dems' Fault
 69226316f58f79a697d315c6	Swiggy Backs New Labour Codes, Calls Them 'Transformative Steps' For Millions Of Workers
 6920f6df64a37efc5bbf90ad	Syrian FM: No deal with Israel without pullback to pre-Dec. 8 lines
 69226242f58f79a697d313fe	Taiwan Minister Says ‘Consensus’ Reached With US to Shield Chips From Tariffs
 69226290f58f79a697d31547	Takaichi's Taiwan remarks cloud prospects for new pandas in Japan
 6920f77464a37efc5bbf92f5	Takeaways from the Trump-Mamdani White House meeting
+69226260f58f79a697d31445	Tamil Nadu government finds itself in a tight corner over Code on Social Security
+6922625ff58f79a697d31430	Tamil Nadu expands Naan Mudhalvan initiative to healthcare
 6922627af58f79a697d31509	Target Practice: U.S. Troops to Shoot Down 500 Confiscated Chinese Drones in Florida Training Event
+6922620df58f79a697d312f4	Tata Trusts trustee Khambata dubs reports of ‘coup’ or ‘takeover’ as ‘absurd’
+6922620ef58f79a697d312fe	‘Teachers must monitor and inform officials’: Chhattisgarh minister on order to remove dogs from schools
 6920f68164a37efc5bbf9028	Tech stocks wrap big losing week as AI names get rocked after Nvidia earnings
+692261faf58f79a697d31294	Tejas crash Dubai: IAF’s heartfelt tribute to Wing Commander Namansh Syal, shares video
+69226264f58f79a697d31484	Tenth edition of Mysuru Children’s Literature Festival on November 23
 69226319f58f79a697d315e0	Texas data center expansion raises blackout risk during extreme winter weather
 69226241f58f79a697d313ef	Texas files emergency Supreme Court petition after Trump-backed congressional map blocked by federal judges
 69226232f58f79a697d3139c	Texas Men Plotted Coup of Haitian Island to Enslave Women and Children, U.S. Says
@@ -588,6 +853,7 @@
 69226319f58f79a697d315e4	The fast-casual bowl boom is over. Wall Street isn't sold on Cava, Chipotle deals to lure back spenders
 6922631af58f79a697d315e5	The 10 U.S. states where you can save up a 10% down payment on a home the fastest—Iowa is No. 1
 6922627cf58f79a697d31525	The Saturday Five: What should the Five go head-to-head on in the Saturday Scrap? - November 22
+692261fff58f79a697d312be	The Week Before CAT: What to study, what to drop, and what to mentally prepare for
 69226275f58f79a697d314c6	The raunchy sex-act RFK Jr. texted about with Olivia Nuzzi, according to her ex Ryan Lizza
 69226233f58f79a697d313a0	The Aftermath of a Deadly Strike in Western Ukraine
 69226282f58f79a697d31533	The Indian doctors who risked their lives to support China in its war with Japan
@@ -596,24 +862,35 @@
 69226283f58f79a697d31537	‘The Cell and the Soul’: The mirror to Indian democracy in Anand Teltumbde’s prison memoir
 69226221f58f79a697d3133b	They came for Timothee Chalamet and left with $326 windbreakers
 69226254f58f79a697d31420	This week in AI: Brushing off new bubble warnings, Google’s AI comeback and Nvidia’s China threat
+692261f7f58f79a697d3126d	This track suits our template better: India assistant coach Ryan ten Doeschate
+69226208f58f79a697d312e2	‘This is how democracy should work’: Congress MP Shashi Tharoor on Mamdani–Trump meet
 6922631ef58f79a697d3161c	Three arrested in India after police crack $800,000 bank heist
+692261f8f58f79a697d3127a	Three youths involved in snatchings, robberies held
 69226274f58f79a697d314ba	Three charged for shouting slurs at praying Muslim students while waving bacon in Florida
 69226279f58f79a697d314f4	Tijuana Mayor Threatens News Outlets Reporting on His Money Laundering Investigation
+692261fdf58f79a697d312ab	Timely wages, higher basic pay, health checkup: what new labour codes mean for workers & employers, in 12 points
 69226317f58f79a697d315cc	Titanic passenger's watch sells for record £1.78m at auction
+6920f66664a37efc5bbf8f52	Today’s world needs new UN and global order, says Rajnath Singh
 69226308f58f79a697d3158a	Tokyo Monorail's Haneda airport route dubbed 'Panorama Line'
 69226277f58f79a697d314df	Toldot: The “Shechina” resides in the Land of Israel
 6920fb5a43a53e9495a10203	Tone Down the Online Humblebragging
 6920f63e64a37efc5bbf8eef	Top GOP chair issues stark warning to Clintons if they defy depositions in Epstein investigation
+692261fcf58f79a697d312a6	Top actress’s mother demanded Parinda narration to her first, Vidhu Vinod Chopra said his father will give it: ‘We will meet if…’
 6922627cf58f79a697d31522	Torrential Rains Return to Southern California, Prompting Flash Flood Warnings Before Moving East
 6922621af58f79a697d3132b	Traffic at Eindhoven airport in the Netherlands resumes after disruption due to drone sightings
+69226207f58f79a697d312da	Train Dreams movie review: Joel Edgerton film a sombre ode to the people we lose, the worlds that vanish
+69226264f58f79a697d31489	Translations key to understanding world literature, says Centurion University vice president
 6922631cf58f79a697d315fa	Travis Kelce gives timeline for when he’ll let Chiefs know about retirement decision
 6920f68764a37efc5bbf9038	Treasury yields slide after Williams suggests Fed could cut again in December
+692261f9f58f79a697d31286	Tribal traditions come to life this weekend at this three-day festival in Delhi’s Sunder Nursery
+692261f8f58f79a697d31282	Tribeny Rai’s Shape of Momo competes for top IFFI awards
 6920fb2d43a53e9495a101d5	Trump Lets Mamdani Answer: Is He Leader of Democrats? Mayor-Elect Says Focused on New York City
 6920f68164a37efc5bbf9025	Trump praises NYC Mayor-elect Mamdani after White House meeting, shrugs off being called 'fascist'
 6920f6c464a37efc5bbf9043	Trump meets New York City Mayor-elect Mamdani
 6920f63f64a37efc5bbf8ef8	Trump envoy torches Senate Dems’ Kennedy Center probe built on ‘inaccurate gossip’
 6920f63f64a37efc5bbf8efa	Trump reveals 'one thing in common' he has with Mamdani after Oval Office love fest
 6920f63f64a37efc5bbf8efb	Trump lands another legal victory as lawsuit against Iowa pollster, Des Moines Register remains in state court
+6920f66764a37efc5bbf8f5a	Trump gives warm welcome to New York’s mayor-elect Mamdani at White House meeting
 6920f6e464a37efc5bbf90e8	Trump says he would feel comfortable living in socialist Zohran Mamdani’s NYC
 6920f6e564a37efc5bbf90e9	Trump says Zohran Mamdani is not a ‘jihadist’ in warm exchange during NYC mayor-elect’s White House visit
 6920f6e564a37efc5bbf90ed	Trump jokes it’s OK for Mamdani to call him a ‘fascist’: ‘You can just say yes’
@@ -640,12 +917,18 @@
 69226279f58f79a697d314f1	Trump: MTG Resignation ‘Great News for the Country’
 6920f66364a37efc5bbf8f42	Trump’s ‘NATO-style’ security deal offered to Ukraine amounts to less than a guarantee: experts
 69226240f58f79a697d313e9	Trump’s ‘America First’ collides with Macron’s ‘Europe First’ in face-off over Western dominance
+692261f7f58f79a697d31270	Trump’s latest Ukraine proposal is not final offer, he says
 69226317f58f79a697d315c9	Trump’s peace plan for Ukraine receives lukewarm response from Poland
+692261fbf58f79a697d3129e	‘Try it tonight and thank me later’: Alaya F swears by this nighttime drink to ‘detox, de-bloat and digest’
+69226203f58f79a697d312cc	Tu Meri Main Tera Main Tera Tu Meri teaser: Ananya Panday wants a ’90s-style love story’ with ‘mama’s boy’ Kartik Aaryan
 6922621ef58f79a697d31334	Tunisians escalate protests against Saied, demanding return of democracy
+6920f66664a37efc5bbf8f53	Two months after Zubeen’s death, his cremation site turns into a shrine: ‘I feel at peace here’
 6922631df58f79a697d31617	Two Texas men charged in plot to invade Haitian island and make women, children 'sex slaves': prosecutors
+6922620af58f79a697d312ec	Typhoid patient had intestinal bleeding after misusing antibiotics: Why is antimicrobial resistance rising?
 6920f63e64a37efc5bbf8ef0	Tyreek Hill praises Chiefs coach as a 'f---ing animal' after disagreeing with Trump on NFL kickoff rule
 6922627af58f79a697d31507	U.N. Climate Conference Rejects EU Demands to Commit to Fossil Fuel Phase-Out
 6922628cf58f79a697d31542	U.N. climate deal increases money to countries hit by climate change, but no explicit fossil fuel plan
+69226265f58f79a697d31491	U.P. CM pushes for stringent action on infiltrators, directs officials to set up temporary detention centres in districts
 69226254f58f79a697d31421	U.S. moves to tame the skies as disruptive passenger incidents reach new highs
 6922631bf58f79a697d315ec	U.S. and Ukrainian Officials to Meet Again on U.S. Peace Plan
 6922631cf58f79a697d315fd	UAB football player allegedly stabs 2 teammates hours before scheduled game against South Florida
@@ -667,44 +950,77 @@
 6920f73264a37efc5bbf9228	Uneasiness Over A.I. Spending Looms Over Markets
 6922624cf58f79a697d31410	UNIFIL highlights importance of Lebanon's independence
 69226247f58f79a697d31408	Unremitting high-quality urban renewal in China
+692261fdf58f79a697d312a9	Upping the ante over SIR, how Mamata is laying TMC groundwork for 2026 Bengal polls
+692261fdf58f79a697d312af	UPSC Key: Four labour codes implemented, ‘One Future’ vision at G20, and India’s private PSLV launch
+69226200f58f79a697d312c5	UPSC Weekly Current Affairs Quiz | November 16 to November 22, 2025
+69226206f58f79a697d312d8	UPSC Essentials | Mains answer practice — GS 2 : Questions on higher judicial services and disputes over the Senkaku Islands (Week 129)
 69226280f58f79a697d31530	‘Urban wandering is central to my writing and how I live’: Debut novelist and editor Sayantan Ghosh
 6920f77464a37efc5bbf92f8	US warns airlines of potential hazards when flying over Venezuela
 6920f74e64a37efc5bbf92df	US President Donald Trump says he is confident Zohran Mamdani can do a good job as NY Mayor 
 6922622bf58f79a697d31350	US Education Department using non-disclosure agreements in Trump reorganisation: Sources
 6922622cf58f79a697d31353	US lawmaker Marjorie Taylor Greene to resign after spat, split with Trump
+692261f4f58f79a697d31253	US set to launch new phase of Venezuela operations as several international airlines cancel flights in Venezuela over US warning
 69226218f58f79a697d31325	US to launch new phase of Venezuela operations, sources say
 692261dbf58f79a697d3124b	US and Ukrainian officials to meet again on Donald Trump’s peace plan to end war with Russia
 6922624df58f79a697d31412	US, China held maritime security talks in Hawaii
 6922623cf58f79a697d313ce	US: Survivors grapple with mixed emotions over release of Epstein files
 69226244f58f79a697d31402	Velayati lauds Iraq people for unprecedented turnout to polls
 69226278f58f79a697d314ef	VIDEO -- 'Guts All Over Me': North Carolina Bald Eagle Drops Dead Cat, Smashing Driver's Windshield
+6922620cf58f79a697d312f1	Vijay Varma says he felt ‘helpless’ when Fatima Sana Shaikh had a seizure on set: ‘Felt so protective of her’
+692261fbf58f79a697d3129d	Vivek Oberoi vowed never to fall in love after heartbreak, says now ‘it feels like a bad dream’: ‘I laugh about it’
+69226210f58f79a697d31312	Vivek Oberoi says lobbies in Bollywood blocked his road to success, feels there was ‘no logic’ behind it: ‘I was told kaun panga lega?’
+6920f66664a37efc5bbf8f55	Voter roll revision underway in poll-bound state: Since 2002 SIR, steepest rise in voters in Bengal’s border districts
 69226215f58f79a697d3131d	Washington state resident dies after H5N5 infection
+692261fbf58f79a697d3129c	WASMO accountant defrauds department of Rs 1.41 crore, booked
 6920f71564a37efc5bbf91b4	Watch: Donald Trump Meets with Zohran Mamdani at the White House
+692261fdf58f79a697d312ae	Watch: PM Modi, Italy’s Giorgia Meloni all smiles as world leaders interact at G20 Summit in Johannesburg
+69226262f58f79a697d31472	Watch: Sons, daughters and battle for political legacy: the Lalu Yadav family fallout
 69226278f58f79a697d314ed	WATCH: Grandparents Caring for Teen with Special Needs Get 'Christmas Miracle' from Secret Santa
 69226278f58f79a697d314ee	WATCH: Secret Santa Blesses Idaho Mom as Her Teen Daughter Heals from Flesh-Eating Infection
 69226240f58f79a697d313ec	WATCH: Democrats struggle to defend Schumer after shutdown ends with few wins
 69226231f58f79a697d31392	WATCH: Keir Starmer addresses world leaders at G20 summit in South Africa
+692261f7f58f79a697d3126a	WATCH: Las Vegas police release body-cam video after road-rage shooting killed 11-year-old boy
 69226240f58f79a697d313e4	Wave of car attacks on ICE agents follows incendiary rhetoric from target-city leaders
+69226203f58f79a697d312cb	‘We grew marijuana for the British’: Kunal Ganjawala reveals how he got his surname, says ‘lagaan maaf tha’ as they were ‘licensed druggists’
+69226210f58f79a697d31311	‘We got a queen size bed. It helped our relationship’: Matthew McConaughey shares his ultimate marriage hack; experts weigh in
 6922622ff58f79a697d31369	Website reportedly puts $100K bounties on heads of hundreds of Israeli academics worldwide — including US: ‘Profoundly disturbed’
 6922631af58f79a697d315e6	Week in review: Behind the stock market's wild swings – plus, 7 trades we made
+69226209f58f79a697d312e5	West Bengal BLO’s suicide takes nationwide toll to 5
+69226262f58f79a697d3146f	West Bengal SIR will cause the largest disenfranchisement of voters in history: activists
 69226223f58f79a697d3133f	Western leaders say Ukraine plan needs work, Trump signals scope for changes
+692261f8f58f79a697d31285	What was Travis Head’s most incredible shot in his hundred that ‘shell-shocked’ England? ‘He had it at 10’
+69226203f58f79a697d312ca	What do these 8 sleep behaviours reveal about your nervous system?
+6922620af58f79a697d312eb	What to do if passport application is stuck? Step-by-step guide to check status and inquire
 69226315f58f79a697d315b7	What Is Himachal's Raulane Festival? A Farewell To Fairies That Pre-Dates Memory Itself
 69226232f58f79a697d3139a	What Is Trump’s 28-Point Plan to End Russia’s War in Ukraine?
 69226234f58f79a697d313a2	What to Know: Trump Labels Nigeria’s Christian Violence a ‘Genocide’
 69226219f58f79a697d31329	What the COP30 climate summit in the Amazon delivered for forests and Indigenous people
+69226260f58f79a697d3143c	What is the Mekedatu dam project dispute? | Explained
 69226219f58f79a697d31327	What did countries agree to at COP30?
+692261f7f58f79a697d31274	When Temba Bavuma was brought to toss in 2019 as a ‘proxy captain’ by South Africa
 6920f77464a37efc5bbf92f9	While You Were Sleeping: 5 stories you might have missed, Nov 22, 2025
 69226219f58f79a697d31328	While You Were Sleeping: 5 stories you might have missed, Nov 23, 2025
 6920f63e64a37efc5bbf8ef6	White House defends Trump after his 'piggy' insult to reporter sparks backlash
+692261fcf58f79a697d312a4	‘White collar’ terror case: J&K Police’s SIA arrests man from Srinagar
 69226239f58f79a697d313c3	Who is Netra Mantena's mother? She is involved in..., know how world knew about Netra-Vamsi wedding
+692261f7f58f79a697d31268	Who is Marjorie Taylor Greene and why she fell out with President Trump
+69226207f58f79a697d312d9	Who is Lakshya Sen’s next opponent – Yushi Tanaka?
 69226317f58f79a697d315cf	Who killed young Chechen woman who fled Russia for a life of freedom?
 69226319f58f79a697d315dc	Why this is England's worst defeat in Australia in years
+692261faf58f79a697d31298	Why UK blocked export of unique series of 200-year-old Hindu paintings
+69226208f58f79a697d312df	Why Indian CEOs should stop preaching about public health
+692261f4f58f79a697d31251	‘Why should we be robbed of childhood’: Students who moved HC against sports calendar amid Delhi air pollution
 6922631ef58f79a697d31621	Will Trump's no-show eclipse South Africa's G20 moment?
+692261faf58f79a697d31296	‘Without brains … this loss is going to damage England’ Michael Vaughan and Stuart Broad’s frank talk on England’s loss to Australia in first Test of Ashes
+69226260f58f79a697d31437	Woman held for robbing gold jewellery at Katpadi railway station
 6922627cf58f79a697d31526	Women-only train carriages are another lurch towards a more medieval Britain - Colin Brazier
+6922620ef58f79a697d312fd	Work-from-home kicks in sooner, Delhi govt tells pvt firms to have 50% staff onsite
 6922630af58f79a697d31591	Worker from Thailand dies at zoo in Japan's Chiba Pref., likely crushed by elephant
 69226279f58f79a697d314f2	WORST OF THE WORST: ICE Arrests 3,500+ Criminal Aliens in Houston During Democrat-Led Government Shutdown
+692261fdf58f79a697d312b2	X launches transparency feature revealing account history, location and username changes
 6922628ef58f79a697d31545	Yadav’s 3-48 restricts South Africa to 247-6 on 1st day of 2nd test against India
 6922631cf58f79a697d315f1	Young adults may be especially prone to overeating ultra-processed foods, study finds
+69226262f58f79a697d3146a	Young India Integrated School initiative will be a game changer for education sector: Bhatti Vikramarka
 6920f6e064a37efc5bbf90bf	Zelensky warns Ukraine risks losing US support over White House peace plan
 6922631df58f79a697d3160d	Zohran Mamdani’s stance during first Trump meeting shows he wants to be ‘good little boy:’ body language expert
 6920f63c64a37efc5bbf8ee5	Zoox Launches Pilot Program of Free Robotaxi Service in San Francisco
