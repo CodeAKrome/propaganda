@@ -66,8 +66,9 @@ b. DEGREE - The intensity of bias:
 
 Analize the bias of the articles and summarize the bias findings in a concise paragraph at the end of your output.
 Do not menntion the bias numbers directly, just summarize the bias findings in a concise paragraph.
+Do not reference mongodb id article numbers.
 Use the bias data to determine the overall bias of the articles and give that as a conclusion.
-Be specific when mentioning which sources are biuased and how.
+Be specific when mentioning which sources are biased and how.
 
 When reporting, speak in a professional newscaster tone like Walter Kronkite.
 
