@@ -1,13 +1,14 @@
 CONDA_MP3_ENV = kokoro
 DB_ENV = db/.venv
-SHELL := /bin/bash
-MLX_MODEL = mlx-community/Llama-4-Scout-17B-16E-Instruct-4bit
+SHELL := /bin/zsh
+#MLX_MODEL = mlx-community/Llama-4-Scout-17B-16E-Instruct-4bit
 NUMDAYS = -1
 TITLEFILE = output/titles.tsv
 
-.PHONY: build load back front vector query mp3 mgconsole testload thingsthatgo fini ner fner fnervector entity fvector bias mkvec fbias
+.PHONY: build load back front vector query mp3 mgconsole testload thingsthatgo fini ner fner fnervector entity fvector bias mkvec fbias querysmall mkvecsmall smallthingsthatgo
 
 thingsthatgo: load ner vector entity mkvec bias query mp3 fini
+smallthingsthatgo: load ner vector entity mkvecsmall bias querysmall mp3 fini
 oldthingsthatgo: load ner vector entity query mp3 fini
 
 fvector: load ner vector fini
@@ -56,6 +57,11 @@ mkvec:
 	find db/output -name "*.ids" -delete
 	source $(DB_ENV)/bin/activate && cd db && ./runmkvecbatch.sh
 
+mkvecsmall:
+	find db/output -name "*.vec" -delete
+	find db/output -name "*.ids" -delete
+	source $(DB_ENV)/bin/activate && cd db && ./batchquery.sh './mkvec.sh'
+
 # output/ids.txt to run geminize.py
 bias:
 	source $(DB_ENV)/bin/activate && cd db && ./runbias.sh
@@ -68,9 +74,14 @@ query:
 	find db/output -name "*.cypher" -delete
 	find db/output -name "*.reporter" -delete
 	source $(DB_ENV)/bin/activate && cd db && ./runentitybatch.sh
-#	source $(DB_ENV)/bin/activate && cd db && ./runbatch.sh
-#	source $(DB_ENV)/bin/activate && cd db && ./run_parallel.sh
-# generate mp3 files into mp3/mp3 using files in db/output/*.md
+
+querysmall:
+	find db/output -name "*.md" -delete
+	find db/output -name "*.txt" -delete
+#	find db/output -name "*.vec" -delete
+	find db/output -name "*.cypher" -delete
+	find db/output -name "*.reporter" -delete
+	source $(DB_ENV)/bin/activate && cd db && ./batchquery.sh './report.sh'
 
 
 mp3:

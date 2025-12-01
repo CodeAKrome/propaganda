@@ -156,7 +156,7 @@ Process these {len(batch)} articles:
                 
         except (json.JSONDecodeError, ValueError) as e:
             print(f"Error parsing LLM response: {e}", file=sys.stderr)
-            print(f"Raw response: {response[:200]}...", file=sys.stderr)
+            print(f"Raw response: {response}...", file=sys.stderr)
             return []
     
     def categorize_all(self, titles: List[Tuple[str, str]]) -> List[Dict[str, Any]]:
