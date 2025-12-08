@@ -1,4 +1,6 @@
 startdate="-1"
+$1 "$startdate" cambodia "Cambodia" "Summarize current events in Cambodia. Analize actions and motivations." "+Cambodia"
+$1 "$startdate" thailand "Thailand" "Summarize current events in Thailand. Analize actions and motivations." "+Thailand"
 $1 "$startdate" jihad "Jihad,Islam,Muslim" "Summarize current events involving jihadist or jihad. Analize actions and motivations." "+Jihad,Jihadist"
 $1 "$startdate" hk "Hong Kong" "Summarize current events in Hong Kong. Analize actions and motivations." "+Hong Kong"
 $1 "$startdate" taiwan "Taiwan" "Summarize current events in Taiwan. Analize actions and motivations." "+Taiwan"

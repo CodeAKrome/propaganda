@@ -2,28 +2,64 @@
 import sys
 import argparse
 import json
+import os
 from pathlib import Path
 from typing import List, Tuple, Dict, Any
 
-# Import MLX components for LLM interaction
-from mlx_lm import load, generate
+# Backend availability checks
+try:
+    import ollama
+    OLLAMA_AVAILABLE = True
+except ImportError:
+    OLLAMA_AVAILABLE = False
+
+try:
+    from mlx_lm import load, generate
+    MLX_AVAILABLE = True
+except ImportError:
+    MLX_AVAILABLE = False
+
+# Gemini configuration
+try:
+    import google.generativeai as genai
+    gemini_configured = False
+    if os.environ.get("GEMINI_API_KEY"):
+        genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+        gemini_configured = True
+except ImportError:
+    gemini_configured = False
 
 
 class NewsCategorizer:
-    """Categorizes news article titles into a three-level hierarchy using MLX LLMs."""
+    """Categorizes news article titles into a three-level hierarchy using LLMs."""
     
-    def __init__(self, model_name: str, max_batch_size: int = 100):
+    def __init__(self, model_name: str, backend: str = "mlx", max_batch_size: int = 100):
         """
-        Initialize the categorizer with a model and batch size.
+        Initialize the categorizer with a model and backend.
         
         Args:
-            model_name: Name/path of the MLX model to use
+            model_name: Name/path of the model to use
+            backend: Backend type: 'mlx', 'ollama', or 'gemini'
             max_batch_size: Maximum titles to process per LLM call
         """
         self.model_name = model_name
+        self.backend = backend
         self.max_batch_size = max_batch_size
-        print(f"Loading model: {model_name}...", file=sys.stderr)
-        self.model, self.tokenizer = load(model_name)
+        
+        if backend == "ollama":
+            if not OLLAMA_AVAILABLE:
+                raise ImportError("ollama package not installed. Install with: pip install ollama")
+            print(f"Using Ollama model: {model_name}", file=sys.stderr)
+        elif backend == "gemini":
+            if not gemini_configured:
+                raise ValueError("GEMINI_API_KEY environment variable not set.")
+            print(f"Using Gemini model: {model_name}", file=sys.stderr)
+            self.model = genai.GenerativeModel(model_name)
+        else:  # mlx
+            if not MLX_AVAILABLE:
+                raise ImportError("mlx_lm package not installed. Install with: pip install mlx-lm")
+            print(f"Loading MLX model: {model_name}...", file=sys.stderr)
+            self.model, self.tokenizer = load(model_name)
     
     def parse_titles_file(self, filepath: str) -> List[Tuple[str, str]]:
         """
@@ -117,30 +153,43 @@ Process these {len(batch)} articles:
         """
         prompt = self.create_categorization_prompt(batch)
         
-        messages = [{"role": "user", "content": prompt}]
-        formatted_prompt = self.tokenizer.apply_chat_template(
-            messages,
-            tokenize=False,
-            add_generation_prompt=True
-        )
-        
-        # Generate with parameters optimized for structured output
-        response = generate(
-            self.model,
-            self.tokenizer,
-            prompt=formatted_prompt,
-            verbose=False,
-            max_tokens=4096
-        )
+        # Generate response based on backend
+        try:
+            if self.backend == "ollama":
+                response = ollama.chat(
+                    model=self.model_name,
+                    messages=[{"role": "user", "content": prompt}]
+                )
+                result_text = response["message"]["content"]
+            elif self.backend == "gemini":
+                response = self.model.generate_content(prompt)
+                result_text = response.text
+            else:  # mlx
+                messages = [{"role": "user", "content": prompt}]
+                formatted_prompt = self.tokenizer.apply_chat_template(
+                    messages,
+                    tokenize=False,
+                    add_generation_prompt=True
+                )
+                result_text = generate(
+                    self.model,
+                    self.tokenizer,
+                    prompt=formatted_prompt,
+                    verbose=False,
+                    max_tokens=4096
+                )
+        except Exception as e:
+            print(f"Error generating response: {e}", file=sys.stderr)
+            return []
         
         # Robust JSON extraction
         try:
             # Find JSON array boundaries
-            start = response.find('[')
-            end = response.rfind(']') + 1
+            start = result_text.find('[')
+            end = result_text.rfind(']') + 1
             
             if start >= 0 and end > start:
-                json_str = response[start:end]
+                json_str = result_text[start:end]
                 categorized = json.loads(json_str)
                 
                 # Validate result count matches input count
@@ -156,7 +205,7 @@ Process these {len(batch)} articles:
                 
         except (json.JSONDecodeError, ValueError) as e:
             print(f"Error parsing LLM response: {e}", file=sys.stderr)
-            print(f"Raw response: {response}...", file=sys.stderr)
+            print(f"Raw response: {result_text[:500]}...", file=sys.stderr)
             return []
     
     def categorize_all(self, titles: List[Tuple[str, str]]) -> List[Dict[str, Any]]:
@@ -220,9 +269,18 @@ Process these {len(batch)} articles:
 def main():
     """Main entry point for the categorization tool."""
     parser = argparse.ArgumentParser(
-        description="Categorize news article titles using MLX LLM with 3-level hierarchy",
+        description="Categorize news article titles using LLM with 3-level hierarchy",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="Example:\n  python categorize_news.py titles.txt --model mlx-community/Llama-3.3-70B-Instruct-8bit --output sorted_news.tsv"
+        epilog="""Examples:
+  # Use MLX (default)
+  python titlesort.py titles.txt --model mlx-community/Llama-3.3-70B-Instruct-8bit --output sorted_news.tsv
+  
+  # Use Ollama
+  python titlesort.py titles.txt --ollama --model llama3.3 --output sorted_news.tsv
+  
+  # Use Gemini
+  export GEMINI_API_KEY="your-api-key"
+  python titlesort.py titles.txt --gemini --model models/gemini-1.5-flash --output sorted_news.tsv"""
     )
     
     parser.add_argument(
@@ -233,7 +291,7 @@ def main():
         "--model",
         type=str,
         default="mlx-community/Llama-3.3-70B-Instruct-8bit",
-        help="MLX model name (default: mlx-community/Llama-3.3-70B-Instruct-8bit)"
+        help="Model name (default: mlx-community/Llama-3.3-70B-Instruct-8bit)"
     )
     parser.add_argument(
         "--batch-size",
@@ -247,6 +305,19 @@ def main():
         help="Output TSV file path (default: stdout)"
     )
     
+    # Backend selection (mutually exclusive)
+    backend_group = parser.add_mutually_exclusive_group()
+    backend_group.add_argument(
+        "--ollama",
+        action="store_true",
+        help="Use Ollama instead of MLX for inference"
+    )
+    backend_group.add_argument(
+        "--gemini",
+        action="store_true",
+        help="Use Gemini instead of MLX for inference"
+    )
+    
     args = parser.parse_args()
     
     # Validate input file
@@ -254,8 +325,37 @@ def main():
         print(f"Error: File '{args.titles_file}' not found", file=sys.stderr)
         sys.exit(1)
     
+    # Determine backend
+    backend = "mlx"
+    if args.ollama:
+        backend = "ollama"
+    elif args.gemini:
+        backend = "gemini"
+    
+    # Validate backend availability
+    if backend == "ollama" and not OLLAMA_AVAILABLE:
+        print(f"Error: ollama package not installed. Install with: pip install ollama", file=sys.stderr)
+        sys.exit(1)
+    elif backend == "gemini" and not gemini_configured:
+        print(f"Error: GEMINI_API_KEY environment variable not set.", file=sys.stderr)
+        sys.exit(1)
+    elif backend == "mlx" and not MLX_AVAILABLE:
+        print(f"Error: mlx_lm package not installed. Install with: pip install mlx-lm", file=sys.stderr)
+        sys.exit(1)
+    
+    # Print configuration
+    print("=" * 70, file=sys.stderr)
+    print(f"Backend: {backend.capitalize()}", file=sys.stderr)
+    print(f"Model: {args.model}", file=sys.stderr)
+    print(f"Batch size: {args.batch_size}", file=sys.stderr)
+    print("=" * 70, file=sys.stderr)
+    
     # Initialize system
-    categorizer = NewsCategorizer(args.model, args.batch_size)
+    try:
+        categorizer = NewsCategorizer(args.model, backend, args.batch_size)
+    except (ImportError, ValueError) as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
     
     # Parse input
     print("Reading input file...", file=sys.stderr)

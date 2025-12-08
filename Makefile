@@ -5,10 +5,12 @@ SHELL := /bin/zsh
 NUMDAYS = -1
 TITLEFILE = output/titles.tsv
 
-.PHONY: build load back front vector query mp3 mgconsole testload thingsthatgo fini ner fner fnervector entity fvector bias mkvec fbias querysmall mkvecsmall smallthingsthatgo
+.PHONY: build load back front vector query mp3 mgconsole testload thingsthatgo fini ner fner fnervector entity fvector bias mkvec fbias querysmall mkvecsmall smallthingsthatgo cleanoutput fload oldthingsthatgo fquerymp3 fquery fmp3 black querysmallest cleanmp3 mp3small smallestthingsthatgo
 
 thingsthatgo: load ner vector entity mkvec bias query mp3 fini
-smallthingsthatgo: load ner vector entity mkvecsmall bias querysmall mp3 fini
+smallthingsthatgo: load ner vector entity mkvecsmall bias cleanoutput querysmall cleanmp3 mp3small fini
+# Doesn't clean db/output or mp3/mp3
+smallestthingsthatgo: load ner vector entity mkvecsmall bias querysmallest mp3small fini
 oldthingsthatgo: load ner vector entity query mp3 fini
 
 fvector: load ner vector fini
@@ -75,17 +77,31 @@ query:
 	find db/output -name "*.reporter" -delete
 	source $(DB_ENV)/bin/activate && cd db && ./runentitybatch.sh
 
-querysmall:
+cleanoutput:
 	find db/output -name "*.md" -delete
 	find db/output -name "*.txt" -delete
 #	find db/output -name "*.vec" -delete
 	find db/output -name "*.cypher" -delete
 	find db/output -name "*.reporter" -delete
+
+querysmall:
 	source $(DB_ENV)/bin/activate && cd db && ./batchquery.sh './report.sh'
 
+querysmallest:
+	source $(DB_ENV)/bin/activate && cd db && ./batchquerysmallest.sh './report.sh'
 
 mp3:
 	find mp3/mp3 -name "*.mp3" -delete
+	cd mp3 && ./mkmkbatch.sh
+	source $$(conda info --base)/etc/profile.d/conda.sh && \
+	conda activate $(CONDA_MP3_ENV) && \
+	cd mp3 && \
+	./batch.sh
+
+cleanmp3:
+	find mp3/mp3 -name "*.mp3" -delete
+
+mp3small:
 	cd mp3 && ./mkmkbatch.sh
 	source $$(conda info --base)/etc/profile.d/conda.sh && \
 	conda activate $(CONDA_MP3_ENV) && \
