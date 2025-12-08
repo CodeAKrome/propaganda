@@ -10,14 +10,16 @@ TITLEFILE = output/titles.tsv
 thingsthatgo: load ner vector entity mkvec bias query mp3 fini
 smallthingsthatgo: load ner vector entity mkvecsmall bias cleanoutput querysmall cleanmp3 mp3small fini
 # Doesn't clean db/output or mp3/mp3
-smallestthingsthatgo: load ner vector entity mkvecsmall bias querysmallest mp3small fini
+smallestthingsthatgo: querysmallest mp3small fini
 oldthingsthatgo: load ner vector entity query mp3 fini
+# new stuff, just query
+fquerymp3: cleanoutput querysmall cleanmp3 mp3small fini
+
 
 fvector: load ner vector fini
 fload: load ner vector entity fini
 fner: ner vector entity query mp3 fini
 fnervector: ner vector fini
-fquerymp3: query mp3 fini
 fquery: load ner vector query fini
 fmp3: mp3 fini
 fbias: mkvec bias query mp3 fini
