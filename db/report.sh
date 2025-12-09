@@ -108,9 +108,9 @@ reportermlx() {
     ( cat "$reporterfile" "$vec" ) | ./mlxllm.py - --model "$model" > "$news"
 }
 
-reportergem
+#reportergem
 #reporter reporterllama3370b:latest
-#reportermlx mlx-community/Llama-3.3-70B-Instruct-8bit
+reportermlx mlx-community/Llama-3.3-70B-Instruct-8bit
 
 #reportermlx Wwayu/DarkIdol-Llama-3.1-8B-Instruct-1.2-Uncensored-mlx-6Bit
 # good, 38m long
