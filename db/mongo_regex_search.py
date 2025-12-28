@@ -11,6 +11,9 @@ Authentication:
 Export variables before running:
   export MONGO_USER="myuser"
   export MONGO_PASS="mypassword"
+
+./mongo_regex_search.py find_utf8_errors music songs --limit=100 --fix --replacement=" "
+
 """
 
 import os
