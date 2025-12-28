@@ -195,6 +195,9 @@ class MongoRegexSearch:
         limit: int = 0,
         projection: Optional[str] = None,
         show_progress: bool = True,
+        fix: bool = False,
+        replacement: str = "",
+        dry_run: bool = False,
     ):
         """
         Find documents that cause UTF-8 decode errors when read with strict validation.
@@ -209,6 +212,9 @@ class MongoRegexSearch:
             limit: Max results to show (0 = no limit)
             projection: Comma-separated fields to display
             show_progress: Show progress bar (default: True)
+            fix: Attempt to fix corrupted fields by removing invalid chars or replacing with replacement string
+            replacement: String to use when invalid chars can't be removed (default: empty string)
+            dry_run: Show what would be changed without actually updating the database
         """
         # Create a temporary strict client to test for UTF-8 errors
         username = os.getenv("MONGO_USER")
@@ -227,14 +233,22 @@ class MongoRegexSearch:
             strict_db = strict_client[database]
             strict_coll = strict_db[collection]
             
-            # Get IDs using the lenient client
+            # Create a lenient client specifically for reading corrupted data
+            lenient_client = MongoClient(
+                connection_string,
+                unicode_decode_error_handler='replace'
+            )
+            lenient_db = lenient_client[database]
+            lenient_coll = lenient_db[collection]
+            
+            # Use main client for updates (it should already be lenient from __init__)
             db = self.client[database]
             coll = db[collection]
             
             target_fields = self._parse_field_list(fields)
             
-            # Get all document IDs to test
-            id_cursor = coll.find({}, {"_id": 1})
+            # Get all document IDs to test (use lenient client)
+            id_cursor = lenient_coll.find({}, {"_id": 1})
             if limit > 0:
                 id_cursor = id_cursor.limit(limit)
             
@@ -269,39 +283,141 @@ class MongoRegexSearch:
                 except (UnicodeDecodeError, Exception) as e:
                     # UTF-8 decode error found - fetch full doc with lenient client
                     try:
-                        full_doc = coll.find_one({"_id": doc_id})
+                        full_doc = lenient_coll.find_one({"_id": doc_id})
+                        
+                        # Find which fields have errors and prepare fixes
+                        corrupted_fields = {}
+                        if full_doc:
+                            check_fields = target_fields if target_fields else [k for k in full_doc.keys() if k != '_id']
+                            for field in check_fields:
+                                if field in full_doc and isinstance(full_doc[field], str):
+                                    original = full_doc[field]
+                                    # Check if this field has replacement characters
+                                    if '\ufffd' in original:
+                                        # Try to clean the field by removing replacement chars
+                                        cleaned = original.replace('\ufffd', '')
+                                        
+                                        if not cleaned.strip() and replacement:
+                                            # If cleaning left nothing, use replacement
+                                            corrupted_fields[field] = {
+                                                'original': original,
+                                                'cleaned': replacement,
+                                                'method': 'replaced_with_custom'
+                                            }
+                                        elif not cleaned.strip():
+                                            # If no replacement specified and field is empty, skip
+                                            corrupted_fields[field] = {
+                                                'original': original,
+                                                'cleaned': '',
+                                                'method': 'removed_invalid_chars'
+                                            }
+                                        else:
+                                            # Use cleaned version
+                                            corrupted_fields[field] = {
+                                                'original': original,
+                                                'cleaned': cleaned,
+                                                'method': 'removed_invalid_chars'
+                                            }
+                        
                         error_docs.append({
                             "_id": doc_id,
                             "error": str(e),
-                            "doc": full_doc
+                            "doc": full_doc,
+                            "corrupted_fields": corrupted_fields
                         })
                     except Exception as fetch_error:
                         error_docs.append({
                             "_id": doc_id,
-                            "error": f"{str(e)} (Could not fetch full doc: {str(fetch_error)})",
-                            "doc": {"_id": doc_id}
+                            "error": f"{str(e)} (Could not fetch with lenient client: {str(fetch_error)})",
+                            "doc": {"_id": doc_id},
+                            "corrupted_fields": {}
                         })
                     pbar.update(1)
             
             pbar.close()
             strict_client.close()
+            lenient_client.close()
+            
+            if fix and not dry_run:
+                print(f"\n{'=' * 80}")
+                print("FIXING CORRUPTED DOCUMENTS")
+                print(f"{'=' * 80}\n")
+            elif fix and dry_run:
+                print(f"\n{'=' * 80}")
+                print("DRY RUN - Showing proposed changes (no actual updates)")
+                print(f"{'=' * 80}\n")
             
             print(f"\nFound {len(error_docs)} document(s) with UTF-8 errors in {database}.{collection}:\n")
+            
+            fixed_count = 0
             for i, item in enumerate(error_docs, 1):
                 doc = item["doc"]
+                corrupted_fields = item.get("corrupted_fields", {})
+                
                 print(f"--- Result {i} ---")
                 print(f"Error: {item['error']}")
+                print(f"Document ID: {doc.get('_id')}")
                 
-                if projection:
+                if corrupted_fields:
+                    print(f"\nCorrupted fields found: {len(corrupted_fields)}")
+                    for field, info in corrupted_fields.items():
+                        print(f"\n  Field: {field}")
+                        print(f"  Method: {info['method']}")
+                        orig_preview = info['original'][:100] + "..." if len(info['original']) > 100 else info['original']
+                        clean_preview = info['cleaned'][:100] + "..." if len(info['cleaned']) > 100 else info['cleaned']
+                        print(f"  Original: {repr(orig_preview)}")
+                        print(f"  Cleaned:  {repr(clean_preview)}")
+                    
+                    # Perform the fix if requested
+                    if fix:
+                        update_dict = {field: info['cleaned'] for field, info in corrupted_fields.items()}
+                        
+                        if dry_run:
+                            print(f"\n  [DRY RUN] Would update: {update_dict}")
+                        else:
+                            try:
+                                result = coll.update_one(
+                                    {"_id": doc["_id"]},
+                                    {"$set": update_dict}
+                                )
+                                if result.modified_count > 0:
+                                    print(f"\n  ✓ FIXED: Updated {len(update_dict)} field(s)")
+                                    fixed_count += 1
+                                else:
+                                    print(f"\n  ✗ Update failed or no changes made")
+                            except Exception as update_error:
+                                print(f"\n  ✗ Error updating document: {update_error}")
+                else:
+                    print("\n  (No corrupted fields identified in target fields)")
+                
+                # Show full document if no projection specified
+                if not projection and doc.get('_id'):
+                    print("\n  Full document:")
+                    for k, v in doc.items():
+                        if isinstance(v, str) and len(v) > 300:
+                            print(f"    {k}: {v[:297]}...")
+                        else:
+                            print(f"    {k}: {v}")
+                else:
                     proj_fields = self._parse_field_list(projection)
-                    doc = {k: v for k, v in doc.items() if k in proj_fields or k == "_id"}
+                    filtered_doc = {k: v for k, v in doc.items() if k in proj_fields or k == "_id"}
+                    print("\n  Selected fields:")
+                    for k, v in filtered_doc.items():
+                        if isinstance(v, str) and len(v) > 300:
+                            print(f"    {k}: {v[:297]}...")
+                        else:
+                            print(f"    {k}: {v}")
                 
-                for k, v in doc.items():
-                    if isinstance(v, str) and len(v) > 300:
-                        print(f"{k}: {v[:297]}...")
-                    else:
-                        print(f"{k}: {v}")
                 print()
+            
+            if fix and not dry_run:
+                print(f"\n{'=' * 80}")
+                print(f"SUMMARY: Fixed {fixed_count} out of {len(error_docs)} documents")
+                print(f"{'=' * 80}\n")
+            elif fix and dry_run:
+                print(f"\n{'=' * 80}")
+                print(f"DRY RUN COMPLETE: Would fix {len([d for d in error_docs if d.get('corrupted_fields')])} documents")
+                print(f"{'=' * 80}\n")
 
         except Exception as e:
             print(f"Error during UTF-8 validation scan: {e}")
