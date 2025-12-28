@@ -68,7 +68,7 @@ Analize the bias of the articles and summarize the bias findings in a concise pa
 Do not menntion the bias numbers directly, just summarize the bias findings in a concise paragraph.
 Do not reference mongodb id article numbers.
 Use the bias data to determine the overall bias of the articles and give that as a conclusion.
-Be specific when mentioning which sources are biased and how.
+Be specific and list sources when mentioning which sources are biased and how.
 
 When reporting, speak in a professional newscaster tone like Walter Kronkite.
 
@@ -108,9 +108,22 @@ reportermlx() {
     ( cat "$reporterfile" "$vec" ) | ./mlxllm.py - --model "$model" > "$news"
 }
 
+# -- MLX Ollama Use 2 different models
+reportermlxollama() {
+    local model="$1"
+    local ollama_model="$2"
+    printf "MLX model: $model\nOllama model: $ollama_model\n"
+    ( cat "$svo_prompt" "$vec" ) | ./mlxllm.py - --model "$model" | sort | uniq > "$cypherfile"
+    cypher=$(<"$cypherfile")
+    echo "$reporter\n<relations>\n $cypher \n</relations>\n$query $footer" > "$reporterfile"
+    ( cat "$reporterfile" "$vec" ) | ollama run --verbose --hidethinking "$model" > "$news"
+}
+
 #reportergem
 #reporter reporterllama3370b:latest
+#reporter gemini-3-flash-preview:cloud
 reportermlx mlx-community/Llama-3.3-70B-Instruct-8bit
+#reportermlxollama mlx-community/Llama-3.3-70B-Instruct-8bit gemini-3-flash-preview:cloud
 
 #reportermlx Wwayu/DarkIdol-Llama-3.1-8B-Instruct-1.2-Uncensored-mlx-6Bit
 # good, 38m long

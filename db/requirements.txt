@@ -1,3 +1,4 @@
+fire
 ollama
 rank-bm25
 cachetools

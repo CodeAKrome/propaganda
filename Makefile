@@ -5,12 +5,12 @@ SHELL := /bin/zsh
 NUMDAYS = -1
 TITLEFILE = output/titles.tsv
 
-.PHONY: build load back front vector query mp3 mgconsole testload thingsthatgo fini ner fner fnervector entity fvector bias mkvec fbias querysmall mkvecsmall smallthingsthatgo cleanoutput fload oldthingsthatgo fquerymp3 fquery fmp3 black querysmallest cleanmp3 mp3small smallestthingsthatgo
+.PHONY: mkvecsmallest build load back front vector query mp3 mgconsole testload thingsthatgo fini ner fner fnervector entity fvector bias mkvec fbias querysmall mkvecsmall smallthingsthatgo cleanoutput fload oldthingsthatgo fquerymp3 fquery fmp3 black querysmallest cleanmp3 mp3small smallestthingsthatgo
 
 thingsthatgo: load ner vector entity mkvec bias query mp3 fini
 smallthingsthatgo: load ner vector entity mkvecsmall bias cleanoutput querysmall cleanmp3 mp3small fini
 # Doesn't clean db/output or mp3/mp3
-smallestthingsthatgo: querysmallest mp3small fini
+smallestthingsthatgo: mkvecsmallest bias mkvecsmallest querysmallest cleanmp3 mp3small fini
 oldthingsthatgo: load ner vector entity query mp3 fini
 # new stuff, just query
 fquerymp3: cleanoutput querysmall cleanmp3 mp3small fini
@@ -65,6 +65,11 @@ mkvecsmall:
 	find db/output -name "*.vec" -delete
 	find db/output -name "*.ids" -delete
 	source $(DB_ENV)/bin/activate && cd db && ./batchquery.sh './mkvec.sh'
+
+mkvecsmallest:
+	find db/output -name "*.vec" -delete
+	find db/output -name "*.ids" -delete
+	source $(DB_ENV)/bin/activate && cd db && ./batchquerysmallest.sh './mkvec.sh'
 
 # output/ids.txt to run geminize.py
 bias:

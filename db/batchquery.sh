@@ -50,7 +50,7 @@ $1 "$startdate" poland "Poland" "Summarize news about Poland. Analize actions an
 $1 "$startdate" uk "UK,United Kingdom" "Summarize news about The United Kingdom. Analize actions and motivations."
 $1 "$startdate" pakistan "Pakistan" "Summarize news about Pakistan. Analize actions and motivations."
 $1 "$startdate" skorea "South Korea" "Summarize news about South Korea. Analize actions and motivations."
-$1 "$startdate" nkorea "North Korea" "Summarize news about South Korea. Analize actions and motivations."
+$1 "$startdate" nkorea "North Korea" "Summarize news about North Korea. Analize actions and motivations."
 $1 "$startdate" venezuela "Venezuela" "Summarize US involvement in Venezuela. Analize actions and motivations."
 $1 "$startdate" gaza "Gaza" "Summarize events in Gaza. Analize actions and motivations."
 $1 "$startdate" nepal "Nepal" "Summarize current events in Nepal. Analize actions and motivations."
