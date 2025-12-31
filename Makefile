@@ -5,12 +5,16 @@ SHELL := /bin/zsh
 NUMDAYS = -1
 TITLEFILE = output/titles.tsv
 
-.PHONY: mkvecsmallest build load back front vector query mp3 mgconsole testload thingsthatgo fini ner fner fnervector entity fvector bias mkvec fbias querysmall mkvecsmall smallthingsthatgo cleanoutput fload oldthingsthatgo fquerymp3 fquery fmp3 black querysmallest cleanmp3 mp3small smallestthingsthatgo
+.PHONY: mkvecsmallest build load back front vector query mp3 mgconsole testload \
+	thingsthatgo fini ner fner fnervector entity fvector bias mkvec fbias \
+	querysmall mkvecsmall smallthingsthatgo cleanoutput fload oldthingsthatgo \
+	fquerymp3 fquery fmp3 black querysmallest cleanmp3 mp3small smallestthingsthatgo \
+	mkvecsmallbiased mkvecsmallestbiased timestamp
 
 thingsthatgo: load ner vector entity mkvec bias query mp3 fini
-smallthingsthatgo: load ner vector entity mkvecsmall bias cleanoutput querysmall cleanmp3 mp3small fini
+smallthingsthatgo: load ner vector entity mkvecsmall bias querysmall cleanmp3 mp3small fini
 # Doesn't clean db/output or mp3/mp3
-smallestthingsthatgo: mkvecsmallest bias mkvecsmallest querysmallest cleanmp3 mp3small fini
+smallestthingsthatgo: load ner vector entity mkvecsmallest bias mkvecsmallestbiased querysmallest cleanmp3 mp3small fini
 oldthingsthatgo: load ner vector entity query mp3 fini
 # new stuff, just query
 fquerymp3: cleanoutput querysmall cleanmp3 mp3small fini
@@ -23,6 +27,9 @@ fnervector: ner vector fini
 fquery: load ner vector query fini
 fmp3: mp3 fini
 fbias: mkvec bias query mp3 fini
+
+timestamp:
+	date -u +"%Y-%m-%dT%H:%M:%SZ" > db/timestamp.txt
 
 black:
 	black db/*.py
@@ -64,12 +71,22 @@ mkvec:
 mkvecsmall:
 	find db/output -name "*.vec" -delete
 	find db/output -name "*.ids" -delete
-	source $(DB_ENV)/bin/activate && cd db && ./batchquery.sh './mkvec.sh'
+	source $(DB_ENV)/bin/activate && cd db && ./batchquery.sh './mkvec.sh' -1
 
 mkvecsmallest:
 	find db/output -name "*.vec" -delete
 	find db/output -name "*.ids" -delete
-	source $(DB_ENV)/bin/activate && cd db && ./batchquerysmallest.sh './mkvec.sh'
+	source $(DB_ENV)/bin/activate && cd db && ./batchquerysmallest.sh './mkvec.sh' -1
+
+mkvecsmallbiased:
+	find db/output -name "*.vec" -delete
+	find db/output -name "*.ids" -delete
+	source $(DB_ENV)/bin/activate && cd db && ./batchquery.sh './mkvec.sh' -2
+
+mkvecsmallestbiased:
+	find db/output -name "*.vec" -delete
+	find db/output -name "*.ids" -delete
+	source $(DB_ENV)/bin/activate && cd db && ./batchquerysmallest.sh './mkvec.sh' -2
 
 # output/ids.txt to run geminize.py
 bias:

@@ -4,6 +4,10 @@ entity="$3"
 query="$4"
 fulltext=${5:-}
 
+timestampfile="timestamp.txt"
+if [[ -e "$timestampfile" ]]; then
+    startdate=$(<"$timestampfile")
+fi
 
 # -----------------------------
 # 3. Check input

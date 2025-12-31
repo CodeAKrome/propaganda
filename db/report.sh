@@ -92,10 +92,11 @@ reporter() {
 
 # -- Gemini
 reportergem() {
+    local model="$1"
     ( cat "$svo_prompt" "$vec" ) | ./gemini.py models/gemini-2.5-flash | sort | uniq > "$cypherfile"
     cypher=$(<"$cypherfile")
     echo "$reporter\n<relations>\n $cypher \n</relations>\n$query $footer" > "$reporterfile"
-    ( cat "$reporterfile" "$vec" ) | ./gemini.py models/gemini-2.5-flash > "$news"
+    ( cat "$reporterfile" "$vec" ) | ./gemini.py $1 > "$news"
 }
 
 # -- MLX
@@ -119,10 +120,46 @@ reportermlxollama() {
     ( cat "$reporterfile" "$vec" ) | ollama run --verbose --hidethinking "$model" > "$news"
 }
 
-#reportergem
+
+cypher() {
+    local src="$1"
+    local model="$2"
+    printf "Cypher source: $src model: $model\n"
+    if [[ "$src" == "ollama" ]]; then
+        ( cat "$svo_prompt" "$vec" ) | ollama run --verbose --hidethinking "$model" | sort | uniq > "$cypherfile"
+    elif [[ "$src" == "gemini" ]]; then
+        ( cat "$svo_prompt" "$vec" ) | ./gemini.py "$model" | sort | uniq > "$cypherfile"
+    elif [[ "$src" == "mlx" ]]; then
+        ( cat "$svo_prompt" "$vec" ) | ./mlxllm.py - --model "$model" | sort | uniq > "$cypherfile"
+    else
+        echo "Unknown source: $src"
+    fi
+}
+
+report() {
+    local src="$1"
+    local model="$2"
+    printf "Report source: $src model: $model\n"
+    cypher=$(<"$cypherfile")
+    echo "$reporter\n<relations>\n $cypher \n</relations>\n$query $footer" > "$reporterfile"
+    if [[ "$src" == "ollama" ]]; then
+        ( cat "$reporterfile" "$vec" ) | ollama run --verbose --hidethinking "$model" > "$news"
+    elif [[ "$src" == "gemini" ]]; then
+        ( cat "$reporterfile" "$vec" ) | ./gemini.py "$model" > "$news"
+    elif [[ "$src" == "mlx" ]]; then
+        ( cat "$reporterfile" "$vec" ) | ./mlxllm.py - --model "$model" > "$news"
+    else
+        echo "Unknown source: $src"
+    fi
+}
+
+cypher("mlx" "mlx-community/Llama-3.3-70B-Instruct-8bit")
+report("gemini" "models/gemini-3-flash-preview")
+
+#reportergem models/gemini-2.5-flash 
 #reporter reporterllama3370b:latest
 #reporter gemini-3-flash-preview:cloud
-reportermlx mlx-community/Llama-3.3-70B-Instruct-8bit
+#reportermlx mlx-community/Llama-3.3-70B-Instruct-8bit
 #reportermlxollama mlx-community/Llama-3.3-70B-Instruct-8bit gemini-3-flash-preview:cloud
 
 #reportermlx Wwayu/DarkIdol-Llama-3.1-8B-Instruct-1.2-Uncensored-mlx-6Bit

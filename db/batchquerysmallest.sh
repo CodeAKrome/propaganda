@@ -1,5 +1,5 @@
 #!/bin/zsh
-startdate="-1"
+startdate=$2
 #queries=${#${(f)$(<$0)}}
 queries=3
 echo "Total queries: $queries"
