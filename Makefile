@@ -2,8 +2,17 @@ CONDA_MP3_ENV = kokoro
 DB_ENV = db/.venv
 SHELL := /bin/zsh
 #MLX_MODEL = mlx-community/Llama-4-Scout-17B-16E-Instruct-4bit
-NUMDAYS = -1
+#NUMDAYS = -2
 TITLEFILE = output/titles.tsv
+
+
+
+# Final recommended version
+# DATE := $(shell cat db/timestamp.txt 2>/dev/null | cut -d'T' -f1)
+# DATE ?= $(shell date +%F)  # fallback to today if file missing
+NUMDAYS := $(shell cat db/timestamp.txt 2>/dev/null | cut -d'T' -f1)
+NUMDAYS ?= $(shell date +%F)  # fallback to today if file missing
+
 
 .PHONY: mkvecsmallest build load back front vector query mp3 mgconsole testload \
 	thingsthatgo fini ner fner fnervector entity fvector bias mkvec fbias \
@@ -12,10 +21,10 @@ TITLEFILE = output/titles.tsv
 	mkvecsmallbiased mkvecsmallestbiased timestamp
 
 thingsthatgo: load ner vector entity mkvec bias query mp3 fini
-smallthingsthatgo: load ner vector entity mkvecsmall bias querysmall cleanmp3 mp3small fini
+smallthingsthatgo: timestamp load ner vector entity mkvecsmall bias mkvecsmallbiased querysmall cleanmp3 mp3small fini
 # Doesn't clean db/output or mp3/mp3
-smallestthingsthatgo: load ner vector entity mkvecsmallest bias mkvecsmallestbiased querysmallest cleanmp3 mp3small fini
-oldthingsthatgo: load ner vector entity query mp3 fini
+smallestthingsthatgo: timestamp load ner vector entity mkvecsmallest bias mkvecsmallestbiased querysmallest cleanmp3 mp3small fini
+oldthingsthatgo: load ner vector entity fini
 # new stuff, just query
 fquerymp3: cleanoutput querysmall cleanmp3 mp3small fini
 
@@ -28,8 +37,9 @@ fquery: load ner vector query fini
 fmp3: mp3 fini
 fbias: mkvec bias query mp3 fini
 
+# this is -1 day
 timestamp:
-	date -u +"%Y-%m-%dT%H:%M:%SZ" > db/timestamp.txt
+	db/mktimestamp.py 1
 
 black:
 	black db/*.py
@@ -71,22 +81,22 @@ mkvec:
 mkvecsmall:
 	find db/output -name "*.vec" -delete
 	find db/output -name "*.ids" -delete
-	source $(DB_ENV)/bin/activate && cd db && ./batchquery.sh './mkvec.sh' -1
+	source $(DB_ENV)/bin/activate && cd db && ./batchquery.sh './mkvec.sh' $(NUMDAYS)
 
 mkvecsmallest:
 	find db/output -name "*.vec" -delete
 	find db/output -name "*.ids" -delete
-	source $(DB_ENV)/bin/activate && cd db && ./batchquerysmallest.sh './mkvec.sh' -1
+	source $(DB_ENV)/bin/activate && cd db && ./batchquerysmallest.sh './mkvec.sh' $(NUMDAYS)
 
 mkvecsmallbiased:
 	find db/output -name "*.vec" -delete
 	find db/output -name "*.ids" -delete
-	source $(DB_ENV)/bin/activate && cd db && ./batchquery.sh './mkvec.sh' -2
+	source $(DB_ENV)/bin/activate && cd db && ./batchquery.sh './mkvec.sh' $(NUMDAYS)
 
 mkvecsmallestbiased:
 	find db/output -name "*.vec" -delete
 	find db/output -name "*.ids" -delete
-	source $(DB_ENV)/bin/activate && cd db && ./batchquerysmallest.sh './mkvec.sh' -2
+	source $(DB_ENV)/bin/activate && cd db && ./batchquerysmallest.sh './mkvec.sh' $(NUMDAYS)
 
 # output/ids.txt to run geminize.py
 bias:
@@ -109,10 +119,10 @@ cleanoutput:
 	find db/output -name "*.reporter" -delete
 
 querysmall:
-	source $(DB_ENV)/bin/activate && cd db && ./batchquery.sh './report.sh'
+	source $(DB_ENV)/bin/activate && cd db && ./batchquery.sh './report.sh' $(NUMDAYS)
 
 querysmallest:
-	source $(DB_ENV)/bin/activate && cd db && ./batchquerysmallest.sh './report.sh'
+	source $(DB_ENV)/bin/activate && cd db && ./batchquerysmallest.sh './report.sh' $(NUMDAYS)
 
 mp3:
 	find mp3/mp3 -name "*.mp3" -delete

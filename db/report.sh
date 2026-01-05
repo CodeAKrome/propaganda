@@ -121,40 +121,175 @@ reportermlxollama() {
 }
 
 
+# cypher() {
+#     local src="$1"
+#     local model="$2"
+#     # local src="mlx"
+#     # local model="mlx-community/Llama-3.3-70B-Instruct-8bit"
+
+#     printf "Cypher source: $src model: $model\n"
+#     if [[ "$src" == "ollama" ]]; then
+#         ( cat "$svo_prompt" "$vec" ) | ollama run --verbose --hidethinking "$model" | sort | uniq > "$cypherfile"
+#     elif [[ "$src" == "gemini" ]]; then
+#         ( cat "$svo_prompt" "$vec" ) | ./gemini.py "$model" | sort | uniq > "$cypherfile"
+#     elif [[ "$src" == "mlx" ]]; then
+#         ( cat "$svo_prompt" "$vec" ) | ./mlxllm.py - --model "$model" | sort | uniq > "$cypherfile"
+#     else
+#         echo "Unknown source: $src"
+#     fi
+# }
+
+# report() {
+#     local src="$1"
+#     local model="$2"
+#     # local src="gemini"
+#     # local model="models/gemini-3-flash-preview"
+
+#     printf "Report source: $src model: $model\n"
+#     cypher=$(<"$cypherfile")
+#     echo "$reporter\n<relations>\n $cypher \n</relations>\n$query $footer" > "$reporterfile"
+#     if [[ "$src" == "ollama" ]]; then
+#         ( cat "$reporterfile" "$vec" ) | ollama run --verbose --hidethinking "$model" > "$news"
+#     elif [[ "$src" == "gemini" ]]; then
+#         ( cat "$reporterfile" "$vec" ) | ./gemini.py "$model" > "$news"
+#     elif [[ "$src" == "mlx" ]]; then
+#         ( cat "$reporterfile" "$vec" ) | ./mlxllm.py - --model "$model" > "$news"
+#     else
+#         echo "Unknown source: $src"
+#     fi
+# }
+
+
+
+
+# -----------------------------
+# Cypher generation with failover
+# -----------------------------
 cypher() {
-    local src="$1"
-    local model="$2"
-    printf "Cypher source: $src model: $model\n"
-    if [[ "$src" == "ollama" ]]; then
-        ( cat "$svo_prompt" "$vec" ) | ollama run --verbose --hidethinking "$model" | sort | uniq > "$cypherfile"
-    elif [[ "$src" == "gemini" ]]; then
-        ( cat "$svo_prompt" "$vec" ) | ./gemini.py "$model" | sort | uniq > "$cypherfile"
-    elif [[ "$src" == "mlx" ]]; then
-        ( cat "$svo_prompt" "$vec" ) | ./mlxllm.py - --model "$model" | sort | uniq > "$cypherfile"
-    else
-        echo "Unknown source: $src"
-    fi
+    local pairs=("$@")
+    local src model cmd_output exit_code
+
+    for (( i=1; i<=${#pairs[@]}; i+=2 )); do
+        src="${pairs[i]}"
+        model="${pairs[i+1]}"
+
+        printf "Trying cypher with %s: %s\n" "$src" "$model"
+
+        if [[ "$src" == "ollama" ]]; then
+            cmd_output=$( (cat "$svo_prompt" "$vec") | time ollama run --hidethinking "$model" 2>/dev/null | sort | uniq )
+            exit_code=$?
+        elif [[ "$src" == "gemini" ]]; then
+            cmd_output=$( (cat "$svo_prompt" "$vec") | time ./gemini.py "$model" 2>/dev/null | sort | uniq )
+            exit_code=$?
+        elif [[ "$src" == "mlx" ]]; then
+            cmd_output=$( (cat "$svo_prompt" "$vec") | time ./mlxllm.py - --model "$model" 2>/dev/null | sort | uniq )
+            exit_code=$?
+        else
+            echo "Unknown cypher source: $src" >&2
+            continue
+        fi
+
+        if [[ $exit_code -eq 0 && -n "$cmd_output" ]]; then
+            echo "$cmd_output" > "$cypherfile"
+            printf "Cypher succeeded with %s: %s\n" "$src" "$model"
+            return 0
+        else
+            printf "Cypher failed with %s: %s (exit_code: %d)\n" "$src" "$model" "$exit_code" >&2
+        fi
+    done
+
+    echo "All cypher attempts failed." >&2
+    > "$cypherfile"  # empty file on total failure
+    return 1
 }
+
+# -----------------------------
+# Report generation with failover
+# -----------------------------
 
 report() {
-    local src="$1"
-    local model="$2"
-    printf "Report source: $src model: $model\n"
-    cypher=$(<"$cypherfile")
-    echo "$reporter\n<relations>\n $cypher \n</relations>\n$query $footer" > "$reporterfile"
-    if [[ "$src" == "ollama" ]]; then
-        ( cat "$reporterfile" "$vec" ) | ollama run --verbose --hidethinking "$model" > "$news"
-    elif [[ "$src" == "gemini" ]]; then
-        ( cat "$reporterfile" "$vec" ) | ./gemini.py "$model" > "$news"
-    elif [[ "$src" == "mlx" ]]; then
-        ( cat "$reporterfile" "$vec" ) | ./mlxllm.py - --model "$model" > "$news"
-    else
-        echo "Unknown source: $src"
-    fi
+    local pairs=("$@")
+    local src model exit_code
+
+    # Ensure cypherfile exists (even if empty)
+    [[ -f "$cypherfile" ]] || > "$cypherfile"
+    cypher_content=$(<"$cypherfile")
+
+    echo "$reporter\n<relations>\n $cypher_content \n</relations>\n$query $footer" > "$reporterfile"
+
+    for (( i=1; i<=${#pairs[@]}; i+=2 )); do
+        src="${pairs[i]}"
+        model="${pairs[i+1]}"
+
+        printf "Trying report with %s: %s\n" "$src" "$model" >&2
+
+        if [[ "$src" == "ollama" ]]; then
+            ( cat "$reporterfile" "$vec" ) | time ollama run --hidethinking "$model" > "$news" 2>/dev/null
+            exit_code=$?
+        elif [[ "$src" == "gemini" ]]; then
+            ( cat "$reporterfile" "$vec" ) | time ./gemini.py "$model" > "$news" 2>/dev/null
+            exit_code=$?
+        elif [[ "$src" == "mlx" ]]; then
+            ( cat "$reporterfile" "$vec" ) | time ./mlxllm.py - --model "$model" > "$news" 2>/dev/null
+            exit_code=$?
+        else
+            echo "Unknown report source: $src" >&2
+            continue
+        fi
+
+        if [[ $exit_code -eq 0 && -s "$news" ]]; then
+            printf "Report succeeded with %s: %s\n" "$src" "$model" >&2
+            return 0
+        else
+            printf "Report failed with %s: %s (exit_code: %d, output empty: %s)\n" \
+                   "$src" "$model" "$exit_code" "$( [[ ! -s "$news" ]] && echo yes || echo no )" >&2
+            > "$news"  # clear partial/failed output
+        fi
+    done
+
+    echo "All report attempts failed." >&2
+    echo "Nothing relevant found or generation failed." > "$news"
+    return 1
 }
 
-cypher("mlx" "mlx-community/Llama-3.3-70B-Instruct-8bit")
-report("gemini" "models/gemini-3-flash-preview")
+
+
+# -----------------------------
+# Cypher generation with failover
+# -----------------------------
+
+# Preferred order: try high-quality MLX first for cypher, then Gemini as fallback
+# cypher \
+#     "mlx"   "mlx-community/Llama-3.3-70B-Instruct-8bit" \
+#     "gemini" "models/gemini-2.5-flash" \
+#     "ollama" "llama3.1:70b"
+
+# "mlx-community/MiniMax-M2.1-3bit"
+
+cypher \
+    "mlx"   "mlx-community/MiniMax-M2.1-3bit"
+
+# cypher \
+#     "mlx"   "mlx-community/Llama-3.3-70B-Instruct-8bit" 
+
+# For reporting, prefer fast Gemini, fall back to others if needed
+report \
+    "gemini" "models/gemini-3-flash-preview" \
+    "gemini" "models/gemini-2.5-flash" \
+    "mlx"   "mlx-community/MiniMax-M2.1-3bit"
+
+# report \
+#     "gemini" "models/gemini-3-flash-preview" \
+#     "gemini" "models/gemini-2.5-flash" \
+#     "mlx"    "mlx-community/Llama-3.3-70B-Instruct-8bit"
+
+
+# cypher "mlx" "mlx-community/Llama-3.3-70B-Instruct-8bit"
+# report "gemini" "models/gemini-2.5-flash"
+# report "gemini" "models/gemini-3-flash-preview"
+# cypher
+# report
+
 
 #reportergem models/gemini-2.5-flash 
 #reporter reporterllama3370b:latest

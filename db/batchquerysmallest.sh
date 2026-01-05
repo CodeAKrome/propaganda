@@ -1,10 +1,16 @@
 #!/bin/zsh
 startdate=$2
-#queries=${#${(f)$(<$0)}}
 queries=3
+current=0
+
 echo "Total queries: $queries"
-$1 "$startdate" skorea "South Korea" "Summarize news about South Korea. Analize actions and motivations."
-echo "$LINENO / $queries"
-$1 "$startdate" nkorea "North Korea" "Summarize news about North Korea. Analize actions and motivations."
-echo "$LINENO / $queries"
-$1 "$startdate" gaza "Gaza" "Summarize events in Gaza. Analize actions and motivations."
+
+((current++))
+echo "$current / $queries"
+# echo "$current / $queries"
+# ((current++))
+# echo "$current / $queries"
+# ((current++))
+# echo "$current / $queries"
+$1 "$startdate" venezuela "Venezuela" "Summarize US involvement in Venezuela. Analize actions and motivations."
+$1 "$startdate" maduro "Maduro" "Summarize legal actions involving Maduro. Analize actions and motivations." "+legal,court,trial,arrest,indictment,charges,prosecution"
