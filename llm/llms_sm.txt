@@ -1,0 +1,3 @@
+gpt-oss:120b
+deepseek-r1:8b
+deepseek-coder-v2:16b

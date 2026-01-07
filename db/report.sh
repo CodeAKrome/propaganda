@@ -266,22 +266,22 @@ report() {
 
 # "mlx-community/MiniMax-M2.1-3bit"
 
-cypher \
-    "mlx"   "mlx-community/MiniMax-M2.1-3bit"
-
 # cypher \
-#     "mlx"   "mlx-community/Llama-3.3-70B-Instruct-8bit" 
+#     "mlx"   "mlx-community/MiniMax-M2.1-3bit"
+
+cypher \
+    "mlx"   "mlx-community/Llama-3.3-70B-Instruct-8bit" 
 
 # For reporting, prefer fast Gemini, fall back to others if needed
-report \
-    "gemini" "models/gemini-3-flash-preview" \
-    "gemini" "models/gemini-2.5-flash" \
-    "mlx"   "mlx-community/MiniMax-M2.1-3bit"
-
 # report \
 #     "gemini" "models/gemini-3-flash-preview" \
 #     "gemini" "models/gemini-2.5-flash" \
-#     "mlx"    "mlx-community/Llama-3.3-70B-Instruct-8bit"
+#     "mlx"   "mlx-community/MiniMax-M2.1-3bit"
+
+report \
+    "gemini" "models/gemini-3-flash-preview" \
+    "gemini" "models/gemini-2.5-flash" \
+    "mlx"    "mlx-community/Llama-3.3-70B-Instruct-8bit"
 
 
 # cypher "mlx" "mlx-community/Llama-3.3-70B-Instruct-8bit"
