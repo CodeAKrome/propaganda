@@ -1,0 +1,324 @@
+<prompt>
+  <goal>
+    Given a text document with pre-identified entities, extract all relationships among the identified entities. Extract up to 100 entity-relation triplets total.
+  </goal>
+
+  <method name="Chain-of-Verification">
+    <description>
+      Chain-of-Verification (CoVe) is a systematic reasoning process where you:
+      1. Generate an initial answer
+      2. Create verification questions to test your answer
+      3. Answer each verification question independently
+      4. Use verification results to confirm, refine, or correct your initial answer
+      5. Produce a final, validated answer
+    </description>
+    <instruction>You MUST complete all five steps internally before producing output.</instruction>
+  </method>
+
+  <input_format>
+    <description>
+      The input document contains pre-identified entities in an entities block.
+      Each line lists an entity type followed by a colon, then a comma-separated list of entities of that type.
+    </description>
+    <structure>
+      <![CDATA[
+      <entities>
+      ENTITY_TYPE: entity1, entity2, entity3, ...
+      ENTITY_TYPE: entity1, entity2, ...
+      </entities>
+      ]]>
+    </structure>
+    <example>
+      <![CDATA[
+      <entities>
+      PERSON: John Smith, Jane Doe, Robert Johnson
+      ORG: NASA, Google, United Nations
+      GPE: United States, France, Tokyo
+      DATE: 2023, January 1st, last week
+      </entities>
+      ]]>
+    </example>
+    <instruction>
+      Use these pre-identified entities as the authoritative source for entity extraction.
+      Your task is to:
+      1. Parse all entities from the entities block
+      2. Identify relationships between these entities based on the document text
+      3. Verify your relationship extractions
+    </instruction>
+  </input_format>
+
+  <entity_types>
+    <type name="CARDINAL">
+      <meaning>cardinal value</meaning>
+      <examples>1, 2, 3, one hundred, about half</examples>
+    </type>
+    <type name="DATE">
+      <meaning>date value</meaning>
+      <examples>2023-12-25, January 1st, last week, decades later</examples>
+    </type>
+    <type name="EVENT">
+      <meaning>event name</meaning>
+      <examples>Super Bowl, Olympics, World War II, Cold War</examples>
+    </type>
+    <type name="FAC">
+      <meaning>building or facility name</meaning>
+      <examples>Empire State Building, Eiffel Tower, Vatican</examples>
+    </type>
+    <type name="GPE">
+      <meaning>geo-political entity</meaning>
+      <examples>United States, France, Cuba, Venezuela</examples>
+    </type>
+    <type name="LANGUAGE">
+      <meaning>language name</meaning>
+      <examples>English, Spanish, Mandarin</examples>
+    </type>
+    <type name="LAW">
+      <meaning>law name</meaning>
+      <examples>Constitution, Copyright Act, GDPR</examples>
+    </type>
+    <type name="LOC">
+      <meaning>non-GPE location</meaning>
+      <examples>Mount Everest, Pacific Ocean, Latin America, the Western Hemisphere</examples>
+    </type>
+    <type name="MONEY">
+      <meaning>monetary value</meaning>
+      <examples>$500, 10 euros, five million dollars</examples>
+    </type>
+    <type name="NORP">
+      <meaning>nationality, religious, or political affiliation</meaning>
+      <examples>Republican, Democrat, American, Cuban, communist</examples>
+    </type>
+    <type name="ORDINAL">
+      <meaning>ordinal value</meaning>
+      <examples>first, second, third</examples>
+    </type>
+    <type name="ORG">
+      <meaning>organization name</meaning>
+      <examples>NASA, Google, CIA, NATO</examples>
+    </type>
+    <type name="PERCENT">
+      <meaning>percent value</meaning>
+      <examples>50%, 75%, ten percent</examples>
+    </type>
+    <type name="PERSON">
+      <meaning>person name</meaning>
+      <examples>John Doe, Donald Trump, Fidel Castro</examples>
+    </type>
+    <type name="PRODUCT">
+      <meaning>product name</meaning>
+      <examples>iPhone, MacBook, Boeing 747</examples>
+    </type>
+    <type name="QUANTITY">
+      <meaning>quantity with unit</meaning>
+      <examples>10 kilometers, 20 pounds, 5 liters</examples>
+    </type>
+    <type name="TIME">
+      <meaning>time value</meaning>
+      <examples>12:00 PM, 5:30 AM, midnight</examples>
+    </type>
+    <type name="WORK_OF_ART">
+      <meaning>name of work of art</meaning>
+      <examples>Mona Lisa, Star Wars, Overthrow: America's Century of Regime Change</examples>
+    </type>
+  </entity_types>
+
+  <procedure>
+    <step number="1" name="Parse Entities Block">
+      <instruction>Extract all entities from the entities block in the document.</instruction>
+      <process>
+        <action>Locate the entities block delimited by entity tags</action>
+        <action>For each line, parse the entity type before the colon</action>
+        <action>Split the comma-separated list after the colon to get individual entities</action>
+        <action>Trim whitespace from each entity name</action>
+        <action>Build a complete entity inventory with name and type</action>
+      </process>
+    </step>
+
+    <step number="2" name="Initial Relationship Extraction">
+      <instruction>Analyze the document text to identify relationships between parsed entities.</instruction>
+      <extract>
+        <field name="source_entity">Name of the source entity (from entities block)</field>
+        <field name="target_entity">Name of the target entity (from entities block)</field>
+        <field name="relation">Relationship type between source and target</field>
+        <field name="relationship_description">Explanation of why these entities are related</field>
+      </extract>
+      <constraint>Only extract relationships between entities that appear in the entities block.</constraint>
+    </step>
+
+    <step number="3" name="Generate Verification Questions">
+      <instruction>Create 5-7 questions to validate your extractions.</instruction>
+      <question_types>
+        <type>Did I correctly parse all entities from the entities block?</type>
+        <type>Are there any implicit relationships I overlooked?</type>
+        <type>Is each relationship supported by explicit textual evidence?</type>
+        <type>Are any extracted relationships speculative rather than stated?</type>
+        <type>Did I use the exact entity names as they appear in the block?</type>
+        <type>Are the relationship types accurate and specific?</type>
+        <type>Do the relationship descriptions accurately reflect the text?</type>
+      </question_types>
+    </step>
+
+    <step number="4" name="Answer Verification Questions">
+      <instruction>Answer each verification question independently.</instruction>
+      <requirements>
+        <requirement>Cite specific textual evidence for each answer</requirement>
+        <requirement>Identify any relationships that need correction</requirement>
+        <requirement>Note any missing relationships to add</requirement>
+        <requirement>Flag any relationships without textual support for removal</requirement>
+      </requirements>
+    </step>
+
+    <step number="5" name="Synthesize and Refine">
+      <instruction>Compare verification answers against initial extraction.</instruction>
+      <actions>
+        <action>Add any missing relationships</action>
+        <action>Remove any unsupported extractions</action>
+        <action>Correct any inaccurate relationship types</action>
+        <action>Refine relationship descriptions for accuracy</action>
+      </actions>
+    </step>
+
+    <step number="6" name="Produce Final Output">
+      <instruction>Output only the validated relationships in the specified format.</instruction>
+    </step>
+  </procedure>
+
+  <output_specification>
+    <format>
+      ("source_entity", "relation", "target_entity", "relationship_description")
+    </format>
+    <examples>
+      <example>("Donald Trump", "threatens_intervention", "Venezuela", "Donald Trump has threatened military intervention in Venezuela.")</example>
+      <example>("Fidel Castro", "led", "Cuba", "Fidel Castro led Cuba as its revolutionary leader.")</example>
+      <example>("CIA", "orchestrated_coup_in", "Guatemala", "The CIA orchestrated a coup in Guatemala in 1954.")</example>
+      <example>("Stephen Kinzer", "authored", "Overthrow: America's Century of Regime Change", "Stephen Kinzer authored the book Overthrow: America's Century of Regime Change.")</example>
+    </examples>
+    <constraints>
+      <constraint>Output ONLY relationships in the specified format</constraint>
+      <constraint>Use exact entity names as they appear in the entities block</constraint>
+      <constraint>Do not include any other formatting or explanatory text</constraint>
+      <constraint>Do not show your Chain-of-Verification work in the output</constraint>
+      <constraint>Maximum 100 entity-relation triplets</constraint>
+    </constraints>
+  </output_specification>
+
+  <verification_checklist>
+    <item>☐ All entities parsed correctly from entities block</item>
+    <item>☐ Entity names match exactly as listed</item>
+    <item>☐ All clear relationships extracted</item>
+    <item>☐ Verification questions generated</item>
+    <item>☐ Verification questions answered with evidence</item>
+    <item>☐ Corrections applied based on verification</item>
+    <item>☐ Output format matches specification</item>
+    <item>☐ No extraneous text in output</item>
+  </verification_checklist>
+
+  <input>
+    <label>Document to analyze:</label>
+ID: 695ddea505332cb5d7f6deb1
+Title: Trump’s new imperialism recalls a dark period of US-led regime change
+Published: 2026-01-06T13:37:36
+Source: egyptian-independant
+Bias: {"dir":{"L":0.85,"C":0.05,"R":0.10},"deg":{"L":0.05,"M":0.15,"H":0.80},"reason":"The article uses highly loaded terms such as \"imperialism\", \"regime change\", and \"dictator\" to describe Trump’s actions, framing them as exploitative and violent.  It relies almost exclusively on academic voices (Stephen Kinzer, Alexander Downes, Alan Kuperman) who criticize U.S. intervention, while omitting any counter‑arguments or Trump’s stated justifications.  This negative framing, selective source selection, and omission of alternative perspectives point to a left‑leaning, high‑bias stance."}
+<entities>
+CARDINAL: about half, hundreds
+DATE: 1898, 1954, 1973, 1990, 2026, 36 years ago this month, Decades later, Saturday, Subsequent decades, Sunday, almost 50 years, between 1990 and 2026, the 20th century, the early 20th century, the past 100 years, years
+EVENT: Cold War, the Red Scare
+FAC: Vatican
+GPE: Afghanistan, Austin, Caracas, China, Colombia, Cuba, Denmark, Greenland, Guatemala, Haiti, Hawaii, Honduras, Iran, Iraq, Israel, Libya, Mexico, Nicaragua, Panama, Panama City, Russia, Saudi Arabia, The United States, U.S., US, Venezuela, Washington, the Dominican Republic, the United Kingdom, the United States
+LOC: Caribbean, Latin America, the Middle East, the Western Hemisphere
+NORP: American, American-allied, American-led, Americans, Central, Chilean, Cuban, Cubans, European, South American, Spanish, US-led, Venezuelan, communist
+ORDINAL: first
+ORG: Brown University, CIA, Corbis, Delta Force, George Washington University, NATO, State, The US Army, Watson School of International and Public Affairs, the Institute for Security and Conflict Studies, the United Fruit Company, the University of Texas
+PERSON: Alan Kuperman, Alexander Downes, Augusto Pinochet, Castro, Cristobal Basaure Araya, Donald Trump, Downes, Fidel Castro, Juan Orlando Hernández, Kinzer, Kuperman, Maduro, Manuel Noriega, Marco Rubio, Mohammed bin Salman, Nicolás Maduro, Noriega, Rubio, Salvador Allende, Stephen Kinzer, Theodore Roosevelt, Trump, William Gentile, William Howard Taft, William McKinley
+WORK_OF_ART: Catastrophic Success: Why Foreign-Imposed Regime Change Goes Wrong, “Overthrow: America’s Century of Regime Change
+</entities>
+Text: President Donald Trump is ringing in 2026 with a new form of American imperialism.
+
+► The US Army’s Delta Force was dispatched to depose Venezuelan leader Nicolás Maduro in a snatch-and-grab operation Saturday. Now Trump says Secretary of State Marco Rubio will be part of “running” that oil-rich country, whatever that ends up meaning.
+
+► Leaders of neighboring countries, including Colombia and Mexico, were put on notice by Trump that he could take some kind of action against them, too — a clear warning to fall in line.
+
+► Trump on Sunday expressed a renewed desire to take over Greenland, claiming the US needs it for security purposes. Both Greenland and Denmark, a NATO ally of the US, are staunchly opposed to the idea.
+
+► The president also threatened to take new action against Iran on behalf of protesters there, suggesting the US could revisit the Middle East with its military might.
+
+All of this suggests a new era of violent American influence in the rest of the world. And Trump’s decision to turn the American arsenal back on the Western Hemisphere recalls the very long, frequently dark history of American-led regime change closer to home.
+
+Whether to intimidate European powers; to protect American-allied businesses such as banana exporters; to dominate shipping routes or to guard against the specter of communism, the US has been either toppling or propping up various governments for generations.
+
+“This is one of the oldest stories in American history,” said Stephen Kinzer, a senior fellow at Brown University’s Watson School of International and Public Affairs.
+
+Maduro shares an important trait with other deposed Central and South American leaders over the past 100 years or so, Kinzer said.
+
+“These are leaders who do not accept the right of the United States to dominate their countries and their region,” said Kinzer, author of the book “Overthrow: America’s Century of Regime Change from Hawaii to Iraq.”
+
+“The United States finds this intolerable,” Kinzer said, “so it’s back to the future.”
+
+Maduro, Kinzer acknowledged, is a far-from-sympathetic character — a brutal dictator leading an undemocratic government. But that’s true of some who are US allies.
+
+“Mohammed bin Salman (the crown prince of Saudi Arabia) has never won an election and chopped up his main critic into little pieces, but that’s fine with us, because he’s on our side,” Kinzer said with irony.
+
+A unique feature of the Maduro toppling — which may end up being more a decapitation of his regime than a full-scale regime change — is that he was essentially taken rendition-style from Caracas, according to Alexander Downes, director of the Institute for Security and Conflict Studies at George Washington University.
+
+“Foreign leaders do get indicted in the U.S. That’s fine,” Downes said in an email. See Trump’s recent pardon of former Honduras President Juan Orlando Hernández, who was actually convicted of trafficking drugs into the US.
+
+“Kidnapping (rival world leaders) while in office, however, strikes me as a bad idea if not illegal,” said Downes, author of the book “Catastrophic Success: Why Foreign-Imposed Regime Change Goes Wrong.”
+
+Downes added that the move may create a new precedent for other countries. How will the US react if China or Russia now simply kidnaps a rival leader?
+
+The idea that Trump thinks the US is now running Venezuela — something disputed by the country’s acting president — is not likely to endear him to anyone in the region.
+
+The most obvious corollary to Trump’s Venezuelan operation may seem to be Panama, where 36 years ago this month, the strongman military leader Manuel Noriega surrendered to US custody. He had been seeking refuge in the Vatican embassy in Panama City after US forces, including paratroopers, invaded his small country en masse.
+
+William Gentile/Corbis/Getty Images
+
+Noriega was later tried and convicted in US court, although he won the concession of being treated as a prisoner of war rather than a garden-variety drug trafficker.
+
+Kinzer noted there are many differences between Panama and Venezuela that also complicate comparisons between 1990 and 2026. Venezuela is a much larger country with more rugged terrain. And back in 1990, the US already had a large military presence garrisoned in Panama. There’s no US military base inside Venezuela.
+
+The US invasion of Panama may not be remembered by many Americans, but it cost hundreds of lives in the small country, and its anniversary is now treated as a national day of mourning.
+
+Views of the Panama invasion may have turned over time, but it remains among the most successful US regime change operations because it allowed the US to topple Noriega and a democratic government to take over.
+
+Defending democracy has long been a stated, if sometimes unbelievable, goal of recent US-led regime change, but Trump does not appear particularly interested in it.
+
+In that regard, Trump is recalling the first part of the 20th century, when presidents such as William McKinley, Theodore Roosevelt and William Howard Taft were swinging “big stick” or “gunboat” diplomacy around the Caribbean.
+
+“We invaded Cuba in 1898 with the promise that once we helped the Cubans chase out the Spanish overlords, we would turn Cuba over to its people. As soon as the Spanish were gone, we changed our minds and decided we wanted to rule Cuba,” Kinzer said.
+
+He then ticked through other US interventions at the behest of business that led to the overthrow, ouster or resignation of governments during the early 20th century, including in Nicaragua and Honduras. The US military also occupied Nicaragua, Haiti and the Dominican Republic at various points for years during this period.
+
+Later, as the Red Scare and Cold War consumed the US, administrations from both parties meddled abroad for more ideological reasons, such as fighting socialism and the spread of communism — but these moves also helped US businesses.
+
+The CIA, at the urging of the United Fruit Company, helped engineer a coup in Guatemala in 1954 that achieved the goal of toppling the democratically elected government. Subsequent decades saw military juntas and mass killings.
+
+That’s about the same time the US and the United Kingdom were colluding to help overthrow the democratically elected government in Iran.
+
+“What looks like an immediate success can turn into a long term failure,” Downes said, pointing to Iran as Exhibit A. “Washington has been dealing with the fallout, including the Iran hostage crisis, Iran’s bid for nuclear weapons, and its hostility to Israel for almost 50 years.”
+
+The same could be said of the unintended consequences of more recent US actions in Iraq, Afghanistan and Libya.
+
+Decades later, in 1973, the US helped overthrow the democratically elected Chilean President Salvador Allende, who died in a coup. His successor, Gen. Augusto Pinochet, led a repressive right-wing regime.
+
+Cristobal Basaure Araya/LightRocket/SOPA Images/LightRocket/Getty Images
+
+For Trump, who has variously cited drug trafficking, immigration and other justifications for going after Maduro, the end goal may just be power.
+
+“This is not about values. This is simply about maximizing US security and prosperity,” said Alan Kuperman, a professor of public affairs at the University of Texas at Austin, who has written about regime change.
+
+“What he wants is to make the US the dominant power in Latin America, and he wants for the resources of Latin America to benefit the US more than they have,” Kuperman surmised.
+
+That helps explain why, for now, Maduro’s regime has been left intact, just without Maduro. Trump has said he doesn’t think opposition leaders can rule.
+
+Setting aside values like democracy and human rights, Kuperman said US-led regime change accomplishes its goals about half the time.
+
+It does not take much of a leap to see that while Trump mostly talks about drugs, his administration is also very much interested in opening more of Venezuela’s oil fields to US companies.
+
+Secretary of State Marco Rubio, the Cuban American who Trump said will be part of “running” Venezuela for the time being, seems to have some of his own motivations. Rubio’s family fled Cuba, the country where the US failed to depose or take out communist leader Fidel Castro.
+
+Castro is dead, but Cuba is still communist and relies heavily on Venezuela for support. Taking out Maduro could be a step to regime change in Cuba.
+
+“It’s amazing how Cuba has had such a hold on the United States and on the American imagination for so long. This little island has distorted our foreign policy over generations, and it’s happening again. I think, without the fact that Venezuela is the lifeline for Cuba, this might never have happened,” Kinzer said.
+  </input>
+</prompt>

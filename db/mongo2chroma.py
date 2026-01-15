@@ -157,12 +157,26 @@ def load_into_chroma(
     end_date: Optional[str] = None,
     and_entities: Optional[List[Tuple[str | None, str]]] = None,
     or_entities: Optional[List[Tuple[str | None, str]]] = None,
+    force: bool = False,
 ) -> int:
     """Embed every article and add into Chroma."""
     from tqdm import tqdm
     
     collection = get_chroma_collection()
     encoder = get_encoder()
+    
+    if force:
+        print("Clearing existing Chroma collection...")
+        try:
+            _chroma_client.delete_collection(name=CHROMA_COLL)
+            collection = _chroma_client.get_or_create_collection(
+                name=CHROMA_COLL, metadata={"hnsw:space": "cosine"}
+            )
+            # Update the global reference
+            global _collection
+            _collection = collection
+        except Exception as e:
+            print(f"Note: Could not clear collection: {e}")
     
     and_entities = and_entities or []
     or_entities = or_entities or []
@@ -200,6 +214,7 @@ def load_into_chroma(
 
     docs, ids = [], []
     stored = 0
+    skipped = 0
 
     for doc in tqdm(cursor, total=total_docs, desc="Loading articles"):
         _id = str(doc["_id"])
@@ -207,7 +222,9 @@ def load_into_chroma(
         if not text:
             continue
 
-        if collection.get(ids=[_id])["ids"]:
+        # Skip if already exists (unless force flag is used)
+        if not force and collection.get(ids=[_id])["ids"]:
+            skipped += 1
             continue
 
         docs.append(text)
@@ -223,6 +240,9 @@ def load_into_chroma(
         embs = encoder.encode(docs, convert_to_tensor=True).cpu().numpy().tolist()
         collection.add(documents=docs, embeddings=embs, ids=ids)
         stored += len(ids)
+
+    if skipped > 0:
+        print(f"Skipped {skipped} documents already in Chroma (use --force to reload)")
 
     return stored
 
@@ -552,6 +572,11 @@ def main(argv=None):
         "--orentity",
         help="Comma-separated entities (at least one required). Format: [LABEL/]TEXT",
     )
+    p_load.add_argument(
+        "--force",
+        action="store_true",
+        help="Clear existing collection and reload all articles",
+    )
 
     p_query = sub.add_parser("query", help="Search articles by text")
     p_query.add_argument(
@@ -665,6 +690,7 @@ def main(argv=None):
             end_date=str(args.end_date) if args.end_date is not None else None,
             and_entities=and_entities,
             or_entities=or_entities,
+            force=args.force,
         )
         print(f"✅  Stored {count} new vectors in Chroma")
         return

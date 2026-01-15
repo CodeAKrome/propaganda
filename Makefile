@@ -18,13 +18,13 @@ NUMDAYS ?= $(shell date +%F)  # fallback to today if file missing
 	thingsthatgo fini ner fner fnervector entity fvector bias mkvec fbias \
 	querysmall mkvecsmall smallthingsthatgo cleanoutput fload oldthingsthatgo \
 	fquerymp3 fquery fmp3 black querysmallest cleanmp3 mp3small smallestthingsthatgo \
-	mkvecsmallbiased mkvecsmallestbiased timestamp
+	timestamp
 
 thingsthatgo: load ner vector entity mkvec bias query mp3 fini
-smallthingsthatgo: timestamp load ner vector entity mkvecsmall bias mkvecsmallbiased querysmall cleanmp3 mp3small fini
+smallthingsthatgo: timestamp load ner vector entity mkvecsmall bias mkvecsmall querysmall cleanmp3 mp3small fini
 # Doesn't clean db/output or mp3/mp3
-smallestthingsthatgo: timestamp load ner vector entity mkvecsmallest bias mkvecsmallestbiased querysmallest cleanmp3 mp3small fini
-oldthingsthatgo: load ner vector entity fini
+smallestthingsthatgo: timestamp load ner vector entity mkvecsmallest bias mkvecsmallest querysmallest mp3small fini
+oldthingsthatgo: entity mkvecsmall bias mkvecsmall querysmall cleanmp3 mp3small fini
 # new stuff, just query
 fquerymp3: cleanoutput querysmall cleanmp3 mp3small fini
 
@@ -67,7 +67,7 @@ front:
 	front/RUNME.sh
 # read data from mongodb and create vectors in chroma
 vector:
-	$(DB_ENV)/bin/python db/mongo2chroma.py load --start-date $(NUMDAYS)
+	$(DB_ENV)/bin/python db/mongo2chroma.py load --start-date $(NUMDAYS) --force
 # Do NER
 ner:
 	cd ../ner && ./RUNME.sh $(NUMDAYS)
@@ -84,16 +84,6 @@ mkvecsmall:
 	source $(DB_ENV)/bin/activate && cd db && ./batchquery.sh './mkvec.sh' $(NUMDAYS)
 
 mkvecsmallest:
-	find db/output -name "*.vec" -delete
-	find db/output -name "*.ids" -delete
-	source $(DB_ENV)/bin/activate && cd db && ./batchquerysmallest.sh './mkvec.sh' $(NUMDAYS)
-
-mkvecsmallbiased:
-	find db/output -name "*.vec" -delete
-	find db/output -name "*.ids" -delete
-	source $(DB_ENV)/bin/activate && cd db && ./batchquery.sh './mkvec.sh' $(NUMDAYS)
-
-mkvecsmallestbiased:
 	find db/output -name "*.vec" -delete
 	find db/output -name "*.ids" -delete
 	source $(DB_ENV)/bin/activate && cd db && ./batchquerysmallest.sh './mkvec.sh' $(NUMDAYS)
@@ -119,10 +109,10 @@ cleanoutput:
 	find db/output -name "*.reporter" -delete
 
 querysmall:
-	source $(DB_ENV)/bin/activate && cd db && ./batchquery.sh './report.sh' $(NUMDAYS)
+	source $(DB_ENV)/bin/activate && cd db && ./batchquery.sh './report.py' $(NUMDAYS)
 
 querysmallest:
-	source $(DB_ENV)/bin/activate && cd db && ./batchquerysmallest.sh './report.sh' $(NUMDAYS)
+	source $(DB_ENV)/bin/activate && cd db && ./batchquerysmallest.sh './report.py' $(NUMDAYS)
 
 mp3:
 	find mp3/mp3 -name "*.mp3" -delete

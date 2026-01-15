@@ -284,6 +284,9 @@ def main(argv=None):
     # If reranking, fetch a larger candidate pool (e.g., 10x the requested top N)
     # This gives BM25 enough material to re-order meaningfully.
     k_results = args.top * 10 if args.bm25 else args.top
+    
+    # Ensure we don't request more results than we have candidates
+    k_results = min(k_results, len(candidates))
 
     search_text = fulltext_search_string if fulltext_search_string else args.text
     

@@ -159,42 +159,71 @@ reportermlxollama() {
 #     fi
 # }
 
-
-
+# -----------------------------
+# Cypher generation with failover
+# -----------------------------
 
 # -----------------------------
 # Cypher generation with failover
 # -----------------------------
+
 cypher() {
     local pairs=("$@")
     local src model cmd_output exit_code
+    local -a remaining_pairs
 
-    for (( i=1; i<=${#pairs[@]}; i+=2 )); do
-        src="${pairs[i]}"
-        model="${pairs[i+1]}"
+    # Copy all pairs to remaining_pairs initially
+    remaining_pairs=("${pairs[@]}")
+
+    while [[ ${#remaining_pairs[@]} -gt 0 ]]; do
+        src="${remaining_pairs[1]}"
+        model="${remaining_pairs[2]}"
 
         printf "Trying cypher with %s: %s\n" "$src" "$model"
 
+        # Clear any previous output
+        > "$cypherfile"
+
         if [[ "$src" == "ollama" ]]; then
-            cmd_output=$( (cat "$svo_prompt" "$vec") | time ollama run --hidethinking "$model" 2>/dev/null | sort | uniq )
-            exit_code=$?
+            (cat "$svo_prompt" "$vec") | timeout 300 ollama run --hidethinking "$model" 2>/dev/null | sort | uniq > "$cypherfile"
+            exit_code=${PIPESTATUS[1]}  # Get ollama's exit code, not sort/uniq
         elif [[ "$src" == "gemini" ]]; then
-            cmd_output=$( (cat "$svo_prompt" "$vec") | time ./gemini.py "$model" 2>/dev/null | sort | uniq )
-            exit_code=$?
+            (cat "$svo_prompt" "$vec") | timeout 300 ./gemini.py "$model" 2>/dev/null | sort | uniq > "$cypherfile"
+            exit_code=${PIPESTATUS[1]}  # Get gemini.py's exit code
         elif [[ "$src" == "mlx" ]]; then
-            cmd_output=$( (cat "$svo_prompt" "$vec") | time ./mlxllm.py - --model "$model" 2>/dev/null | sort | uniq )
-            exit_code=$?
+            (cat "$svo_prompt" "$vec") | timeout 300 ./mlxllm.py - --model "$model" 2>/dev/null | sort | uniq > "$cypherfile"
+            exit_code=${PIPESTATUS[1]}  # Get mlxllm.py's exit code
         else
             echo "Unknown cypher source: $src" >&2
+            # Remove this unknown pair and continue
+            remaining_pairs=("${remaining_pairs[@]:2}")
             continue
         fi
 
-        if [[ $exit_code -eq 0 && -n "$cmd_output" ]]; then
-            echo "$cmd_output" > "$cypherfile"
+        # Debug output
+        if [[ -f "$cypherfile" ]]; then
+            file_size=$(wc -c < "$cypherfile" 2>/dev/null || echo 0)
+            printf "Debug: exit_code=%d, file exists, size=%d bytes\n" "$exit_code" "$file_size" >&2
+        else
+            printf "Debug: exit_code=%d, file does not exist\n" "$exit_code" >&2
+        fi
+
+        if [[ $exit_code -eq 0 && -s "$cypherfile" ]]; then
             printf "Cypher succeeded with %s: %s\n" "$src" "$model"
             return 0
         else
             printf "Cypher failed with %s: %s (exit_code: %d)\n" "$src" "$model" "$exit_code" >&2
+            
+            # Remove the failed pair from remaining_pairs
+            # But only if there are more pairs left to try
+            if [[ ${#remaining_pairs[@]} -gt 2 ]]; then
+                printf "Removing failed model %s: %s from retry list\n" "$src" "$model" >&2
+                remaining_pairs=("${remaining_pairs[@]:2}")
+            else
+                # This was the last pair, don't remove it but stop trying
+                printf "Last model failed, stopping attempts\n" >&2
+                break
+            fi
         fi
     done
 
@@ -210,40 +239,57 @@ cypher() {
 report() {
     local pairs=("$@")
     local src model exit_code
-
+    local -a remaining_pairs
+    
     # Ensure cypherfile exists (even if empty)
     [[ -f "$cypherfile" ]] || > "$cypherfile"
     cypher_content=$(<"$cypherfile")
 
     echo "$reporter\n<relations>\n $cypher_content \n</relations>\n$query $footer" > "$reporterfile"
 
-    for (( i=1; i<=${#pairs[@]}; i+=2 )); do
-        src="${pairs[i]}"
-        model="${pairs[i+1]}"
+    # Copy all pairs to remaining_pairs initially
+    remaining_pairs=("${pairs[@]}")
+    
+    while [[ ${#remaining_pairs[@]} -gt 0 ]]; do
+        src="${remaining_pairs[1]}"
+        model="${remaining_pairs[2]}"
 
         printf "Trying report with %s: %s\n" "$src" "$model" >&2
 
         if [[ "$src" == "ollama" ]]; then
-            ( cat "$reporterfile" "$vec" ) | time ollama run --hidethinking "$model" > "$news" 2>/dev/null
+            ( cat "$reporterfile" "$vec" ) | timeout 300 ollama run --hidethinking "$model" > "$news" 2>/dev/null
             exit_code=$?
         elif [[ "$src" == "gemini" ]]; then
-            ( cat "$reporterfile" "$vec" ) | time ./gemini.py "$model" > "$news" 2>/dev/null
+            ( cat "$reporterfile" "$vec" ) | timeout 300 ./gemini.py "$model" > "$news" 2>/dev/null
             exit_code=$?
         elif [[ "$src" == "mlx" ]]; then
-            ( cat "$reporterfile" "$vec" ) | time ./mlxllm.py - --model "$model" > "$news" 2>/dev/null
+            ( cat "$reporterfile" "$vec" ) | timeout 300 ./mlxllm.py - --model "$model" > "$news" 2>/dev/null
             exit_code=$?
         else
             echo "Unknown report source: $src" >&2
+            # Remove this unknown pair and continue
+            remaining_pairs=("${remaining_pairs[@]:2}")
             continue
         fi
 
+        # Check if successful (exit code 0 and non-empty output)
         if [[ $exit_code -eq 0 && -s "$news" ]]; then
             printf "Report succeeded with %s: %s\n" "$src" "$model" >&2
             return 0
         else
             printf "Report failed with %s: %s (exit_code: %d, output empty: %s)\n" \
                    "$src" "$model" "$exit_code" "$( [[ ! -s "$news" ]] && echo yes || echo no )" >&2
-            > "$news"  # clear partial/failed output
+            
+            # Remove the failed pair from remaining_pairs
+            # But only if there are more pairs left to try
+            if [[ ${#remaining_pairs[@]} -gt 2 ]]; then
+                printf "Removing failed model %s: %s from retry list\n" "$src" "$model" >&2
+                remaining_pairs=("${remaining_pairs[@]:2}")
+            else
+                # This was the last pair, don't remove it but stop trying
+                printf "Last model failed, stopping attempts\n" >&2
+                break
+            fi
         fi
     done
 
@@ -251,6 +297,90 @@ report() {
     echo "Nothing relevant found or generation failed." > "$news"
     return 1
 }
+
+# cypher() {
+#     local pairs=("$@")
+#     local src model cmd_output exit_code
+
+#     for (( i=1; i<=${#pairs[@]}; i+=2 )); do
+#         src="${pairs[i]}"
+#         model="${pairs[i+1]}"
+
+#         printf "Trying cypher with %s: %s\n" "$src" "$model"
+
+#         if [[ "$src" == "ollama" ]]; then
+#             cmd_output=$( (cat "$svo_prompt" "$vec") | time ollama run --hidethinking "$model" 2>/dev/null | sort | uniq )
+#             exit_code=$?
+#         elif [[ "$src" == "gemini" ]]; then
+#             cmd_output=$( (cat "$svo_prompt" "$vec") | time ./gemini.py "$model" 2>/dev/null | sort | uniq )
+#             exit_code=$?
+#         elif [[ "$src" == "mlx" ]]; then
+#             cmd_output=$( (cat "$svo_prompt" "$vec") | time ./mlxllm.py - --model "$model" 2>/dev/null | sort | uniq )
+#             exit_code=$?
+#         else
+#             echo "Unknown cypher source: $src" >&2
+#             continue
+#         fi
+
+#         if [[ $exit_code -eq 0 && -n "$cmd_output" ]]; then
+#             echo "$cmd_output" > "$cypherfile"
+#             printf "Cypher succeeded with %s: %s\n" "$src" "$model"
+#             return 0
+#         else
+#             printf "Cypher failed with %s: %s (exit_code: %d)\n" "$src" "$model" "$exit_code" >&2
+#         fi
+#     done
+
+#     echo "All cypher attempts failed." >&2
+#     > "$cypherfile"  # empty file on total failure
+#     return 1
+# }
+
+
+# report() {
+#     local pairs=("$@")
+#     local src model exit_code
+
+#     # Ensure cypherfile exists (even if empty)
+#     [[ -f "$cypherfile" ]] || > "$cypherfile"
+#     cypher_content=$(<"$cypherfile")
+
+#     echo "$reporter\n<relations>\n $cypher_content \n</relations>\n$query $footer" > "$reporterfile"
+
+#     for (( i=1; i<=${#pairs[@]}; i+=2 )); do
+#         src="${pairs[i]}"
+#         model="${pairs[i+1]}"
+
+#         printf "Trying report with %s: %s\n" "$src" "$model" >&2
+
+#         if [[ "$src" == "ollama" ]]; then
+#             ( cat "$reporterfile" "$vec" ) | time ollama run --hidethinking "$model" > "$news" 2>/dev/null
+#             exit_code=$?
+#         elif [[ "$src" == "gemini" ]]; then
+#             ( cat "$reporterfile" "$vec" ) | time ./gemini.py "$model" > "$news" 2>/dev/null
+#             exit_code=$?
+#         elif [[ "$src" == "mlx" ]]; then
+#             ( cat "$reporterfile" "$vec" ) | time ./mlxllm.py - --model "$model" > "$news" 2>/dev/null
+#             exit_code=$?
+#         else
+#             echo "Unknown report source: $src" >&2
+#             continue
+#         fi
+
+#         if [[ $exit_code -eq 0 && -s "$news" ]]; then
+#             printf "Report succeeded with %s: %s\n" "$src" "$model" >&2
+#             return 0
+#         else
+#             printf "Report failed with %s: %s (exit_code: %d, output empty: %s)\n" \
+#                    "$src" "$model" "$exit_code" "$( [[ ! -s "$news" ]] && echo yes || echo no )" >&2
+#             > "$news"  # clear partial/failed output
+#         fi
+#     done
+
+#     echo "All report attempts failed." >&2
+#     echo "Nothing relevant found or generation failed." > "$news"
+#     return 1
+# }
 
 
 
@@ -269,8 +399,11 @@ report() {
 # cypher \
 #     "mlx"   "mlx-community/MiniMax-M2.1-3bit"
 
+# cypher \
+#     "mlx"   "mlx-community/Llama-3.3-70B-Instruct-8bit" 
+
 cypher \
-    "mlx"   "mlx-community/Llama-3.3-70B-Instruct-8bit" 
+    "ollama"   "gpt-oss:20b" 
 
 # For reporting, prefer fast Gemini, fall back to others if needed
 # report \
@@ -281,7 +414,12 @@ cypher \
 report \
     "gemini" "models/gemini-3-flash-preview" \
     "gemini" "models/gemini-2.5-flash" \
-    "mlx"    "mlx-community/Llama-3.3-70B-Instruct-8bit"
+    "ollama"    "gpt-oss:20b"
+
+# report \
+#     "gemini" "models/gemini-3-flash-preview" \
+#     "gemini" "models/gemini-2.5-flash" \
+#     "mlx"    "mlx-community/Llama-3.3-70B-Instruct-8bit"
 
 
 # cypher "mlx" "mlx-community/Llama-3.3-70B-Instruct-8bit"

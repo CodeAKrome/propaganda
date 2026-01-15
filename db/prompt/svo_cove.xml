@@ -1,0 +1,220 @@
+<prompt>
+  <goal>
+    Given a text document with pre-identified entities, extract all relationships among the identified entities. Extract up to 100 entity-relation triplets total.
+  </goal>
+
+  <method name="Chain-of-Verification">
+    <description>
+      Chain-of-Verification (CoVe) is a systematic reasoning process where you:
+      1. Generate an initial answer
+      2. Create verification questions to test your answer
+      3. Answer each verification question independently
+      4. Use verification results to confirm, refine, or correct your initial answer
+      5. Produce a final, validated answer
+    </description>
+    <instruction>You MUST complete all five steps internally before producing output.</instruction>
+  </method>
+
+  <input_format>
+    <description>
+      The input document contains pre-identified entities in an entities block.
+      Each line lists an entity type followed by a colon, then a comma-separated list of entities of that type.
+    </description>
+    <structure>
+      <![CDATA[
+      <entities>
+      ENTITY_TYPE: entity1, entity2, entity3, ...
+      ENTITY_TYPE: entity1, entity2, ...
+      </entities>
+      ]]>
+    </structure>
+    <example>
+      <![CDATA[
+      <entities>
+      PERSON: John Smith, Jane Doe, Robert Johnson
+      ORG: NASA, Google, United Nations
+      GPE: United States, France, Tokyo
+      DATE: 2023, January 1st, last week
+      </entities>
+      ]]>
+    </example>
+    <instruction>
+      Use these pre-identified entities as the authoritative source for entity extraction.
+      Your task is to:
+      1. Parse all entities from the entities block
+      2. Identify relationships between these entities based on the document text
+      3. Verify your relationship extractions
+    </instruction>
+  </input_format>
+
+  <entity_types>
+    <type name="CARDINAL">
+      <meaning>cardinal value</meaning>
+      <examples>1, 2, 3, one hundred, about half</examples>
+    </type>
+    <type name="DATE">
+      <meaning>date value</meaning>
+      <examples>2023-12-25, January 1st, last week, decades later</examples>
+    </type>
+    <type name="EVENT">
+      <meaning>event name</meaning>
+      <examples>Super Bowl, Olympics, World War II, Cold War</examples>
+    </type>
+    <type name="FAC">
+      <meaning>building or facility name</meaning>
+      <examples>Empire State Building, Eiffel Tower, Vatican</examples>
+    </type>
+    <type name="GPE">
+      <meaning>geo-political entity</meaning>
+      <examples>United States, France, Cuba, Venezuela</examples>
+    </type>
+    <type name="LANGUAGE">
+      <meaning>language name</meaning>
+      <examples>English, Spanish, Mandarin</examples>
+    </type>
+    <type name="LAW">
+      <meaning>law name</meaning>
+      <examples>Constitution, Copyright Act, GDPR</examples>
+    </type>
+    <type name="LOC">
+      <meaning>non-GPE location</meaning>
+      <examples>Mount Everest, Pacific Ocean, Latin America, the Western Hemisphere</examples>
+    </type>
+    <type name="MONEY">
+      <meaning>monetary value</meaning>
+      <examples>$500, 10 euros, five million dollars</examples>
+    </type>
+    <type name="NORP">
+      <meaning>nationality, religious, or political affiliation</meaning>
+      <examples>Republican, Democrat, American, Cuban, communist</examples>
+    </type>
+    <type name="ORDINAL">
+      <meaning>ordinal value</meaning>
+      <examples>first, second, third</examples>
+    </type>
+    <type name="ORG">
+      <meaning>organization name</meaning>
+      <examples>NASA, Google, CIA, NATO</examples>
+    </type>
+    <type name="PERCENT">
+      <meaning>percent value</meaning>
+      <examples>50%, 75%, ten percent</examples>
+    </type>
+    <type name="PERSON">
+      <meaning>person name</meaning>
+      <examples>John Doe, Donald Trump, Fidel Castro</examples>
+    </type>
+    <type name="PRODUCT">
+      <meaning>product name</meaning>
+      <examples>iPhone, MacBook, Boeing 747</examples>
+    </type>
+    <type name="QUANTITY">
+      <meaning>quantity with unit</meaning>
+      <examples>10 kilometers, 20 pounds, 5 liters</examples>
+    </type>
+    <type name="TIME">
+      <meaning>time value</meaning>
+      <examples>12:00 PM, 5:30 AM, midnight</examples>
+    </type>
+    <type name="WORK_OF_ART">
+      <meaning>name of work of art</meaning>
+      <examples>Mona Lisa, Star Wars, Overthrow: America's Century of Regime Change</examples>
+    </type>
+  </entity_types>
+
+  <procedure>
+    <step number="1" name="Parse Entities Block">
+      <instruction>Extract all entities from the entities block in the document.</instruction>
+      <process>
+        <action>Locate the entities block delimited by entity tags</action>
+        <action>For each line, parse the entity type before the colon</action>
+        <action>Split the comma-separated list after the colon to get individual entities</action>
+        <action>Trim whitespace from each entity name</action>
+        <action>Build a complete entity inventory with name and type</action>
+      </process>
+    </step>
+
+    <step number="2" name="Initial Relationship Extraction">
+      <instruction>Analyze the document text to identify relationships between parsed entities.</instruction>
+      <extract>
+        <field name="source_entity">Name of the source entity (from entities block)</field>
+        <field name="target_entity">Name of the target entity (from entities block)</field>
+        <field name="relation">Relationship type between source and target</field>
+        <field name="relationship_description">Explanation of why these entities are related</field>
+      </extract>
+      <constraint>Only extract relationships between entities that appear in the entities block.</constraint>
+    </step>
+
+    <step number="3" name="Generate Verification Questions">
+      <instruction>Create 5-7 questions to validate your extractions.</instruction>
+      <question_types>
+        <type>Did I correctly parse all entities from the entities block?</type>
+        <type>Are there any implicit relationships I overlooked?</type>
+        <type>Is each relationship supported by explicit textual evidence?</type>
+        <type>Are any extracted relationships speculative rather than stated?</type>
+        <type>Did I use the exact entity names as they appear in the block?</type>
+        <type>Are the relationship types accurate and specific?</type>
+        <type>Do the relationship descriptions accurately reflect the text?</type>
+      </question_types>
+    </step>
+
+    <step number="4" name="Answer Verification Questions">
+      <instruction>Answer each verification question independently.</instruction>
+      <requirements>
+        <requirement>Cite specific textual evidence for each answer</requirement>
+        <requirement>Identify any relationships that need correction</requirement>
+        <requirement>Note any missing relationships to add</requirement>
+        <requirement>Flag any relationships without textual support for removal</requirement>
+      </requirements>
+    </step>
+
+    <step number="5" name="Synthesize and Refine">
+      <instruction>Compare verification answers against initial extraction.</instruction>
+      <actions>
+        <action>Add any missing relationships</action>
+        <action>Remove any unsupported extractions</action>
+        <action>Correct any inaccurate relationship types</action>
+        <action>Refine relationship descriptions for accuracy</action>
+      </actions>
+    </step>
+
+    <step number="6" name="Produce Final Output">
+      <instruction>Output only the validated relationships in the specified format.</instruction>
+    </step>
+  </procedure>
+
+  <output_specification>
+    <format>
+      ("source_entity", "relation", "target_entity", "relationship_description")
+    </format>
+    <examples>
+      <example>("Donald Trump", "threatens_intervention", "Venezuela", "Donald Trump has threatened military intervention in Venezuela.")</example>
+      <example>("Fidel Castro", "led", "Cuba", "Fidel Castro led Cuba as its revolutionary leader.")</example>
+      <example>("CIA", "orchestrated_coup_in", "Guatemala", "The CIA orchestrated a coup in Guatemala in 1954.")</example>
+      <example>("Stephen Kinzer", "authored", "Overthrow: America's Century of Regime Change", "Stephen Kinzer authored the book Overthrow: America's Century of Regime Change.")</example>
+    </examples>
+    <constraints>
+      <constraint>Output ONLY relationships in the specified format</constraint>
+      <constraint>Use exact entity names as they appear in the entities block</constraint>
+      <constraint>Do not include any other formatting or explanatory text</constraint>
+      <constraint>Do not show your Chain-of-Verification work in the output</constraint>
+      <constraint>Maximum 100 entity-relation triplets</constraint>
+    </constraints>
+  </output_specification>
+
+  <verification_checklist>
+    <item>☐ All entities parsed correctly from entities block</item>
+    <item>☐ Entity names match exactly as listed</item>
+    <item>☐ All clear relationships extracted</item>
+    <item>☐ Verification questions generated</item>
+    <item>☐ Verification questions answered with evidence</item>
+    <item>☐ Corrections applied based on verification</item>
+    <item>☐ Output format matches specification</item>
+    <item>☐ No extraneous text in output</item>
+  </verification_checklist>
+
+  <input>
+    <label>Document to analyze:</label>
+    DOCUMENT_HERE
+  </input>
+</prompt>
