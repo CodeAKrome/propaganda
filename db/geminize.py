@@ -10,6 +10,7 @@ import os
 import sys
 import argparse
 import time
+import re
 from typing import Optional, List
 from datetime import datetime, timedelta
 
@@ -105,272 +106,43 @@ def build_mongo_query(
 
     return q
 
-
-# def process_articles(
-#     model_name: str,
-#     src_field: str,
-#     dst_field: str,
-#     query: str,
-#     start_date: Optional[str] = None,
-#     end_date: Optional[str] = None,
-#     news_sources: Optional[List[str]] = None,
-#     limit: Optional[int] = None,
-#     id_file: str = "ids.txt",
-#     id_list: Optional[List[str]] = None,
-#     update_existing: bool = False,
-#     use_ollama: bool = False,
-#     use_mlx: bool = False,
-#     dry_run: bool = False,
-# ) -> dict:
-#     """
-#     Process articles through Gemini LLM.
-#     Returns statistics about the processing run.
-#     """
-#     # Build query
-#     mongo_query = build_mongo_query(start_date, end_date, news_sources, src_field, id_list)
+def extract_final_json(text: str) -> str:
+    """
+    Extract the final JSON object or array from text.
+    Finds the last closing brace/bracket and works backwards to find the matching opener.
+    """
+    # Step 1: Find the last } or ] in output
+    last_brace = text.rfind('}')
+    last_bracket = text.rfind(']')
     
-#     # Count documents
-#     print("Counting documents to process...")
-#     total_docs = mongo_coll.count_documents(mongo_query)
+    if last_brace == -1 and last_bracket == -1:
+        print(f"DEBUG: Full LLM output:\n{text}", file=sys.stderr)
+        raise ValueError("No JSON object or array found in text")
     
-#     if total_docs == 0:
-#         print("No documents found matching criteria.")
-#         return {
-#             "total": 0,
-#             "processed": 0,
-#             "skipped": 0,
-#             "errors": 0,
-#             "model": model_name,
-#             "modified_ids": [],
-#         }
+    # Determine which closing character is last
+    if last_brace > last_bracket:
+        close_char = '}'
+        open_char = '{'
+        end_pos = last_brace
+    else:
+        close_char = ']'
+        open_char = '['
+        end_pos = last_bracket
     
-#     print(f"Found {total_docs} documents to process")
+    # Step 2: Go backwards through output to find the matching {
+    count = 0
+    for i in range(end_pos, -1, -1):
+        if text[i] == close_char:
+            count += 1
+        elif text[i] == open_char:
+            count -= 1
+        
+        # Step 3: Extract that slice from output for the json
+        if count == 0:
+            return text[i:end_pos + 1]
     
-#     # Apply limit if specified
-#     if limit:
-#         total_docs = min(total_docs, limit)
-#         print(f"Limiting to {total_docs} documents")
-    
-#     # Initialize LLM model
-#     model = None
-#     if use_ollama:
-#         if not OLLAMA_AVAILABLE:
-#             print("Error: ollama package not installed. Install with: pip install ollama")
-#             sys.exit(1)
-#         print(f"Using Ollama model: {model_name}")
-#     elif use_mlx:
-#         if not MLX_AVAILABLE:
-#             print("Error: mlx_lm package not installed. Install with: pip install mlx-lm")
-#             sys.exit(1)
-#         try:
-#             model, tokenizer = load(model_name)
-#         except Exception as e:
-#             print(f"Error initializing MLX model '{model_name}': {e}")
-#     else:
-#         if not gemini_configured:
-#             print("Error: GEMINI_API_KEY environment variable not set.")
-#             sys.exit(1)
-#         try:
-#             model = genai.GenerativeModel(model_name)
-#             print(f"Using Gemini model: {model_name}")
-#         except Exception as e:
-#             print(f"Error initializing Gemini model '{model_name}': {e}")
-#             sys.exit(1)
-    
-#     # Fetch documents with no_cursor_timeout to prevent timeout during long processing
-#     cursor = mongo_coll.find(
-#         mongo_query,
-#         {"_id": 1, "title": 1, "source": 1, "published": 1, src_field: 1, dst_field: 1},
-#         no_cursor_timeout=True
-#     ).sort("published", -1)
-    
-#     # Note: We don't apply limit to cursor because we need to examine documents
-#     # until we've actually processed 'limit' documents
-    
-#     # Statistics
-#     stats = {
-#         "total": total_docs,
-#         "processed": 0,
-#         "skipped": 0,
-#         "errors": 0,
-#         "model": model_name,
-#         "modified_ids": [],
-#         "total_time": 0,
-#         "inference_time": 0,
-#         "use_ollama": use_ollama,
-#         "use_mlx": use_mlx,
-#         "examined": 0,
-#     }
-    
-#     # Start overall timer
-#     start_time = time.time()
-    
-#     # Process each document - use try/finally to ensure cursor is closed
-#     try:
-#         for doc in tqdm(cursor, desc="Processing articles"):
-#             stats["examined"] += 1
-            
-#             _id = doc["_id"]
-#             src_content = doc.get(src_field, "")
-            
-#             # Skip if source field is empty
-#             if not src_content or not src_content.strip():
-#                 stats["skipped"] += 1
-#                 continue
-            
-#             # Skip if destination field already exists and has content (unless --update flag is set)
-#             if not update_existing and dst_field in doc and doc[dst_field]:
-#                 stats["skipped"] += 1
-#                 continue
-            
-#             # Build prompt with RAG input
-#             title = doc.get("title", "")
-#             source = doc.get("source", "")
-#             published = doc.get("published", "")
-            
-#             # Format published date if it's a datetime object
-#             if isinstance(published, datetime):
-#                 published = published.isoformat()
-            
-#             prompt = f"""Query: {query}
-
-# Article Title: {title}
-# Source: {source}
-# Published: {published}
-
-# Article Content:
-# {src_content}
-# """
-            
-#             # Process through LLM (Gemini or Ollama)
-#             try:
-#                 # Time the inference
-#                 inference_start = time.time()
-                
-#                 if use_ollama:
-#                     # Use Ollama
-#                     response = ollama.chat(
-#                         model=model_name,
-#                         messages=[{"role": "user", "content": prompt}]
-#                     )
-#                     result_text = response["message"]["content"]
-#                 elif use_mlx:
-#                     # Use MLX
-#                     messages = [{"role": "user", "content": prompt}]
-#                     mlx_prompt = tokenizer.apply_chat_template(
-#                         messages,
-#                         tokenize=False,
-#                         add_generation_prompt=True,
-#                     )
-#                     result_text = generate(
-#                         model, tokenizer, prompt=mlx_prompt, verbose=False
-#                     )
-#                 else:
-#                     # Use Gemini
-#                     response = model.generate_content(prompt)
-#                     result_text = response.text
-                
-#                 inference_time = time.time() - inference_start
-#                 stats["inference_time"] += inference_time
-                
-#                 # Clean up response - remove markdown code fences and common wrappers
-#                 result_text_cleaned = result_text.strip()
-                
-#                 # Remove markdown code blocks (```json, ```python, etc.)
-#                 if result_text_cleaned.startswith("```"):
-#                     lines = result_text_cleaned.split("\n")
-#                     # Remove first line if it's a code fence
-#                     if lines[0].startswith("```"):
-#                         lines = lines[1:]
-#                     # Remove last line if it's a closing code fence
-#                     if lines and lines[-1].strip() == "```":
-#                         lines = lines[:-1]
-#                     result_text_cleaned = "\n".join(lines).strip()
-                
-#                 # Prepare update data
-#                 update_timestamp = datetime.now()
-#                 update_data = {
-#                     dst_field: result_text_cleaned,
-#                     f"{dst_field}_model": model_name,
-#                     f"{dst_field}_backend": "mlx" if use_mlx else ("ollama" if use_ollama else "gemini"),
-#                     f"{dst_field}_timestamp": update_timestamp,
-#                     f"{dst_field}_inference_time": inference_time,
-#                 }
-                
-#                 stats["processed"] += 1
-
-#                 # Print what will be/was updated
-#                 print(f"\n{f' {stats['processed']} '.center(70, '=')}")
-#                 print(f"{'[DRY RUN] ' if dry_run else ''}Article ID: {_id}")
-#                 print(f"Title: {title}")
-#                 print(f"Source: {source}")
-#                 print(f"Published: {published}")
-#                 print(f"Inference time: {inference_time:.2f}s")            
-#                 backend_name = "MLX" if use_mlx else ("Ollama" if use_ollama else "Gemini")
-#                 print(f"\nPrompt sent to {backend_name} ({len(prompt)} chars):")
-#                 print("-" * 70)
-#                 print(prompt[:500] + "..." if len(prompt) > 500 else prompt)
-#                 print("-" * 70)
-#                 print(f"\n{backend_name} Response ({len(result_text_cleaned)} chars):")
-#                 print("-" * 70)
-#                 print(result_text_cleaned)
-#                 print("-" * 70)
-#                 print(f"  {dst_field}: {result_text_cleaned[:100]}..." if len(result_text_cleaned) > 100 else f"  {dst_field}: {result_text_cleaned}")
-#                 print(f"  {dst_field}_model: {model_name}")
-#                 print(f"  {dst_field}_backend: {'ollama' if use_ollama else 'gemini'}")
-#                 print(f"  {dst_field}_timestamp: {update_timestamp.isoformat()}")
-#                 print(f"  {dst_field}_inference_time: {inference_time:.2f}s")
-#                 print("=" * 70)
-                
-#                 if not dry_run:
-#                     # Store result in MongoDB
-#                     mongo_coll.update_one(
-#                         {"_id": _id},
-#                         {"$set": update_data}
-#                     )
-                
-#                 # Track modified ID
-#                 stats["modified_ids"].append(str(_id))
-                
-#                 # Check if we've reached the limit of processed documents
-#                 if limit and stats["processed"] >= limit:
-#                     print(f"\n✅ Reached limit of {limit} processed documents")
-#                     break
-                    
-#             except Exception as e:
-#                 print(f"\nError processing article {_id}: {e}")
-#                 stats["errors"] += 1
-                
-#                 # Store error in MongoDB
-#                 if not dry_run:
-#                     mongo_coll.update_one(
-#                         {"_id": _id},
-#                         {
-#                             "$set": {
-#                                 f"{dst_field}_error": str(e),
-#                                 f"{dst_field}_error_timestamp": datetime.now(),
-#                             }
-#                         }
-#                     )
-#     finally:
-#         # Always close the cursor to free server resources
-#         cursor.close()
-    
-#     # Calculate total time
-#     stats["total_time"] = time.time() - start_time
-    
-#     # Save modified IDs to file
-#     if stats["modified_ids"]:
-#         try:
-#             with open(id_file, "w") as f:
-#                 for _id in stats["modified_ids"]:
-#                     f.write(f"{_id}\n")
-#             print(f"\n✅ Saved {len(stats['modified_ids'])} {'processed' if dry_run else 'modified'} IDs to {id_file}")
-#         except Exception as e:
-#             print(f"\n⚠️  Error saving IDs to file: {e}")
-    
-#     return stats
-
+    print(f"DEBUG: Full LLM output:\n{text}", file=sys.stderr)
+    raise ValueError(f"No matching '{open_char}' found")
 
 
 def process_articles(
@@ -388,6 +160,7 @@ def process_articles(
     use_ollama: bool = False,
     use_mlx: bool = False,
     dry_run: bool = False,
+    extract_json: bool = False,
 ) -> dict:
     """
     Process articles through Gemini LLM.
@@ -549,7 +322,7 @@ Article Content:
                     add_generation_prompt=True,
                 )
                 result_text = generate(
-                    model, tokenizer, prompt=mlx_prompt, verbose=False
+                    model, tokenizer, prompt=mlx_prompt, verbose=False, max_tokens=100000
                 )
             else:
                 # Use Gemini
@@ -560,18 +333,21 @@ Article Content:
             stats["inference_time"] += inference_time
             
             # Clean up response (Remains the same)
-            result_text_cleaned = result_text.strip()
-            
-            # Remove markdown code blocks (```json, ```python, etc.)
-            if result_text_cleaned.startswith("```"):
-                lines = result_text_cleaned.split("\n")
-                # Remove first line if it's a code fence
-                if lines[0].startswith("```"):
-                    lines = lines[1:]
-                # Remove last line if it's a closing code fence
-                if lines and lines[-1].strip() == "```":
-                    lines = lines[:-1]
-                result_text_cleaned = "\n".join(lines).strip()
+            if extract_json:
+                result_text_cleaned = extract_final_json(result_text)
+            else:
+                result_text_cleaned = result_text.strip()
+                
+                # Remove markdown code blocks (```json, ```python, etc.)
+                if result_text_cleaned.startswith("```"):
+                    lines = result_text_cleaned.split("\n")
+                    # Remove first line if it's a code fence
+                    if lines[0].startswith("```"):
+                        lines = lines[1:]
+                    # Remove last line if it's a closing code fence
+                    if lines and lines[-1].strip() == "```":
+                        lines = lines[:-1]
+                    result_text_cleaned = "\n".join(lines).strip()
             
             # Prepare update data (Remains the same)
             update_timestamp = datetime.now()
@@ -735,6 +511,11 @@ def main(argv=None):
         action="store_true",
         help="Show what would be processed without making changes"
     )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Extract JSON from LLM output"
+    )
     
     args = parser.parse_args(argv)
     
@@ -846,6 +627,7 @@ def main(argv=None):
         use_ollama=args.ollama,
         use_mlx=args.mlx,
         dry_run=args.dry_run,
+        extract_json=args.json,
     )
     
     # Print final report
