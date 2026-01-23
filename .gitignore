@@ -1,3 +1,4 @@
+*.safetensors
 db/timestamp.txt
 mp3/biasmp3
 mp3/mp3/
