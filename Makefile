@@ -18,8 +18,9 @@ NUMDAYS ?= $(shell date +%F)  # fallback to today if file missing
 	thingsthatgo fini ner fner fnervector entity fvector bias mkvec fbias \
 	querysmall mkvecsmall smallthingsthatgo cleanoutput fload oldthingsthatgo \
 	fquerymp3 fquery fmp3 black querysmallest cleanmp3 mp3small smallestthingsthatgo \
-	timestamp
+	timestamp testrun
 
+testrun: timestamp load ner vector entity mkvecsmall
 thingsthatgo: load ner vector entity mkvec bias query mp3 fini
 smallthingsthatgo: timestamp load ner vector entity mkvecsmall bias mkvecsmall querysmall cleanmp3 mp3small fini
 # Doesn't clean db/output or mp3/mp3
