@@ -10,9 +10,7 @@ except ImportError:
     sys.exit(1)
 
 # Create the parser
-parser = argparse.ArgumentParser(
-    description="Get a completion from the Groq API."
-)
+parser = argparse.ArgumentParser(description="Get a completion from the Groq API.")
 
 # Add arguments
 parser.add_argument(

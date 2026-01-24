@@ -20,11 +20,11 @@ now_utc = datetime.now(timezone.utc)
 previous_day_utc = now_utc - timedelta(days=days)
 
 # Format as ISO 8601 with 'Z' suffix
-previous_timestamp = previous_day_utc.strftime('%Y-%m-%dT%H:%M:%SZ')
+previous_timestamp = previous_day_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 # Print it (or save to file if needed)
 print(previous_timestamp)
 
 # Optional: save to file
-with open('db/timestamp.txt', 'w') as f:
+with open("db/timestamp.txt", "w") as f:
     f.write(previous_timestamp)

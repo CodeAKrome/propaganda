@@ -4,6 +4,7 @@ import sys
 
 # dotfile outfile_base
 
+
 class gr:
     def __init__(self):
         self.text = "foo"

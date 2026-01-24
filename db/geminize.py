@@ -21,12 +21,14 @@ from tqdm import tqdm
 
 try:
     import ollama
+
     OLLAMA_AVAILABLE = True
 except ImportError:
     OLLAMA_AVAILABLE = False
 
 try:
     from mlx_lm import load, generate
+
     MLX_AVAILABLE = True
 except ImportError:
     MLX_AVAILABLE = False
@@ -66,7 +68,7 @@ def parse_date_arg(date_str: str) -> datetime:
         days_ago = int(date_str)
         return datetime.now() + timedelta(days=days_ago)
     else:
-        return datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+        return datetime.fromisoformat(date_str.replace("Z", "+00:00"))
 
 
 def build_mongo_query(
@@ -106,29 +108,30 @@ def build_mongo_query(
 
     return q
 
+
 def extract_final_json(text: str) -> str:
     """
     Extract the final JSON object or array from text.
     Finds the last closing brace/bracket and works backwards to find the matching opener.
     """
     # Step 1: Find the last } or ] in output
-    last_brace = text.rfind('}')
-    last_bracket = text.rfind(']')
-    
+    last_brace = text.rfind("}")
+    last_bracket = text.rfind("]")
+
     if last_brace == -1 and last_bracket == -1:
         print(f"DEBUG: Full LLM output:\n{text}", file=sys.stderr)
         raise ValueError("No JSON object or array found in text")
-    
+
     # Determine which closing character is last
     if last_brace > last_bracket:
-        close_char = '}'
-        open_char = '{'
+        close_char = "}"
+        open_char = "{"
         end_pos = last_brace
     else:
-        close_char = ']'
-        open_char = '['
+        close_char = "]"
+        open_char = "["
         end_pos = last_bracket
-    
+
     # Step 2: Go backwards through output to find the matching {
     count = 0
     for i in range(end_pos, -1, -1):
@@ -136,11 +139,11 @@ def extract_final_json(text: str) -> str:
             count += 1
         elif text[i] == open_char:
             count -= 1
-        
+
         # Step 3: Extract that slice from output for the json
         if count == 0:
-            return text[i:end_pos + 1]
-    
+            return text[i : end_pos + 1]
+
     print(f"DEBUG: Full LLM output:\n{text}", file=sys.stderr)
     raise ValueError(f"No matching '{open_char}' found")
 
@@ -161,30 +164,33 @@ def process_articles(
     use_mlx: bool = False,
     dry_run: bool = False,
     extract_json: bool = False,
+    prompt_cache_file: Optional[str] = None,
 ) -> dict:
     """
     Process articles through Gemini LLM.
     Returns statistics about the processing run.
     """
     # Build query
-    mongo_query = build_mongo_query(start_date, end_date, news_sources, src_field, id_list)
-    
+    mongo_query = build_mongo_query(
+        start_date, end_date, news_sources, src_field, id_list
+    )
+
     # --- New Strategy: Fetch all IDs first to avoid long-lived cursors ---
     print("Fetching IDs of documents to process...")
     # Fetch only _id field and sort to maintain order
-    id_cursor = mongo_coll.find(mongo_query, {"_id": 1}).sort("published", -1) 
-    
+    id_cursor = mongo_coll.find(mongo_query, {"_id": 1}).sort("published", -1)
+
     all_ids = []
     try:
         for doc in id_cursor:
             all_ids.append(doc["_id"])
     finally:
         # Close the cursor immediately after fetching IDs
-        id_cursor.close() 
+        id_cursor.close()
 
     total_docs = len(all_ids)
     # -------------------------------------------------------------------
-    
+
     if total_docs == 0:
         print("No documents found matching criteria.")
         return {
@@ -200,31 +206,46 @@ def process_articles(
             "use_mlx": use_mlx,
             "examined": 0,
         }
-    
+
     print(f"Found {total_docs} documents to process")
-    
+
     # Apply limit if specified
     if limit:
         total_docs = min(total_docs, limit)
-        all_ids = all_ids[:total_docs] # Apply limit to the ID list
+        all_ids = all_ids[:total_docs]  # Apply limit to the ID list
         print(f"Limiting to {total_docs} documents")
-    
+
     # Initialize LLM model (Remains the same)
     model = None
+    prompt_cache = None
     if use_ollama:
         if not OLLAMA_AVAILABLE:
-            print("Error: ollama package not installed. Install with: pip install ollama")
+            print(
+                "Error: ollama package not installed. Install with: pip install ollama"
+            )
             sys.exit(1)
         print(f"Using Ollama model: {model_name}")
     elif use_mlx:
         if not MLX_AVAILABLE:
-            print("Error: mlx_lm package not installed. Install with: pip install mlx-lm")
+            print(
+                "Error: mlx_lm package not installed. Install with: pip install mlx-lm"
+            )
             sys.exit(1)
         try:
             model, tokenizer = load(model_name)
         except Exception as e:
             print(f"Error initializing MLX model '{model_name}': {e}")
             sys.exit(1)
+
+        if prompt_cache_file:
+            import mlx.core as mx
+
+            try:
+                print(f"Loading prompt cache from {prompt_cache_file}...")
+                prompt_cache = mx.load(prompt_cache_file)
+            except Exception as e:
+                print(f"Error loading prompt cache: {e}")
+                sys.exit(1)
     else:
         if not gemini_configured:
             print("Error: GEMINI_API_KEY environment variable not set.")
@@ -235,7 +256,7 @@ def process_articles(
         except Exception as e:
             print(f"Error initializing Gemini model '{model_name}': {e}")
             sys.exit(1)
-    
+
     # Statistics
     stats = {
         "total": total_docs,
@@ -250,17 +271,24 @@ def process_articles(
         "use_mlx": use_mlx,
         "examined": 0,
     }
-    
+
     # Start overall timer
     start_time = time.time()
-    
+
     # Process each document by ID
     for _id in tqdm(all_ids, desc="Processing articles"):
         stats["examined"] += 1
-        
+
         # Fetch the full document content for the current ID
         try:
-            projection = {"_id": 1, "title": 1, "source": 1, "published": 1, src_field: 1, dst_field: 1}
+            projection = {
+                "_id": 1,
+                "title": 1,
+                "source": 1,
+                "published": 1,
+                src_field: 1,
+                dst_field: 1,
+            }
             doc = mongo_coll.find_one({"_id": _id}, projection)
             if not doc:
                 stats["skipped"] += 1
@@ -269,28 +297,28 @@ def process_articles(
             print(f"\nError fetching document {_id}: {e}")
             stats["errors"] += 1
             continue
-            
+
         src_content = doc.get(src_field, "")
-        
+
         # Skip if source field is empty
         if not src_content or not src_content.strip():
             stats["skipped"] += 1
             continue
-        
+
         # Skip if destination field already exists and has content (unless --update flag is set)
         if not update_existing and dst_field in doc and doc[dst_field]:
             stats["skipped"] += 1
             continue
-        
+
         # Build prompt with RAG input (Remains the same)
         title = doc.get("title", "")
         source = doc.get("source", "")
         published = doc.get("published", "")
-        
+
         # Format published date if it's a datetime object
         if isinstance(published, datetime):
             published = published.isoformat()
-        
+
         prompt = f"""Query: {query}
 
 Article Title: {title}
@@ -300,17 +328,16 @@ Published: {published}
 Article Content:
 {src_content}
 """
-        
+
         # Process through LLM (Gemini or Ollama) (Remains the same)
         try:
             # Time the inference
             inference_start = time.time()
-            
+
             if use_ollama:
                 # Use Ollama
                 response = ollama.chat(
-                    model=model_name,
-                    messages=[{"role": "user", "content": prompt}]
+                    model=model_name, messages=[{"role": "user", "content": prompt}]
                 )
                 result_text = response["message"]["content"]
             elif use_mlx:
@@ -322,22 +349,27 @@ Article Content:
                     add_generation_prompt=True,
                 )
                 result_text = generate(
-                    model, tokenizer, prompt=mlx_prompt, verbose=False, max_tokens=100000
+                    model,
+                    tokenizer,
+                    prompt=mlx_prompt,
+                    verbose=False,
+                    max_tokens=100000,
+                    prompt_cache=prompt_cache,
                 )
             else:
                 # Use Gemini
                 response = model.generate_content(prompt)
                 result_text = response.text
-            
+
             inference_time = time.time() - inference_start
             stats["inference_time"] += inference_time
-            
+
             # Clean up response (Remains the same)
             if extract_json:
                 result_text_cleaned = extract_final_json(result_text)
             else:
                 result_text_cleaned = result_text.strip()
-                
+
                 # Remove markdown code blocks (```json, ```python, etc.)
                 if result_text_cleaned.startswith("```"):
                     lines = result_text_cleaned.split("\n")
@@ -348,17 +380,19 @@ Article Content:
                     if lines and lines[-1].strip() == "```":
                         lines = lines[:-1]
                     result_text_cleaned = "\n".join(lines).strip()
-            
+
             # Prepare update data (Remains the same)
             update_timestamp = datetime.now()
             update_data = {
                 dst_field: result_text_cleaned,
                 f"{dst_field}_model": model_name,
-                f"{dst_field}_backend": "mlx" if use_mlx else ("ollama" if use_ollama else "gemini"),
+                f"{dst_field}_backend": (
+                    "mlx" if use_mlx else ("ollama" if use_ollama else "gemini")
+                ),
                 f"{dst_field}_timestamp": update_timestamp,
                 f"{dst_field}_inference_time": inference_time,
             }
-            
+
             stats["processed"] += 1
 
             # Print what will be/was updated (Remains the same)
@@ -367,7 +401,7 @@ Article Content:
             print(f"Title: {title}")
             print(f"Source: {source}")
             print(f"Published: {published}")
-            print(f"Inference time: {inference_time:.2f}s")            
+            print(f"Inference time: {inference_time:.2f}s")
             backend_name = "MLX" if use_mlx else ("Ollama" if use_ollama else "Gemini")
             print(f"\nPrompt sent to {backend_name} ({len(prompt)} chars):")
             print("-" * 70)
@@ -377,32 +411,33 @@ Article Content:
             print("-" * 70)
             print(result_text_cleaned)
             print("-" * 70)
-            print(f"  {dst_field}: {result_text_cleaned[:100]}..." if len(result_text_cleaned) > 100 else f"  {dst_field}: {result_text_cleaned}")
+            print(
+                f"  {dst_field}: {result_text_cleaned[:100]}..."
+                if len(result_text_cleaned) > 100
+                else f"  {dst_field}: {result_text_cleaned}"
+            )
             print(f"  {dst_field}_model: {model_name}")
             print(f"  {dst_field}_backend: {'ollama' if use_ollama else 'gemini'}")
             print(f"  {dst_field}_timestamp: {update_timestamp.isoformat()}")
             print(f"  {dst_field}_inference_time: {inference_time:.2f}s")
             print("=" * 70)
-            
+
             if not dry_run:
                 # Store result in MongoDB
-                mongo_coll.update_one(
-                    {"_id": _id},
-                    {"$set": update_data}
-                )
-            
+                mongo_coll.update_one({"_id": _id}, {"$set": update_data})
+
             # Track modified ID (Remains the same)
             stats["modified_ids"].append(str(_id))
-            
+
             # Check if we've reached the limit of processed documents
             if limit and stats["processed"] >= limit:
                 print(f"\n✅ Reached limit of {limit} processed documents")
                 break
-                
+
         except Exception as e:
             print(f"\nError processing article {_id}: {e}")
             stats["errors"] += 1
-            
+
             # Store error in MongoDB (Remains the same)
             if not dry_run:
                 mongo_coll.update_one(
@@ -412,22 +447,24 @@ Article Content:
                             f"{dst_field}_error": str(e),
                             f"{dst_field}_error_timestamp": datetime.now(),
                         }
-                    }
+                    },
                 )
-    
+
     # Calculate total time (Remains the same)
     stats["total_time"] = time.time() - start_time
-    
+
     # Save modified IDs to file (Remains the same)
     if stats["modified_ids"]:
         try:
             with open(id_file, "w") as f:
                 for _id in stats["modified_ids"]:
                     f.write(f"{_id}\n")
-            print(f"\n✅ Saved {len(stats['modified_ids'])} {'processed' if dry_run else 'modified'} IDs to {id_file}")
+            print(
+                f"\n✅ Saved {len(stats['modified_ids'])} {'processed' if dry_run else 'modified'} IDs to {id_file}"
+            )
         except Exception as e:
             print(f"\n⚠️  Error saving IDs to file: {e}")
-    
+
     return stats
 
 
@@ -438,87 +475,68 @@ def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Process MongoDB articles through Google Gemini with RAG"
     )
-    
+
     parser.add_argument(
         "--model",
         default=DEFAULT_MODEL,
-        help=f"Model name (default: {DEFAULT_MODEL} for Gemini, or specify Ollama model with --ollama)"
+        help=f"Model name (default: {DEFAULT_MODEL} for Gemini, or specify Ollama model with --ollama)",
     )
     parser.add_argument(
         "--ollama",
         action="store_true",
-        help="Use Ollama instead of Gemini for inference"
+        help="Use Ollama instead of Gemini for inference",
     )
     parser.add_argument(
-        "--mlx",
-        action="store_true",
-        help="Use MLX instead of Gemini for inference"
+        "--mlx", action="store_true", help="Use MLX instead of Gemini for inference"
     )
     parser.add_argument(
         "--start-date",
-        help="Start date: ISO format or negative days (e.g., '-7' for 7 days ago)"
+        help="Start date: ISO format or negative days (e.g., '-7' for 7 days ago)",
     )
     parser.add_argument(
         "--end-date",
-        help="End date: ISO format or negative days (e.g., '-1' for 1 day ago)"
+        help="End date: ISO format or negative days (e.g., '-1' for 1 day ago)",
     )
-    parser.add_argument(
-        "--news",
-        help="Comma-separated list of news sources to filter"
-    )
+    parser.add_argument("--news", help="Comma-separated list of news sources to filter")
     parser.add_argument(
         "--src",
         default="article",
-        help="Source field name in MongoDB (default: article)"
+        help="Source field name in MongoDB (default: article)",
     )
     parser.add_argument(
-        "--dst",
-        required=True,
-        help="Destination field name in MongoDB (required)"
+        "--dst", required=True, help="Destination field name in MongoDB (required)"
+    )
+    parser.add_argument("-q", "--query", help="Query/prompt for LLM")
+    parser.add_argument("--queryfile", help="Read query/prompt from file")
+    parser.add_argument("-n", type=int, help="Limit number of records to process")
+    parser.add_argument(
+        "--id", help="Comma-separated list of MongoDB _id strings to process"
     )
     parser.add_argument(
-        "-q", "--query",
-        help="Query/prompt for LLM"
+        "--idfile", help="File to save modified MongoDB IDs (default: ids.txt)"
     )
     parser.add_argument(
-        "--queryfile",
-        help="Read query/prompt from file"
-    )
-    parser.add_argument(
-        "-n",
-        type=int,
-        help="Limit number of records to process"
-    )
-    parser.add_argument(
-        "--id",
-        help="Comma-separated list of MongoDB _id strings to process"
-    )
-    parser.add_argument(
-        "--idfile",
-        help="File to save modified MongoDB IDs (default: ids.txt)"
-    )
-    parser.add_argument(
-        "--idsource",
-        help="File to load MongoDB _id strings to process (one per line)"
+        "--idsource", help="File to load MongoDB _id strings to process (one per line)"
     )
     parser.add_argument(
         "--update",
         action="store_true",
-        help="Update records even if destination field already has data"
+        help="Update records even if destination field already has data",
     )
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Show what would be processed without making changes"
+        help="Show what would be processed without making changes",
     )
     parser.add_argument(
-        "--json",
-        action="store_true",
-        help="Extract JSON from LLM output"
+        "--json", action="store_true", help="Extract JSON from LLM output"
     )
-    
+    parser.add_argument(
+        "--prompt-cache-file", help="Path to .safetensors prompt cache file (MLX only)"
+    )
+
     args = parser.parse_args(argv)
-    
+
     # Validate only one backend is chosen
     if sum([args.ollama, args.mlx]) > 1:
         parser.error("Cannot specify more than one backend (--ollama, --mlx)")
@@ -526,14 +544,14 @@ def main(argv=None):
     # Validate --id and --idsource are mutually exclusive
     if args.id and args.idsource:
         parser.error("Cannot specify both --id and --idsource")
-    
+
     # Validate query input - must provide either --query or --queryfile
     if not args.query and not args.queryfile:
         parser.error("Either -q/--query or --queryfile must be provided")
-    
+
     if args.query and args.queryfile:
         parser.error("Cannot specify both -q/--query and --queryfile")
-    
+
     # Read query from file if --queryfile is specified
     query = args.query
     if args.queryfile:
@@ -546,12 +564,12 @@ def main(argv=None):
         except Exception as e:
             print(f"Error reading query file '{args.queryfile}': {e}")
             sys.exit(1)
-    
+
     # Parse news sources
     news_sources = None
     if args.news:
         news_sources = [s.strip() for s in args.news.split(",")]
-    
+
     # Parse ID list
     id_list = None
     if args.id:
@@ -559,25 +577,31 @@ def main(argv=None):
     elif args.idsource:
         try:
             with open(args.idsource, "r") as f:
-                id_list = [line.strip() for line in f if line.strip() and not line.strip().startswith("#")]
+                id_list = [
+                    line.strip()
+                    for line in f
+                    if line.strip() and not line.strip().startswith("#")
+                ]
         except FileNotFoundError:
             print(f"Error: ID source file '{args.idsource}' not found.")
             sys.exit(1)
         except Exception as e:
             print(f"Error reading ID source file '{args.idsource}': {e}")
             sys.exit(1)
-    
+
     # Set default for --idfile if not specified
     if not args.idfile:
         args.idfile = "ids.txt"
-    
+
     # Print configuration
     print("=" * 70)
     print("MongoDB to Gemini RAG Processor")
     print("=" * 70)
     backend = "Gemini"
-    if args.ollama: backend = "Ollama"
-    if args.mlx: backend = "MLX"
+    if args.ollama:
+        backend = "Ollama"
+    if args.mlx:
+        backend = "MLX"
     print(f"LLM Backend: {backend}")
 
     print(f"Model: {args.model}")
@@ -594,7 +618,10 @@ def main(argv=None):
         if args.idsource:
             print(f"Processing IDs from file: {args.idsource} ({len(id_list)} IDs)")
         else:
-            print(f"Processing specific IDs: {', '.join(id_list[:5])}" + (f" ... and {len(id_list)-5} more" if len(id_list) > 5 else ""))
+            print(
+                f"Processing specific IDs: {', '.join(id_list[:5])}"
+                + (f" ... and {len(id_list)-5} more" if len(id_list) > 5 else "")
+            )
     if args.start_date:
         print(f"Start date: {args.start_date}")
     if args.end_date:
@@ -610,7 +637,7 @@ def main(argv=None):
         print("DRY RUN MODE - No changes will be made")
     print("=" * 70)
     print()
-    
+
     # Process articles
     stats = process_articles(
         model_name=args.model,
@@ -628,15 +655,18 @@ def main(argv=None):
         use_mlx=args.mlx,
         dry_run=args.dry_run,
         extract_json=args.json,
+        prompt_cache_file=args.prompt_cache_file,
     )
-    
+
     # Print final report
     print("\n" + "=" * 70)
     print("Processing Report")
     print("=" * 70)
     backend = "Gemini"
-    if stats['use_ollama']: backend = "Ollama"
-    if stats['use_mlx']: backend = "MLX"
+    if stats["use_ollama"]:
+        backend = "Ollama"
+    if stats["use_mlx"]:
+        backend = "MLX"
     print(f"LLM Backend: {backend}")
     print(f"Model used: {stats['model']}")
     print(f"Total documents in query: {stats['total']}")
@@ -647,13 +677,17 @@ def main(argv=None):
     print("-" * 70)
     print(f"Total time: {stats['total_time']:.2f}s")
     print(f"Total inference time: {stats['inference_time']:.2f}s")
-    if stats['processed'] > 0:
-        print(f"Average inference time: {stats['inference_time']/stats['processed']:.2f}s per article")
-        print(f"Average total time: {stats['total_time']/stats['processed']:.2f}s per article")
+    if stats["processed"] > 0:
+        print(
+            f"Average inference time: {stats['inference_time']/stats['processed']:.2f}s per article"
+        )
+        print(
+            f"Average total time: {stats['total_time']/stats['processed']:.2f}s per article"
+        )
     print("=" * 70)
-    
+
     # Exit with error code if there were errors
-    if stats['errors'] > 0:
+    if stats["errors"] > 0:
         sys.exit(1)
 
 

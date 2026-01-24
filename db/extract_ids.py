@@ -10,6 +10,7 @@ from pathlib import Path
 
 ID_PATTERN = re.compile(r"^ID:\s*([0-9a-f]{24})\s*$", re.I)
 
+
 def extract_ids(file_path: str):
     """Yield every MongoDB ObjectId string found in the file."""
     try:

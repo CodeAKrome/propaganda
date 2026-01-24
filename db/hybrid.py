@@ -20,6 +20,7 @@ from sentence_transformers import SentenceTransformer
 # Try to import rank_bm25 for reranking
 try:
     from rank_bm25 import BM25Okapi
+
     HAS_BM25 = True
 except ImportError:
     HAS_BM25 = False
@@ -205,7 +206,15 @@ def main(argv=None):
             candidates = list(
                 mongo_coll.find(
                     fulltext_filter,
-                    {"_id": 1, "title": 1, "source": 1, "published": 1, "ner": 1, "article": 1, "bias": 1},
+                    {
+                        "_id": 1,
+                        "title": 1,
+                        "source": 1,
+                        "published": 1,
+                        "ner": 1,
+                        "article": 1,
+                        "bias": 1,
+                    },
                 )
             )
     else:
@@ -215,7 +224,15 @@ def main(argv=None):
         candidates = list(
             mongo_coll.find(
                 mongo_filter,
-                {"_id": 1, "title": 1, "source": 1, "published": 1, "ner": 1, "article": 1, "bias": 1},
+                {
+                    "_id": 1,
+                    "title": 1,
+                    "source": 1,
+                    "published": 1,
+                    "ner": 1,
+                    "article": 1,
+                    "bias": 1,
+                },
             ).sort("published", -1)
         )
         debug(f"Mongo filter matched: {len(candidates)} records")
@@ -228,7 +245,15 @@ def main(argv=None):
             text_candidates = list(
                 mongo_coll.find(
                     text_filter,
-                    {"_id": 1, "title": 1, "source": 1, "published": 1, "ner": 1, "article": 1, "bias": 1},
+                    {
+                        "_id": 1,
+                        "title": 1,
+                        "source": 1,
+                        "published": 1,
+                        "ner": 1,
+                        "article": 1,
+                        "bias": 1,
+                    },
                 )
             )
             debug(f"Full-text search matched: {len(text_candidates)} records")
@@ -280,16 +305,16 @@ def main(argv=None):
         tmp_coll.add(documents=docs, embeddings=embeddings, ids=ids)
 
     # 5. Vector search
-    
+
     # If reranking, fetch a larger candidate pool (e.g., 10x the requested top N)
     # This gives BM25 enough material to re-order meaningfully.
     k_results = args.top * 10 if args.bm25 else args.top
-    
+
     # Ensure we don't request more results than we have candidates
     k_results = min(k_results, len(candidates))
 
     search_text = fulltext_search_string if fulltext_search_string else args.text
-    
+
     query_emb = (
         encoder.encode(
             f"Represent this sentence for searching relevant passages: {search_text}",
@@ -312,7 +337,7 @@ def main(argv=None):
         if not HAS_BM25:
             debug("WARNING: rank_bm25 not installed. Skipping BM25 reranking.")
             # Fallback to slicing the original list if we fetched extra
-            hit_ids = hit_ids[:args.top]
+            hit_ids = hit_ids[: args.top]
         else:
             debug("Applying BM25 reranking...")
             # Tokenize corpus and query (simple whitespace tokenization)
@@ -321,16 +346,16 @@ def main(argv=None):
 
             bm25 = BM25Okapi(tokenized_corpus)
             doc_scores = bm25.get_scores(tokenized_query)
-            
+
             # Combine ids and scores, then sort
             # hit_ids and doc_scores are index-aligned
             scored_results = list(zip(hit_ids, doc_scores))
-            
+
             # Sort by score descending
             scored_results.sort(key=lambda x: x[1], reverse=True)
-            
+
             # Keep top N
-            hit_ids = [item[0] for item in scored_results[:args.top]]
+            hit_ids = [item[0] for item in scored_results[: args.top]]
             debug("BM25 reranking complete.")
 
     # 6. Build id→doc map and print

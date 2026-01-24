@@ -100,12 +100,15 @@ prompt = tokenizer.apply_chat_template(
     enable_thinking=args.think,
 )
 
+
 # Timeout handler
 class TimeoutException(Exception):
     pass
 
+
 def timeout_handler(signum, frame):
     raise TimeoutException("LLM generation timed out")
+
 
 def generate_with_timeout(model, tokenizer, prompt, verbose, max_tokens, time_limit):
     # Consolidate generation arguments
@@ -123,9 +126,7 @@ def generate_with_timeout(model, tokenizer, prompt, verbose, max_tokens, time_li
         signal.alarm(time_limit)
 
         try:
-            text = generate(
-                **gen_kwargs
-            )
+            text = generate(**gen_kwargs)
             # Disable the alarm if generation completes successfully
             signal.alarm(0)
             return text
@@ -133,7 +134,10 @@ def generate_with_timeout(model, tokenizer, prompt, verbose, max_tokens, time_li
             # Graceful timeout handling with detailed reporting
             error_msg = f"LLM generation timed out after {time_limit} seconds"
             print(f"TIMEOUT: {error_msg}", file=sys.stderr)
-            print(f"REPORT: Generation was terminated due to exceeding time limit of {time_limit} seconds", file=sys.stderr)
+            print(
+                f"REPORT: Generation was terminated due to exceeding time limit of {time_limit} seconds",
+                file=sys.stderr,
+            )
             print(f"STATUS: FAILED", file=sys.stderr)
             print(f"REASON: Timeout", file=sys.stderr)
             print(f"TIME_LIMIT: {time_limit}", file=sys.stderr)
@@ -148,9 +152,14 @@ def generate_with_timeout(model, tokenizer, prompt, verbose, max_tokens, time_li
         # No time limit
         return generate(**gen_kwargs)
 
+
 # Generate response
 text = generate_with_timeout(
-    model, tokenizer, prompt=prompt, verbose=args.verbose, max_tokens=args.tokens,
-    time_limit=args.time_limit
+    model,
+    tokenizer,
+    prompt=prompt,
+    verbose=args.verbose,
+    max_tokens=args.tokens,
+    time_limit=args.time_limit,
 )
 print(text)

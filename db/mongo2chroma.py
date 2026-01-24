@@ -44,6 +44,7 @@ def get_chroma_collection():
     if _collection is None:
         import chromadb
         from chromadb.config import Settings
+
         _chroma_client = chromadb.PersistentClient(
             path=CHROMA_PATH, settings=Settings(anonymized_telemetry=False)
         )
@@ -58,6 +59,7 @@ def get_encoder():
     global _encoder
     if _encoder is None:
         from sentence_transformers import SentenceTransformer
+
         _encoder = SentenceTransformer(EMBED_MODEL)
     return _encoder
 
@@ -161,10 +163,10 @@ def load_into_chroma(
 ) -> int:
     """Embed every article and add into Chroma."""
     from tqdm import tqdm
-    
+
     collection = get_chroma_collection()
     encoder = get_encoder()
-    
+
     if force:
         print("Clearing existing Chroma collection...")
         try:
@@ -177,7 +179,7 @@ def load_into_chroma(
             _collection = collection
         except Exception as e:
             print(f"Note: Could not clear collection: {e}")
-    
+
     and_entities = and_entities or []
     or_entities = or_entities or []
 
@@ -259,7 +261,7 @@ def query_chroma(
     """Return the `n` most similar articles."""
     collection = get_chroma_collection()
     encoder = get_encoder()
-    
+
     and_entities = and_entities or []
     or_entities = or_entities or []
     show_entities = show_entities or []
@@ -391,7 +393,9 @@ def format_entities(entities_by_type: Dict[str, Set[str]]) -> str:
     return "\n".join(lines)
 
 
-def export_titles(start_date: Optional[str] = None, end_date: Optional[str] = None) -> None:
+def export_titles(
+    start_date: Optional[str] = None, end_date: Optional[str] = None
+) -> None:
     """Export tab-delimited published date, source, MongoDB ID, and article title."""
     q = {
         "$or": [
@@ -514,7 +518,16 @@ def export_articles(
         q.update(entity_filter)
 
     cursor = mongo_coll.find(
-        q, {"_id": 1, "title": 1, "source": 1, "published": 1, "ner": 1, "article": 1, "bias": 1}
+        q,
+        {
+            "_id": 1,
+            "title": 1,
+            "source": 1,
+            "published": 1,
+            "ner": 1,
+            "article": 1,
+            "bias": 1,
+        },
     ).sort("published", -1)
 
     if limit:
@@ -756,7 +769,7 @@ def main(argv=None):
             id_list = [i.strip() for i in args.id.split(",")]
         if args.idfile:
             id_list.extend(parse_id_file(args.idfile))
-        
+
         and_entities = parse_entity_list(args.andentity) if args.andentity else []
         or_entities = parse_entity_list(args.orentity) if args.orentity else []
 
