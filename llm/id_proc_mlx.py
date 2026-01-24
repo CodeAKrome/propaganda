@@ -2,6 +2,7 @@
 import sys
 import subprocess
 import argparse
+from tqdm import tqdm
 
 
 def fmt_command(model, mongo_id):
@@ -23,14 +24,19 @@ def main():
     parser.add_argument("model", help="Name of MLX model to use")
     args = parser.parse_args()
 
-    # Read MongoDB IDs from stdin
-    for line in sys.stdin:
-        mongo_id = line.strip()
-        if not mongo_id:
-            continue
+    # Read all MongoDB IDs from stdin
+    mongo_ids = [line.strip() for line in sys.stdin if line.strip()]
+    
+    if not mongo_ids:
+        print("No MongoDB IDs provided", file=sys.stderr)
+        return
 
+    # Process each ID with progress bar
+    for mongo_id in tqdm(mongo_ids, desc="Processing IDs", unit="id"):
         # Get the command for this ID
         command = fmt_command(args.model, mongo_id)
+
+        tqdm.write(f"Processing ID: {mongo_id} {command}")
 
         try:
             # Execute the command
@@ -44,19 +50,18 @@ def main():
 
             # Print output
             if result.stdout:
-                print(f"[{mongo_id}] Output: {result.stdout.strip()}")
+                tqdm.write(f"[{mongo_id}] Output: {result.stdout.strip()}")
 
             # Print errors if any
             if result.returncode != 0:
-                print(
-                    f"[{mongo_id}] Error (exit code {result.returncode}): {result.stderr.strip()}",
-                    file=sys.stderr,
+                tqdm.write(
+                    f"[{mongo_id}] Error (exit code {result.returncode}): {result.stderr.strip()}"
                 )
 
         except subprocess.TimeoutExpired:
-            print(f"[{mongo_id}] Error: Command timeout", file=sys.stderr)
+            tqdm.write(f"[{mongo_id}] Error: Command timeout")
         except Exception as e:
-            print(f"[{mongo_id}] Error: {str(e)}", file=sys.stderr)
+            tqdm.write(f"[{mongo_id}] Error: {str(e)}")
 
 
 if __name__ == "__main__":
