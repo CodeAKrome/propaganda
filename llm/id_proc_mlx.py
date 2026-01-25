@@ -11,11 +11,12 @@ def fmt_command(model, mongo_id):
     """
     # Using raw string and proper escaping for the complex command
     command = (
-        f"../db/mongo_rw.py read --id={mongo_id} --field=article | "
+        f"./mongo_rw.py read --id={mongo_id} --field=article | "
         f"mlx_lm.generate --model {model} --prompt - --max-tokens 100000 "
         f"--verbose FALSE --prompt-cache-file prompt/claudeopus_CoVe.safetensors | "
-        f'grep "final output" | '
-        f"perl -0777 -ne '@m = /\\{{(?:[^{{}}]|(?0))*\\}}/g; print $m[-1]'"
+        f'grep "final<|message" | '
+        f"perl -0777 -ne '@m = /\\{{(?:[^{{}}]|(?0))*\\}}/g; print $m[-1]' | "
+        f"./mongo_rw.py write --id={mongo_id} --field=bias --data=-"
     )
     return command
 
@@ -36,7 +37,7 @@ def main():
         # Get the command for this ID
         command = fmt_command(args.model, mongo_id)
 
-        tqdm.write(f"Processing ID: {mongo_id} {command}")
+        # tqdm.write(f"Processing ID: {mongo_id} {command}")
 
         try:
             # Execute the command
