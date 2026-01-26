@@ -78,19 +78,19 @@ mkvec:
 	find db/output -name "*.vec" -delete
 	find db/output -name "*.ids" -delete
 	@source $(DB_ENV)/bin/activate && cd db && ./runmkvecbatch.sh
-	cat db/output/*.ids | grep -v '#' > db/ids.txt
+	cat db/output/*.ids | grep -v '#' | sort | uniq > db/ids.txt
 
 mkvecsmall:
 	find db/output -name "*.vec" -delete
 	find db/output -name "*.ids" -delete
 	@source $(DB_ENV)/bin/activate && cd db && ./batchquery.sh './mkvec.sh' $(NUMDAYS)
-	cat db/output/*.ids | grep -v '#' > db/ids.txt
+	cat db/output/*.ids | grep -v '#' | sort | uniq > db/ids.txt
 
 mkvecsmallest:
 	find db/output -name "*.vec" -delete
 	find db/output -name "*.ids" -delete
 	@source $(DB_ENV)/bin/activate && cd db && ./batchquerysmallest.sh './mkvec.sh' $(NUMDAYS)
-	cat db/output/*.ids | grep -v '#' > db/ids.txt
+	cat db/output/*.ids | grep -v '#' | sort | uniq > db/ids.txt
 
 # output/ids.txt to run geminize.py
 bias:

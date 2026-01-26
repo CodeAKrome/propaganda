@@ -1,4 +1,4 @@
-// main.go  (dot-all flag added → deletions cross new-lines)
+// main.go - RSS feed aggregator with user agent rotation and curl fallback
 package main
 
 import (
@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"regexp"
 	"strings"
 	"sync"
@@ -32,7 +33,17 @@ const (
 	maxRetries     = 3
 	initialBackoff = 2 * time.Second
 	MINLINE        = 128
+	uaStatsFile    = "user_agent_stats.txt"
 )
+
+var userAgents = []string{
+	"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7843.90 Safari/537.36",
+	"Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7843.90 Mobile Safari/537.36",
+	"Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15",
+	"Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/605.1.15",
+	"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:132.0) Gecko/20100101 Firefox/132.0",
+	"Mozilla/5.0 (Macintosh; Intel Mac OS X 14.6; rv:132.0) Gecko/20100101 Firefox/132.0",
+}
 
 type Article struct {
 	Source      string    `bson:"source"`
@@ -40,10 +51,10 @@ type Article struct {
 	Description string    `bson:"description"`
 	Link        string    `bson:"link"`
 	Published   time.Time `bson:"published"`
-	Raw         *string   `bson:"raw,omitempty"`     // original scraped text
-	Article     *string   `bson:"article,omitempty"` // cleaned text
+	Raw         *string   `bson:"raw,omitempty"`
+	Article     *string   `bson:"article,omitempty"`
 	FetchError  *string   `bson:"fetch_error,omitempty"`
-	Tags        []string  `bson:"tags"` // <-- NEW: always init to []
+	Tags        []string  `bson:"tags"`
 }
 
 type Stats struct {
@@ -52,10 +63,126 @@ type Stats struct {
 	Updated      time.Time      `bson:"updated"`
 }
 
-// source-specific regex cleaners
-var sourceRegex = make(map[string]*regexp.Regexp)
+type UAStats struct {
+	mu      sync.RWMutex
+	success map[string]int // user agent -> success count
+	failure map[string]int // user agent -> failure count
+}
 
-// --- 2.  main collects the counters and prints them ------------------
+var (
+	sourceRegex = make(map[string]*regexp.Regexp)
+	uaStats     = &UAStats{
+		success: make(map[string]int),
+		failure: make(map[string]int),
+	}
+)
+
+func (u *UAStats) load() error {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+
+	f, err := os.Open(uaStatsFile)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil // file doesn't exist yet, that's ok
+		}
+		return err
+	}
+	defer f.Close()
+
+	sc := bufio.NewScanner(f)
+	for sc.Scan() {
+		line := strings.TrimSpace(sc.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		parts := strings.SplitN(line, "\t", 3)
+		if len(parts) != 3 {
+			continue
+		}
+		ua := parts[0]
+		var succ, fail int
+		fmt.Sscanf(parts[1], "%d", &succ)
+		fmt.Sscanf(parts[2], "%d", &fail)
+		u.success[ua] = succ
+		u.failure[ua] = fail
+	}
+	return sc.Err()
+}
+
+func (u *UAStats) save() error {
+	u.mu.RLock()
+	defer u.mu.RUnlock()
+
+	f, err := os.Create(uaStatsFile)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	w := bufio.NewWriter(f)
+	w.WriteString("# User Agent\tSuccess\tFailure\n")
+	for _, ua := range userAgents {
+		succ := u.success[ua]
+		fail := u.failure[ua]
+		fmt.Fprintf(w, "%s\t%d\t%d\n", ua, succ, fail)
+	}
+	return w.Flush()
+}
+
+func (u *UAStats) recordSuccess(ua string) {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	u.success[ua]++
+}
+
+func (u *UAStats) recordFailure(ua string) {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	u.failure[ua]++
+}
+
+// getSortedUserAgents returns user agents sorted by success rate (best first)
+func (u *UAStats) getSortedUserAgents() []string {
+	u.mu.RLock()
+	defer u.mu.RUnlock()
+
+	type uaScore struct {
+		ua    string
+		score float64
+	}
+
+	scores := make([]uaScore, len(userAgents))
+	for i, ua := range userAgents {
+		succ := float64(u.success[ua])
+		fail := float64(u.failure[ua])
+		total := succ + fail
+
+		// Score: success rate, but add small bonus for being tried
+		// Default to original order if never tried
+		score := float64(i) / 100.0 // small tiebreaker for original order
+		if total > 0 {
+			score = succ / total
+		}
+		scores[i] = uaScore{ua: ua, score: score}
+	}
+
+	// Sort by score descending
+	for i := 0; i < len(scores)-1; i++ {
+		for j := i + 1; j < len(scores); j++ {
+			if scores[j].score > scores[i].score {
+				scores[i], scores[j] = scores[j], scores[i]
+			}
+		}
+	}
+
+	result := make([]string, len(scores))
+	for i, s := range scores {
+		result[i] = s.ua
+	}
+	return result
+}
+
 func main() {
 	flag.Parse()
 	args := flag.Args()
@@ -64,6 +191,11 @@ func main() {
 	}
 	cfgPath := args[0]
 	rulesPath := args[1]
+
+	// Load user agent stats
+	if err := uaStats.load(); err != nil {
+		log.Printf("warning: could not load UA stats: %v", err)
+	}
 
 	ctx := context.Background()
 	uri := "mongodb://" + os.Getenv("MONGO_USER") + ":" + os.Getenv("MONGO_PASS") + "@localhost:27017"
@@ -125,6 +257,12 @@ func main() {
 	if err := updateStats(ctx, articlesColl, statsColl); err != nil {
 		log.Fatalf("update stats: %v", err)
 	}
+
+	// 7. save user agent stats
+	if err := uaStats.save(); err != nil {
+		log.Printf("warning: could not save UA stats: %v", err)
+	}
+
 	log.Println("all done")
 }
 
@@ -190,33 +328,69 @@ func cleanText(src, raw string) string {
 	return re.ReplaceAllString(raw, "")
 }
 
-// Helper function to parse feeds with retry logic
-func parseFeedWithRetry(fp *gofeed.Parser, name, url string, maxRetries int) (*gofeed.Feed, error) {
-	var feed *gofeed.Feed
-	var err error
-	backoff := initialBackoff
+// fetchWithCurl uses curl as a fallback when all user agents fail
+func fetchWithCurl(url string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
 
-	for attempt := 0; attempt <= maxRetries; attempt++ {
-		feed, err = fp.ParseURL(url)
+	cmd := exec.CommandContext(ctx, "curl", "-s", "-L", url)
+	output, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("curl failed: %w", err)
+	}
+	return string(output), nil
+}
+
+// parseFeedWithRetry tries user agents in order, then falls back to curl
+func parseFeedWithRetry(fp *gofeed.Parser, name, url string, maxRetries int) (*gofeed.Feed, error) {
+	sortedUAs := uaStats.getSortedUserAgents()
+
+	// Try each user agent in order
+	for i, ua := range sortedUAs {
+		client := &http.Client{
+			Timeout: requestTimeout,
+		}
+		fp.Client = client
+		fp.UserAgent = ua
+
+		feed, err := fp.ParseURL(url)
 		if err == nil {
+			uaStats.recordSuccess(ua)
+			if i > 0 {
+				log.Printf("  ✅ %s succeeded with UA #%d", name, i+1)
+			}
 			return feed, nil
 		}
 
-		// Check if it's a 429 error
-		if strings.Contains(err.Error(), "429") || strings.Contains(err.Error(), "Too Many Requests") {
-			if attempt < maxRetries {
-				log.Printf("  ⏳ rate limited on %s, waiting %v before retry %d/%d", name, backoff, attempt+1, maxRetries)
-				time.Sleep(backoff)
-				backoff *= 2 // exponential backoff
-				continue
-			}
+		// Check if it's a retriable error
+		if strings.Contains(err.Error(), "403") ||
+			strings.Contains(err.Error(), "429") ||
+			strings.Contains(err.Error(), "Forbidden") ||
+			strings.Contains(err.Error(), "Too Many Requests") {
+			uaStats.recordFailure(ua)
+			log.Printf("  ⚠️  %s failed with UA #%d: %v", name, i+1, err)
+			continue
 		}
 
-		// For non-429 errors or final attempt, return the error
+		// Non-retriable error, return it
 		return nil, err
 	}
 
-	return nil, err
+	// All user agents failed, try curl
+	log.Printf("  🔄 %s: all user agents failed, trying curl...", name)
+	body, err := fetchWithCurl(url)
+	if err != nil {
+		return nil, fmt.Errorf("all methods failed, curl: %w", err)
+	}
+
+	// Parse the curl output as RSS/Atom
+	feed, err := fp.ParseString(body)
+	if err != nil {
+		return nil, fmt.Errorf("curl succeeded but parse failed: %w", err)
+	}
+
+	log.Printf("  ✅ %s succeeded with curl", name)
+	return feed, nil
 }
 
 func fetchAllFeeds(src map[string]string) []Article {
@@ -247,7 +421,6 @@ func fetchAllFeeds(src map[string]string) []Article {
 				if item.PublishedParsed != nil {
 					a.Published = *item.PublishedParsed
 				} else {
-					// Use current date if published date is not available
 					a.Published = time.Now()
 				}
 				out = append(out, a)
@@ -257,58 +430,121 @@ func fetchAllFeeds(src map[string]string) []Article {
 		}(name, url)
 	}
 	wg.Wait()
-	return out // always succeeds from the caller's point of view
+	return out
 }
 
-// Helper function to fetch articles with retry logic
+// fetchArticleWithUserAgents tries user agents in order, then curl
 func fetchArticleWithRetry(url string, maxRetries int) (string, error) {
-	var body string
-	var err error
-	backoff := initialBackoff
+	sortedUAs := uaStats.getSortedUserAgents()
 
-	for attempt := 0; attempt <= maxRetries; attempt++ {
-		body, err = fetchArticle(url)
+	// Try each user agent in order
+	for _, ua := range sortedUAs {
+		body, err := fetchArticleWithUA(url, ua)
 		if err == nil {
+			uaStats.recordSuccess(ua)
 			return body, nil
 		}
 
-		// Check if it's a 429 error
-		if strings.Contains(err.Error(), "429") || strings.Contains(err.Error(), "Too Many Requests") {
-			if attempt < maxRetries {
-				time.Sleep(backoff)
-				backoff *= 2 // exponential backoff
-				continue
-			}
+		// Check if it's a retriable error
+		if strings.Contains(err.Error(), "403") ||
+			strings.Contains(err.Error(), "429") ||
+			strings.Contains(err.Error(), "Forbidden") ||
+			strings.Contains(err.Error(), "Too Many Requests") {
+			uaStats.recordFailure(ua)
+			continue
 		}
 
-		// For non-429 errors or final attempt, return the error
+		// Non-retriable error, return it
 		return "", err
 	}
 
-	return "", err
+	// All user agents failed, try curl
+	body, err := fetchWithCurl(url)
+	if err != nil {
+		return "", fmt.Errorf("all methods failed: %w", err)
+	}
+
+	// Parse HTML from curl output
+	return parseHTMLBody(body)
 }
 
-// isDuplicateKeyError checks if an error is a MongoDB duplicate key error (E11000)
+func fetchArticleWithUA(url, userAgent string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("User-Agent", userAgent)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("http %d", resp.StatusCode)
+	}
+
+	root, err := html.Parse(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return extractParagraphs(root)
+}
+
+func parseHTMLBody(htmlContent string) (string, error) {
+	root, err := html.Parse(strings.NewReader(htmlContent))
+	if err != nil {
+		return "", err
+	}
+	return extractParagraphs(root)
+}
+
+func extractParagraphs(root *html.Node) (string, error) {
+	var paras []string
+	var walk func(*html.Node)
+	walk = func(n *html.Node) {
+		if n.Type == html.ElementNode && n.Data == "p" {
+			var sb strings.Builder
+			for c := n.FirstChild; c != nil; c = c.NextSibling {
+				renderText(c, &sb)
+			}
+			if txt := strings.TrimSpace(sb.String()); txt != "" {
+				paras = append(paras, txt)
+			}
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			walk(c)
+		}
+	}
+	walk(root)
+
+	if len(paras) == 0 {
+		return "", errors.New("no <p> content found")
+	}
+	return strings.Join(paras, "\n\n"), nil
+}
+
 func isDuplicateKeyError(err error) bool {
 	if err == nil {
 		return false
 	}
-	// Check for MongoDB duplicate key error code
 	if mongo.IsDuplicateKeyError(err) {
 		return true
 	}
-	// Also check error message as fallback
 	return strings.Contains(err.Error(), "E11000") || strings.Contains(err.Error(), "duplicate key")
 }
 
 func storeArticles(ctx context.Context, coll *mongo.Collection, arts []Article) (int, int, int, error) {
-	// Build list of all links to check
 	links := make([]string, len(arts))
 	for i, a := range arts {
 		links[i] = a.Link
 	}
 
-	// Find existing links in one query
 	cur, err := coll.Find(ctx, bson.M{"link": bson.M{"$in": links}}, options.Find().SetProjection(bson.M{"link": 1}))
 	if err != nil {
 		return 0, 0, 0, err
@@ -325,15 +561,13 @@ func storeArticles(ctx context.Context, coll *mongo.Collection, arts []Article) 
 	}
 	cur.Close(ctx)
 
-	// Process only new articles
 	var added, errs, skipped int
 	for _, a := range arts {
 		if existing[a.Link] {
 			skipped++
-			continue // Skip existing article
+			continue
 		}
 
-		// Fetch and process new article
 		body, err := fetchArticleWithRetry(a.Link, maxRetries)
 		if err != nil {
 			msg := err.Error()
@@ -343,9 +577,7 @@ func storeArticles(ctx context.Context, coll *mongo.Collection, arts []Article) 
 			raw := body
 			article := cleanText(a.Source, body)
 
-			// Check if article length is less than MINLINE
 			if len(article) < MINLINE {
-				// Skip this article entirely - don't insert it
 				skipped++
 				continue
 			}
@@ -354,18 +586,14 @@ func storeArticles(ctx context.Context, coll *mongo.Collection, arts []Article) 
 			a.Article = &article
 		}
 
-		// Initialize tags to empty slice
 		a.Tags = []string{}
 
-		// Insert the article, handling duplicate key errors gracefully
 		_, err = coll.InsertOne(ctx, a)
 		if err != nil {
 			if isDuplicateKeyError(err) {
-				// This is a duplicate - just skip it and continue
 				skipped++
 				continue
 			}
-			// For other errors, return them
 			return added, errs, skipped, err
 		}
 		added++
@@ -403,9 +631,7 @@ func backfillArticles(ctx context.Context, coll *mongo.Collection) error {
 					raw := body
 					article := cleanText(j.source, body)
 
-					// Check if article length is less than MINLINE
 					if len(article) < MINLINE {
-						// Mark as too short so it won't come up in queries
 						msg := fmt.Sprintf("article too short: %d chars (minimum %d)", len(article), MINLINE)
 						update = bson.M{"$set": bson.M{"fetch_error": msg}}
 					} else {
@@ -438,52 +664,11 @@ func backfillArticles(ctx context.Context, coll *mongo.Collection) error {
 }
 
 func fetchArticle(url string) (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
-	defer cancel()
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if err != nil {
-		return "", err
+	sortedUAs := uaStats.getSortedUserAgents()
+	if len(sortedUAs) > 0 {
+		return fetchArticleWithUA(url, sortedUAs[0])
 	}
-	req.Header.Set("User-Agent", "rss2mongo/1.0 (+https://example.com/bot)")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("http %d", resp.StatusCode)
-	}
-
-	root, err := html.Parse(resp.Body)
-	if err != nil {
-		return "", err
-	}
-
-	var paras []string
-	var walk func(*html.Node)
-	walk = func(n *html.Node) {
-		if n.Type == html.ElementNode && n.Data == "p" {
-			var sb strings.Builder
-			for c := n.FirstChild; c != nil; c = c.NextSibling {
-				renderText(c, &sb)
-			}
-			if txt := strings.TrimSpace(sb.String()); txt != "" {
-				paras = append(paras, txt)
-			}
-		}
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			walk(c)
-		}
-	}
-	walk(root)
-
-	if len(paras) == 0 {
-		return "", errors.New("no <p> content found")
-	}
-	return strings.Join(paras, "\n\n"), nil
+	return fetchArticleWithUA(url, userAgents[0])
 }
 
 func renderText(n *html.Node, sb *strings.Builder) {

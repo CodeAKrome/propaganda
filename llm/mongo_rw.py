@@ -4,7 +4,7 @@ MongoDB field reader/writer tool using Fire library.
 
 Usage:
   python mongo_tool.py read --id=<doc_id> --field=<field_name>
-  python mongo_tool.py write --id=<doc_id> --field=<field_name> --data=<value>
+  python mongo_tool.py write --id=<doc_id> --field=<field_name> --data=<value> [--force]
 """
 
 import os
@@ -70,7 +70,7 @@ class MongoFieldTool:
             print(f"Error reading field: {e}")
             return None
 
-    def write(self, id: str, field: str, data: str):
+    def write(self, id: str, field: str, data: str, force: bool = False):
         """
         Write data to a specific field in a document.
 
@@ -78,6 +78,7 @@ class MongoFieldTool:
             id: MongoDB document ID
             field: Field name to write
             data: Data to write to the field (use '-' to read from stdin)
+            force: If True, overwrite existing data; if False, skip if field has data
 
         Returns:
             True if successful, False otherwise
@@ -90,6 +91,23 @@ class MongoFieldTool:
                     print("Error: No data received from stdin")
                     return False
 
+            # If not forcing, check if field already has data using projection
+            if not force:
+                doc = self.collection.find_one(
+                    {"_id": ObjectId(id)},
+                    {field: 1}  # Only fetch the specific field
+                )
+                
+                if doc is None:
+                    print(f"Error: Document with ID '{id}' not found")
+                    return False
+
+                # Check if field exists and has data (not None and not empty string)
+                if field in doc and doc[field] not in (None, ""):
+                    print(f"Skipped: Field '{field}' already has data. Use --force to overwrite.")
+                    return False
+
+            # Perform the update
             result = self.collection.update_one(
                 {"_id": ObjectId(id)}, {"$set": {field: data}}
             )
@@ -112,7 +130,7 @@ class MongoFieldTool:
 
 def main():
     """Main entry point for Fire CLI."""
-    fire.Fire(MongoFieldTool())  # <-- Changed: instantiate the class
+    fire.Fire(MongoFieldTool())
 
 
 if __name__ == "__main__":
