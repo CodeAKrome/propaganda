@@ -20,7 +20,7 @@ NUMDAYS ?= $(shell date +%F)  # fallback to today if file missing
 	fquerymp3 fquery fmp3 black querysmallest cleanmp3 mp3small smallestthingsthatgo \
 	timestamp testrun
 
-testrun: timestamp load ner vector entity mkvecsmall
+testrun: querysmall cleanmp3 mp3small fini
 thingsthatgo: load ner vector entity mkvec bias query mp3 fini
 smallthingsthatgo: timestamp load ner vector entity mkvecsmall bias mkvecsmall querysmall cleanmp3 mp3small fini
 # Doesn't clean db/output or mp3/mp3
@@ -46,12 +46,13 @@ black:
 	black db/*.py
 	black ner/*.py
 entity:
-	cd db && ./mongo2chroma.py title --start-date $(NUMDAYS) | sort -k4,4 > $(TITLEFILE)
-	cd db &&  cat $(TITLEFILE) | grep -v thehindu | grep -v indiaexpress > output/titles_nohindu.tsv
-	cd db && ./mongo2chroma.py dumpentity --start-date $(NUMDAYS) | egrep '(PERSON|GPE|LOC|EVENT)' > output/impentity.tsv
-	cd db && ./mongo2chroma.py dumpentity --start-date $(NUMDAYS)  > output/entity.tsv
-	cd db && ./mongo2chroma.py dumpentity --start-date -60  > output/entity_60days.tsv
-	cd db && ./mongo2chroma.py dumpentity --start-date -60 | egrep '(PERSON|GPE|LOC|EVENT)' > output/impentity_60days.tsv
+	source $(DB_ENV)/bin/activate && cd db && ./mongo2chroma.py title --start-date $(NUMDAYS) | sort -k4,4 > $(TITLEFILE)
+	source $(DB_ENV)/bin/activate && cd db &&  cat $(TITLEFILE) | grep -v thehindu | grep -v indiaexpress > output/titles_nohindu.tsv
+	source $(DB_ENV)/bin/activate && cd db && ./mongo2chroma.py dumpentity --start-date $(NUMDAYS) | egrep '(PERSON|GPE|LOC|EVENT)' > output/impentity.tsv
+	source $(DB_ENV)/bin/activate && cd db && ./mongo2chroma.py dumpentity --start-date $(NUMDAYS)  > output/entity.tsv
+	source $(DB_ENV)/bin/activate && cd db && ./mongo2chroma.py dumpentity --start-date -60  > output/entity_60days.tsv
+	source $(DB_ENV)/bin/activate && cd db && ./mongo2chroma.py dumpentity --start-date -60 | egrep '(PERSON|GPE|LOC|EVENT)' > output/impentity_60days.tsv
+
 # build propaganda go binary
 build:
 	go build
