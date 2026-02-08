@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 MongoDB to Bias Training Data Exporter
 =======================================
