@@ -1,3 +1,4 @@
+#!/use/bin/env python
 """
 Political Bias Detector using T5 with LoRA - WITH CLI SUPPORT & NON-FATAL ERROR HANDLING
 ========================================================================================
