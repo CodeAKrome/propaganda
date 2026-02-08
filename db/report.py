@@ -162,7 +162,7 @@ def report(
     return False
 
 
-def main(startdate, filename, entity, query, fulltext="", svoprompt="prompt/kgsvo.txt"):
+def main(startdate, filename, entity, query, svoprompt="prompt/kgsvo.txt", workdir="output"):
     """
     Generate news reports from vector files using LLM analysis.
 
@@ -171,15 +171,15 @@ def main(startdate, filename, entity, query, fulltext="", svoprompt="prompt/kgsv
         filename: Base filename for output files
         entity: Entity name(s) to analyze
         query: Query string for the report
-        fulltext: Optional fulltext parameter
         svoprompt: Path to SVO prompt file (default: prompt/kgsvo.txt)
+        workdir: Directory for input/output files (default: output)
     """
     # File paths
-    vec = f"output/{filename}.vec"
-    news = f"output/{filename}.md"
-    cypherfile = f"output/{filename}.cypher"
-    reporterfile = f"output/{filename}.reporter"
-    barenews = f"output/{filename}"
+    vec = f"{workdir}/{filename}.vec"
+    news = f"{workdir}/{filename}.md"
+    cypherfile = f"{workdir}/{filename}.cypher"
+    reporterfile = f"{workdir}/{filename}.reporter"
+    barenews = f"{workdir}/{filename}"
     svo_prompt = svoprompt
 
     # Count entries

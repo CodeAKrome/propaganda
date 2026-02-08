@@ -1,3 +1,4 @@
+checkpoint-*
 user_agent_stats.txt
 *.safetensors
 db/timestamp.txt
