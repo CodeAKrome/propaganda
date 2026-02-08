@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+"""
+Detect political bias
+"""
+
 import sys
 import json
 import torch
