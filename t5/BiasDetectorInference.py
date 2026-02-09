@@ -25,7 +25,7 @@ class BiasDetectorInference:
     Inference class for political bias detection. 
     Outputs strictly valid, unescaped JSON objects.
     """
-    def __init__(self, model_path: str = './bias-detector-output', base_model_name: str = "t5-small"):
+    def __init__(self, model_path: str = './bias-detector-output', base_model_name: str = "t5-large"):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         
         self.tokenizer = T5Tokenizer.from_pretrained(base_model_name, verbose=False)

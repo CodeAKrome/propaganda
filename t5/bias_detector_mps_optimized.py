@@ -213,7 +213,7 @@ class BiasDatasetCreator:
 class BiasDetectorModel:
     def __init__(
         self, 
-        model_name: str = "t5-small", 
+        model_name: str = "t5-large", 
         lora_r: int = 16, 
         lora_alpha: int = 32, 
         lora_dropout: float = 0.1,
@@ -545,9 +545,9 @@ Examples:
                         help='Export sample data template to specified file')
     
     # Model arguments
-    parser.add_argument('--model-name', type=str, default='t5-small',
-                        choices=['t5-small', 't5-base', 't5-large'],
-                        help='T5 model variant (default: t5-small)')
+    parser.add_argument('--model-name', type=str, default='t5-large',
+                        choices=['t5-large', 't5-base', 't5-large'],
+                        help='T5 model variant (default: t5-large)')
     parser.add_argument('--lora-r', type=int, default=16,
                         help='LoRA rank parameter (default: 16)')
     parser.add_argument('--lora-alpha', type=int, default=32,

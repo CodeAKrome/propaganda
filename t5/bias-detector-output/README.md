@@ -1,8 +1,8 @@
 ---
-base_model: t5-small
+base_model: t5-large
 library_name: peft
 tags:
-- base_model:adapter:t5-small
+- base_model:adapter:t5-large
 - lora
 - transformers
 ---
