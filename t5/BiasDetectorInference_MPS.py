@@ -26,7 +26,7 @@ class BiasDetectorInference:
     Outputs strictly valid, unescaped JSON objects.
     """
     def __init__(self, model_path: str = './bias-detector-output', base_model_name: str = "t5-large"):
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.device = "cuda" if torch.cuda.is_available() else "mps"
         
         self.tokenizer = T5Tokenizer.from_pretrained(base_model_name, verbose=False)
         base_model = T5ForConditionalGeneration.from_pretrained(
