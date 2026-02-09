@@ -1,1 +1,1 @@
-bias_detector.py --data train.json
+./bias_detector.py --data train.json

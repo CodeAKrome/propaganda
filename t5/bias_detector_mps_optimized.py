@@ -447,13 +447,15 @@ class BiasPredictor:
         
         print(f"Predictor initialized on {self.device}")
     
-    def predict(self, article: str, return_raw: bool = False) -> Dict:
+    def predict(self, article: str, return_raw: bool = False, use_beam_search: bool = True) -> Dict:
         """
         Predict political bias for a given article.
         
         Args:
             article: The article text to analyze
             return_raw: If True, include raw model output
+            use_beam_search: If True, use beam search (slower, more accurate).
+                           If False, use greedy decoding (faster, less accurate)
         
         Returns:
             Dictionary with bias predictions
@@ -470,16 +472,23 @@ class BiasPredictor:
         
         # Generate prediction
         with torch.no_grad():
-            # MPS-friendly generation settings
-            outputs = self.model.generate(
-                **inputs,
-                max_length=self.max_length,
-                num_beams=1,  # Greedy decoding is faster on MPS
-                do_sample=False,
-                early_stopping=True,
-                pad_token_id=self.tokenizer.pad_token_id,
-                eos_token_id=self.tokenizer.eos_token_id,
-            )
+            if use_beam_search:
+                # Original behavior: beam search (matches original script exactly)
+                outputs = self.model.generate(
+                    **inputs,
+                    max_length=self.max_length
+                )
+            else:
+                # MPS-optimized: greedy decoding (faster)
+                outputs = self.model.generate(
+                    **inputs,
+                    max_length=self.max_length,
+                    num_beams=1,
+                    do_sample=False,
+                    early_stopping=True,
+                    pad_token_id=self.tokenizer.pad_token_id,
+                    eos_token_id=self.tokenizer.eos_token_id,
+                )
         
         # Decode output
         generated_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
@@ -497,9 +506,9 @@ class BiasPredictor:
                 "article": article[:100] + "..." if len(article) > 100 else article
             }
     
-    def predict_batch(self, articles: List[str]) -> List[Dict]:
+    def predict_batch(self, articles: List[str], use_beam_search: bool = True) -> List[Dict]:
         """Predict bias for multiple articles."""
-        return [self.predict(article) for article in articles]
+        return [self.predict(article, use_beam_search=use_beam_search) for article in articles]
 
 
 # ==============================================================================
@@ -563,6 +572,8 @@ Examples:
                         help='Path to trained model (required for --predict-only)')
     parser.add_argument('--test-article', type=str, default=None,
                         help='Article text to classify (for testing)')
+    parser.add_argument('--fast-predict', action='store_true',
+                        help='Use greedy decoding for faster predictions (less accurate)')
     
     # Device arguments
     parser.add_argument('--cpu-only', action='store_true',
@@ -642,12 +653,19 @@ def main():
     print("\n[Step 4] Running Predictions...")
     predictor = BiasPredictor(model)
     
+    # Determine prediction mode
+    use_beam_search = not args.fast_predict
+    if args.fast_predict:
+        print("ℹ Using fast prediction mode (greedy decoding)")
+    else:
+        print("ℹ Using beam search (matches original behavior)")
+    
     # Test with provided article or default
     test_text = args.test_article if args.test_article else \
                 "The legislature passed a routine budget bill today with overwhelming bipartisan support."
     
     print(f"\nTest Article: {test_text}\n")
-    prediction = predictor.predict(test_text, return_raw=False)
+    prediction = predictor.predict(test_text, return_raw=False, use_beam_search=use_beam_search)
     print("Prediction Result:")
     print(json.dumps(prediction, indent=2))
     
@@ -663,7 +681,7 @@ def main():
     ]
     
     for i, article in enumerate(sample_articles, 1):
-        pred = predictor.predict(article)
+        pred = predictor.predict(article, use_beam_search=use_beam_search)
         print(f"\n{i}. {article}")
         print(f"   Result: {json.dumps(pred, indent=6)}")
     
