@@ -528,7 +528,7 @@ Examples:
   python bias_detector_mps_optimized.py --data my_data.json --epochs 15
   
   # Use larger model
-  python bias_detector_mps_optimized.py --model-name t5-base --batch-size 1
+  python bias_detector_mps_optimized.py --model-name t5-large --batch-size 1
   
   # Predict only (requires trained model)
   python bias_detector_mps_optimized.py --predict-only --model-path ./bias-detector-output
@@ -546,7 +546,7 @@ Examples:
     
     # Model arguments
     parser.add_argument('--model-name', type=str, default='t5-large',
-                        choices=['t5-large', 't5-base', 't5-large'],
+                        choices=['t5-small', 't5-base', 't5-large'],
                         help='T5 model variant (default: t5-large)')
     parser.add_argument('--lora-r', type=int, default=16,
                         help='LoRA rank parameter (default: 16)')

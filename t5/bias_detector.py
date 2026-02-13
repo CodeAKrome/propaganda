@@ -172,7 +172,7 @@ class BiasDatasetCreator:
 # ==============================================================================
 
 class BiasDetectorModel:
-    def __init__(self, model_name: str = "t5-small", lora_r: int = 16, lora_alpha: int = 32, lora_dropout: float = 0.1):
+    def __init__(self, model_name: str = "t5-large", lora_r: int = 16, lora_alpha: int = 32, lora_dropout: float = 0.1):
         self.model_name = model_name
         self.tokenizer = T5Tokenizer.from_pretrained(model_name)
         self.base_model = T5ForConditionalGeneration.from_pretrained(model_name)
@@ -285,7 +285,7 @@ class BiasPredictor:
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Political Bias Detector")
     parser.add_argument('--data', type=str, default=None)
-    parser.add_argument('--model-name', type=str, default='t5-small')
+    parser.add_argument('--model-name', type=str, default='t5-large')
     parser.add_argument('--epochs', type=int, default=10)
     parser.add_argument('--batch-size', type=int, default=2)
     parser.add_argument('--output-dir', type=str, default='./bias-detector-output')

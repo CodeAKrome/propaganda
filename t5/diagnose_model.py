@@ -8,7 +8,7 @@ import json
 from transformers import T5ForConditionalGeneration, T5Tokenizer
 from peft import PeftModel
 
-def diagnose_model(model_path: str = './bias-detector-output', base_model: str = 't5-small'):
+def diagnose_model(model_path: str = './bias-detector-output', base_model: str = 't5-large'):
     """Run diagnostic checks on the bias detector model."""
     
     print("="*80)
@@ -123,13 +123,13 @@ def diagnose_model(model_path: str = './bias-detector-output', base_model: str =
     print("\nRecommended fixes:")
     print("  1. Re-train with more epochs (15-30)")
     print("  2. Verify training data has correct format")
-    print("  3. Try larger model (t5-base instead of t5-small)")
+    print("  3. Try larger model (t5-large instead of t5-small)")
     print("  4. Use num_beams=5 and no_repeat_ngram_size=3")
     print("="*80 + "\n")
 
 if __name__ == "__main__":
     import sys
     model_path = sys.argv[1] if len(sys.argv) > 1 else './bias-detector-output'
-    base_model = sys.argv[2] if len(sys.argv) > 2 else 't5-small'
+    base_model = sys.argv[2] if len(sys.argv) > 2 else 't5-large'
     
     diagnose_model(model_path, base_model)
