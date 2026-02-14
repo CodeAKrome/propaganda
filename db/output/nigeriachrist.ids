@@ -1,0 +1,1 @@
+# ./hybrid.py Summarize events about christians being killed in Nigeria. Analize actions and motivations. --bm25 --orentity Nigeria,Christian --start-date 2026-02-12T06:35:32Z --showentity -n 40 --ids output/nigeriachrist.ids --fulltext Nigeria,Christian --filter

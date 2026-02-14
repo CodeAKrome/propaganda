@@ -1,0 +1,2 @@
+# ./hybrid.py Summarize events in Bolivia and actions by Rodrigo Paz. Analize actions and motivations. --bm25 --orentity Bolivia --start-date 2026-02-12T06:35:32Z --showentity -n 40 --ids output/bolivia.ids --fulltext Bolivia,Rodrigo Paz
+698ec871c1fa2e60d4ea174b

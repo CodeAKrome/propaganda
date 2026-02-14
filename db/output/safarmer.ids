@@ -1,0 +1,1 @@
+# ./hybrid.py Summarize actions in South Africa taken against White farmers. Analize actions and motivations. --bm25 --orentity South Africa --start-date 2026-02-12T06:35:32Z --showentity -n 40 --ids output/safarmer.ids --fulltext farmer,boer,white,farm --filter

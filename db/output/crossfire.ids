@@ -1,0 +1,1 @@
+# ./hybrid.py Summarize news about Crossfire Hurricane. Analize actions and motivations. --bm25 --orentity Crossfire Hurricane --start-date 2026-02-12T06:35:32Z --showentity -n 40 --ids output/crossfire.ids --fulltext Crossfire Hurricane --filter

@@ -1,0 +1,7 @@
+# ./hybrid.py Summarize all actions by Putin. Analize actions and motivations. --bm25 --orentity Putin --start-date 2026-02-12T06:35:32Z --showentity -n 40 --ids output/putin.ids --fulltext Putin --filter
+698ec75fc1fa2e60d4ea14b1
+698ec757c1fa2e60d4ea148a
+698ec6fcc1fa2e60d4ea140f
+698ec7dbc1fa2e60d4ea15eb
+698ec766c1fa2e60d4ea14cc
+698ec78bc1fa2e60d4ea157c

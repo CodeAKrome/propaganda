@@ -1,0 +1,4 @@
+# ./hybrid.py Summarize stories having to do with voting fraud in the US, United States. List all details. Analize actions and motivations. --bm25 --orentity Voter ID --start-date 2026-02-12T06:35:32Z --showentity -n 40 --ids output/votefraud.ids --fulltext voter fraud
+698ec78bc1fa2e60d4ea157c
+698ec645c1fa2e60d4ea1260
+698ec78bc1fa2e60d4ea157a

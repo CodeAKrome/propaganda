@@ -1,0 +1,4 @@
+# ./hybrid.py Summarize actions in Chicago. Focus on the Mayor and Governor's actions. Analize actions and motivations. --bm25 --orentity Chicago --start-date 2026-02-12T06:35:32Z --showentity -n 40 --ids output/chicago.ids --fulltext Chicago,Mayor,Governor --filter
+698ec7e8c1fa2e60d4ea1601
+698ec654c1fa2e60d4ea12a3
+698ec869c1fa2e60d4ea1716

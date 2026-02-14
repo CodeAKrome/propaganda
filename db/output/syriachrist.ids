@@ -1,0 +1,2 @@
+# ./hybrid.py Summarize events about christians being killed in Syria. Analize actions and motivations. --bm25 --orentity Syria,Christian --start-date 2026-02-12T06:35:32Z --showentity -n 40 --ids output/syriachrist.ids --fulltext Syria,Christian --filter
+698ec7a1c1fa2e60d4ea15b8

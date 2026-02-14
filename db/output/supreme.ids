@@ -1,0 +1,27 @@
+# ./hybrid.py Summarize current actions by the US Supreme Court. Analize actions and motivations. --bm25 --orentity US,U.S.,the United States --start-date 2026-02-12T06:35:32Z --showentity -n 40 --ids output/supreme.ids --fulltext Supreme Court --filter
+698ec870c1fa2e60d4ea172e
+698ec706c1fa2e60d4ea1437
+698ec7e5c1fa2e60d4ea15fc
+698ec861c1fa2e60d4ea170d
+698ec655c1fa2e60d4ea12b6
+698ec797c1fa2e60d4ea159f
+698ec848c1fa2e60d4ea16d0
+698ec85ec1fa2e60d4ea170a
+698ec644c1fa2e60d4ea1245
+698ec871c1fa2e60d4ea1742
+698ec669c1fa2e60d4ea12d7
+698ec7e5c1fa2e60d4ea15fa
+698ec875c1fa2e60d4ea1756
+698ec6e8c1fa2e60d4ea13f4
+698ec6c9c1fa2e60d4ea1369
+698ec654c1fa2e60d4ea12a7
+698ec655c1fa2e60d4ea12b2
+698ec81ec1fa2e60d4ea1661
+698ec826c1fa2e60d4ea1674
+698ec81bc1fa2e60d4ea165b
+698ec654c1fa2e60d4ea12a0
+698ec66dc1fa2e60d4ea12ea
+698ec6e4c1fa2e60d4ea13ed
+698ec6e4c1fa2e60d4ea13ec
+698ec6f8c1fa2e60d4ea140a
+698ec6c3c1fa2e60d4ea1328

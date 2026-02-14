@@ -1,3 +1,5 @@
+db/cluster/*
+!db/cluster/.gitkeep
 checkpoint-*
 user_agent_stats.txt
 *.safetensors
@@ -5,7 +7,8 @@ db/timestamp.txt
 mp3/biasmp3
 mp3/mp3/
 mp3/batch.sh
-db/output/*
+db/output/*.md
+!db/output/.gitkeep
 __pycache__/
 ids.txt
 *.log

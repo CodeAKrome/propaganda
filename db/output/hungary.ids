@@ -1,0 +1,11 @@
+# ./hybrid.py Summarize news about Hungary. Analize actions and motivations. --bm25 --orentity Hungary --start-date 2026-02-12T06:35:32Z --showentity -n 40 --ids output/hungary.ids
+698ec78fc1fa2e60d4ea1588
+698ec75cc1fa2e60d4ea14a6
+698ec710c1fa2e60d4ea1463
+698ec760c1fa2e60d4ea14b5
+698ec78bc1fa2e60d4ea1579
+698ec79ac1fa2e60d4ea15a6
+698ec7a0c1fa2e60d4ea15b4
+698ec653c1fa2e60d4ea1295
+698ec7eac1fa2e60d4ea160b
+698ec66dc1fa2e60d4ea12e8

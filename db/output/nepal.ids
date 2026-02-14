@@ -1,0 +1,6 @@
+# ./hybrid.py Summarize current events in Nepal. Analize actions and motivations. --bm25 --orentity Nepal --start-date 2026-02-12T06:35:32Z --showentity -n 40 --ids output/nepal.ids
+698ec77ac1fa2e60d4ea152c
+698ec6c4c1fa2e60d4ea133c
+698ec77dc1fa2e60d4ea1550
+698ec6cdc1fa2e60d4ea138e
+698ec6d1c1fa2e60d4ea13b8

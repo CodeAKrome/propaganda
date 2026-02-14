@@ -1,0 +1,7 @@
+# ./hybrid.py Summarize news about corporations laying off workers. Analize actions and motivations. --bm25 --orentity layoffs --start-date 2026-02-12T06:35:32Z --showentity -n 40 --ids output/layoff.ids --fulltext layoffs
+698ec853c1fa2e60d4ea16fb
+698ec78bc1fa2e60d4ea157f
+698ec669c1fa2e60d4ea12da
+698ec644c1fa2e60d4ea1259
+698ec709c1fa2e60d4ea144b
+698ec66dc1fa2e60d4ea12e6

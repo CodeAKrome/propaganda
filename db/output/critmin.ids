@@ -1,0 +1,1 @@
+# ./hybrid.py Summarize news about critical minerals and rare earths needed for high tech. Analize actions and motivations. --bm25 --orentity China --start-date 2026-02-12T06:35:32Z --showentity -n 40 --ids output/critmin.ids --fulltext rare earth,critical minerals --filter

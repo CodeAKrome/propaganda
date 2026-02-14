@@ -1,0 +1,6 @@
+# ./hybrid.py Summarize news about Poland. Analize actions and motivations. --bm25 --orentity Poland --start-date 2026-02-12T06:35:32Z --showentity -n 40 --ids output/poland.ids
+698ec761c1fa2e60d4ea14b8
+698ec7a2c1fa2e60d4ea15bb
+698ec7a2c1fa2e60d4ea15bc
+698ec7a2c1fa2e60d4ea15bd
+698ec7a2c1fa2e60d4ea15be

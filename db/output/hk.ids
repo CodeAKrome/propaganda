@@ -1,0 +1,4 @@
+# ./hybrid.py Summarize current events in Hong Kong. Analize actions and motivations. --bm25 --orentity Hong Kong --start-date 2026-02-12T06:35:32Z --showentity -n 40 --ids output/hk.ids --fulltext Hong Kong --filter
+698ec669c1fa2e60d4ea12d7
+698ec77bc1fa2e60d4ea1534
+698ec645c1fa2e60d4ea125f

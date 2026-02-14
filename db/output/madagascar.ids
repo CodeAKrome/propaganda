@@ -1,0 +1,4 @@
+# ./hybrid.py Summarize current events in Madagascar. Analize actions and motivations. --bm25 --orentity Madagascar --start-date 2026-02-12T06:35:32Z --showentity -n 40 --ids output/madagascar.ids
+698ec652c1fa2e60d4ea128e
+698ec7fdc1fa2e60d4ea1637
+698ec76fc1fa2e60d4ea14ee

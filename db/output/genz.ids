@@ -1,0 +1,3 @@
+# ./hybrid.py Summarize news about Gen-Z protests. List locations and groups involved. Analize actions and motivations. --bm25 --orentity Gen Z,Gen Z 212 --start-date 2026-02-12T06:35:32Z --showentity -n 40 --ids output/genz.ids --fulltext Gen Z --filter
+698ec828c1fa2e60d4ea1678
+698ec7e3c1fa2e60d4ea15f7

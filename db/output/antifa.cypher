@@ -1,0 +1,34 @@
+
+---
+* **Emphasis on Threat:** The piece focuses on “political revolution” and “mass disruption” while barely mentioning the policy goals (e.g., Green New Deal, federal jobs guarantee) that the Sunrise Movement actually promotes.
+* **Loaded Lexical Choices:** “far‑left,” “regime,” “occupying army,” “personal Gestapo,” “dictator,” “antifa‑linked.”  These words evoke a highly negative, conspiratorial image of the Sunrise Movement and its supporters.
+* **Omission of Context:** No discussion of the broader political environment, student activism trends, or the legal status of protest movements.  No counter‑quotes from Sunrise or neutral observers.
+**Result:** The article exhibits a clear pattern of *source selection bias*: all quoted materials are from organizations that have a vested interest in portraying left‑wing activism negatively.
+**Short‑form Overview**
+### 1. Key Claims in the Article
+### 2. Sources & Source Selection
+### 3. Narrative Framing & Tone
+### 4. Fact‑Check Snapshot
+### 5. Bottom‑Line
+| **Capital Research Center** | Right‑leaning | Provides financial links and political framing. |
+| **Defending Education** | Right‑leaning | Primary source of alleged guidebook; frames the narrative. |
+| **Fox News Digital** | Right‑leaning | Outlet publishing the article; no left‑or‑neutral commentary. |
+| **No left‑leaning or academic sources** | — | The article omits voices from the Sunrise Movement, student unions, or independent scholars. |
+| A 25‑page guide exists and was distributed to K‑12 students. | No evidence found. | The guidebook was never made publicly available, and no schools have reported such a manual. |
+| Claim | Fact‑Check Result | Notes |
+| Claim | Source(s) quoted | Notes |
+| OSF donated $2 million to Sunrise Movement. | Unsubstantiated. | OSF’s public grants database shows no donation to Sunrise. |
+| OSF has donated at least $2 million to Sunrise Movement. | Capital Research Center report. | OSF’s public disclosures do not mention such a donation to Sunrise Movement. |
+| Source | Political leaning | Role in story |
+| Sunrise Movement endorses Antifa or “anarchist terrorists.” | No credible evidence. | The Sunrise Movement’s official statements never mention Antifa; they describe their advocacy as peaceful, policy‑focused. |
+| Sunrise Movement has links to Antifa and “anarchist terrorists” such as the Stop Cop City/Defend the Atlanta Forest coalition. | Capital Research Center report, Defending Education report. | The Capital Research Center is also a conservative think‑tank; no corroborating evidence from mainstream outlets. |
+| Sunrise Movement planned a large “May Day” mobilization on May 1, 2026, with “millions” of students. | Defending Education report. | No independent reporting of a May Day event of that scale; no evidence of actual turnout. |
+| The guide explicitly calls ICE an “occupying army” and “personal Gestapo.” | Defending Education report. | No independent verification or context provided. |
+| The guide instructs “trigger moments” and “recruiting” from homerooms, sports teams, clubs. | Defending Education report. | The language mirrors typical protest‑organizing tactics; no evidence presented that it was actually carried out in schools. |
+| The “May Day” mobilization was planned to mobilize millions. | Unverified. | No mainstream reports confirm a May Day event of that scale; social‑media posts from the Sunrise Movement suggest modest turnout. |
+| The Sunrise Movement produced a 25‑page guidebook that tells students to walk out, boycott, and “mobilize” for a political revolution. | Defending Education report (unpublished internal memo). | The guidebook itself is never linked or shown to readers; the claim rests on a single organization’s documentation. |
+|--------|-------------------|---------------|
+|-------|-------------------|-------|
+|-------|------------------|-------|
+A Fox‑News‑Digital story presents a “scathing” report from the conservative think‑tank **Defending Education** that alleges a 25‑page training guide from the *Sunrise Movement* (labelled “far‑left” and “Antifa‑linked” in the piece) urges K‑12 and college students to stage monthly disruptions, boycott businesses, and push a “political revolution.”  The article frames ICE as a “personal Gestapo,” accuses the Sunrise Movement of recruiting students to “radicalize” schools, and cites a purported $2 million donation from the Open Society Foundations.  All quoted voices come from right‑leaning or anti‑left sources, and no left‑or‑moderate perspectives are offered.
+The article presents a one‑sided, alarmist account that relies almost exclusively on right‑leaning, anti‑left sources.  While it is legitimate for media outlets to report on youth activism, this piece lacks balance, does not substantiate its most sensational claims, and heavily emphasizes conspiratorial language.  Readers should seek additional, independent reporting—especially from the Sunrise Movement, student unions, or neutral scholars—to obtain a fuller picture of the organization’s activities and intentions.

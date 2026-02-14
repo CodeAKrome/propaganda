@@ -1,0 +1,4 @@
+# ./hybrid.py Summarize actions in Portland Oregon involving ICE, the Mayor and ANTIFA. Analize actions and motivations. --bm25 --orentity Portland --start-date 2026-02-12T06:35:32Z --showentity -n 40 --ids output/portland.ids --fulltext ICE --filter
+698ec654c1fa2e60d4ea12a1
+698ec78bc1fa2e60d4ea1574
+698ec798c1fa2e60d4ea15a1
