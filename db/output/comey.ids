@@ -1,1 +1,0 @@
-# ./hybrid.py Summarize news about James Comey. Analize actions and motivations. --bm25 --orentity Comey --start-date 2026-02-12T06:35:32Z --showentity -n 40 --ids output/comey.ids --fulltext James Comey,trial,felony --filter

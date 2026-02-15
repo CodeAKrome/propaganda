@@ -1,9 +1,0 @@
-# ./hybrid.py Summarize current events in Sudan. Analize actions and motivations. --bm25 --orentity Sudan --start-date 2026-02-12T06:35:32Z --showentity -n 40 --ids output/sudan.ids --fulltext Sudan --filter
-698ec666c1fa2e60d4ea12d1
-698ec750c1fa2e60d4ea147e
-698ec78bc1fa2e60d4ea157b
-698ec7c9c1fa2e60d4ea15c8
-698ec83ac1fa2e60d4ea16b4
-698ec7ffc1fa2e60d4ea1641
-698ec6c6c1fa2e60d4ea1348
-698ec78fc1fa2e60d4ea1588

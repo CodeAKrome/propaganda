@@ -1,2 +1,0 @@
-# ./hybrid.py Summarize current events involving jihadist or jihad. Analize actions and motivations. --bm25 --orentity Jihad,Islam,Muslim --start-date 2026-02-12T06:35:32Z --showentity -n 40 --ids output/jihad.ids --fulltext Jihad,Jihadist --filter
-698ec6f9c1fa2e60d4ea140c

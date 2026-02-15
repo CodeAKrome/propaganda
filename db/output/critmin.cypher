@@ -1,4 +1,0 @@
-
-**Brief Summary**
-China has allowed several shipments of rare‑earth minerals to Japan even after tightening its export controls on dual‑use items that began on Jan 6. The decision comes amid a diplomatic spat over Japanese PM Sanae Takaichi’s remarks on Taiwan. The controls cover seven critical rare‑earth types, along with rare metals and certain electronic devices. China’s exports of magnesium and alloys to Japan have stalled, and Chinese‑bound Japanese food items have also faced delays, reflecting the broader tensions. Japan is actively seeking to diversify its critical‑mineral supply chains, including a recent deep‑sea drilling effort to harvest rare‑earth‑rich mud.
-Would you like a deeper dive into any particular aspect—such as the specific rare earths involved, the impact on supply chains, or the diplomatic context?

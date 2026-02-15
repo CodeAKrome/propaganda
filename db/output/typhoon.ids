@@ -1,1 +1,0 @@
-# ./hybrid.py Summarize any typhoons, their location and damage. Summarize and analize actions taken by authorities. --bm25 --orentity Typhoon --start-date 2026-02-12T06:35:32Z --showentity -n 40 --ids output/typhoon.ids

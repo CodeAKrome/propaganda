@@ -1,4 +1,0 @@
-# ./hybrid.py Summarize current events in Morocco. Analize actions and motivations. --bm25 --orentity Morocco --start-date 2026-02-12T06:35:32Z --showentity -n 40 --ids output/morocco.ids
-698ec710c1fa2e60d4ea1463
-698ec7fcc1fa2e60d4ea1631
-698ec7fec1fa2e60d4ea163c

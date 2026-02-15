@@ -1,3 +1,6 @@
+*.ids
+*.vec
+*.cypher
 db/cluster/*
 !db/cluster/.gitkeep
 checkpoint-*

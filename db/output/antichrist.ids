@@ -1,1 +1,0 @@
-# ./hybrid.py Summarize events about christians being killed or otherwise discriminated against. Summarize the locations. Analize actions and motivations. --bm25 --orentity Christian --start-date 2026-02-12T06:35:32Z --showentity -n 40 --ids output/antichrist.ids --fulltext hate,violence,riot,kill,terror,attack --filter

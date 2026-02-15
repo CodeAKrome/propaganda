@@ -1,8 +1,0 @@
-# ./hybrid.py Summarize news about Afghanistan. Analize actions and motivations. --bm25 --orentity Afghanistan --start-date 2026-02-12T06:35:32Z --showentity -n 40 --ids output/afghanistan.ids
-698ec779c1fa2e60d4ea1515
-698ec7d5c1fa2e60d4ea15db
-698ec817c1fa2e60d4ea1655
-698ec66cc1fa2e60d4ea12e0
-698ec6fcc1fa2e60d4ea141c
-698ec664c1fa2e60d4ea12ce
-698ec829c1fa2e60d4ea167b

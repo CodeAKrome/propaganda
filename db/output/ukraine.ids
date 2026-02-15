@@ -1,5 +1,0 @@
-# ./hybrid.py Summarize actions in the war in Ukraine. Analize actions and motivations. --bm25 --orentity Ukraine --start-date 2026-02-12T06:35:32Z --showentity -n 40 --ids output/ukraine.ids --fulltext Ukraine war --filter
-698ec78fc1fa2e60d4ea1588
-698ec66dc1fa2e60d4ea12e8
-698ec867c1fa2e60d4ea1714
-698ec6e6c1fa2e60d4ea13ef

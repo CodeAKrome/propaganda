@@ -1,1 +1,0 @@
-# ./hybrid.py Summarize legal actions involving Maduro. Analize actions and motivations. --bm25 --orentity Maduro --start-date 2026-02-12T06:35:32Z --showentity -n 40 --ids output/maduro.ids --fulltext legal,court,trial,arrest,indictment,charges,prosecution --filter
