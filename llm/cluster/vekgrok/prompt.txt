@@ -1,0 +1,70 @@
+**Perfect Prompt for an LLM (copy-paste ready)**
+
+You are an expert Python developer specializing in vector databases and unsupervised clustering. Write a **complete, standalone, ready-to-run Python script** (Python 3.9+) that does exactly the following:
+
+**Task**  
+Read a tab-delimited file containing news article IDs and titles (first column = article ID as string, second column = title, no header row) and automatically group the articles into semantic categories using **ChromaDB vector search + similarity-based connected-components clustering** (not K-Means, not HDBSCAN — we explicitly want to leverage Chroma’s ANN search to build the clusters).
+
+**Required behavior**  
+- Use the Sentence-Transformers model `all-MiniLM-L6-v2` to embed every title.  
+- Store all embeddings in a Chroma collection using **cosine** distance (so distance = 1 − cosine_similarity).  
+- Perform similarity-based clustering by querying Chroma’s vector search for each article and connecting articles whose cosine similarity ≥ threshold (i.e. cosine distance ≤ 1 − threshold).  
+- Use a Union-Find (Disjoint Set Union) data structure to merge articles into the same cluster when they are similar enough.  
+- To make the graph symmetric and robust against HNSW approximation, query with a generous `n_results` (default 200) so that even if A → B is found but B → A is ranked slightly lower, the edge is still captured in at least one direction.  
+- After processing all articles, extract the final clusters.
+
+**Command-line interface (use argparse)**  
+```text
+python group_news_chroma.py input_file.tsv [--threshold 0.78] [--n_neighbors 200] [--min_size 2] [--output output.json]
+```
+- `--threshold`: cosine similarity threshold (default 0.78 — works very well for news topic grouping with MiniLM).  
+- `--n_neighbors`: how many nearest neighbors to retrieve per query (default 200).  
+- `--min_size`: only output clusters ≥ this size; smaller ones (including singletons) are discarded or put in "Noise" cluster (default 2).  
+- `--output`: if provided, write results as JSON; otherwise pretty-print to console.
+
+**Output format (both console and JSON)**  
+```json
+{
+  "parameters": {
+    "threshold": 0.78,
+    "n_neighbors": 200,
+    "min_size": 2,
+    "total_articles": 1247,
+    "embedding_model": "all-MiniLM-L6-v2"
+  },
+  "clusters": [
+    {
+      "cluster_id": 0,
+      "size": 47,
+      "articles": [
+        {"id": "nyt_20240215_001", "title": "..."},
+        {"id": "cnn_20240215_007", "title": "..."},
+        ...
+      ]
+    },
+    ...
+  ],
+  "noise": [
+    {"id": "孤立記事123", "title": "..."},
+    ...
+  ]
+}
+```
+When printing to console, show the 10 largest clusters with their titles (truncated to 100 chars) and summarize how many clusters/total articles were found.
+
+**Technical requirements & best practices you MUST follow**  
+1. Use **in-memory** Chroma client (`chromadb.Client()`) unless the user has >50k articles (in that case fall back to persistent at `./chroma_db`).  
+2. Explicitly create the collection with `distance_function="cosine"` (or equivalent setting).  
+3. Provide the embeddings yourself when calling `collection.add()` — do **not** use Chroma’s automatic embedding function.  
+4. Implement a clean, well-commented `UnionFind` class with path compression and union-by-rank.  
+5. Show a tqdm progress bar for the querying phase.  
+6. Skip self-matches (the article will always be the closest to itself).  
+7. After all unions, group by root parent and sort clusters by size descending.  
+8. Make the script idempotent and fast (tested on 25k articles it should finish in <90 seconds on a laptop).  
+9. Include a small `__main__` guard and comprehensive docstring at the top.  
+10. Do not import unnecessary heavy libraries (allowed: chromadb, sentence-transformers, tqdm, pandas OR csv, argparse, json, pathlib).
+
+**Bonus (strongly preferred)**  
+If the number of articles ≤ 8000, after the approximate clustering, optionally perform one exact refinement pass: retrieve **all** embeddings with `collection.get(include=["embeddings","ids","documents","metadatas"])`, compute exact pairwise cosine similarity only for article pairs that are already in the same approximate cluster, and split clusters if needed. Mention this refinement in comments and guard it behind `if len(articles) <= 8000`.
+
+Write the complete script now. No explanations outside the code comments and docstring — only the final Python file.

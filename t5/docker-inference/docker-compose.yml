@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  # CPU/CUDA version (Old Mac x86 compatible)
+  bias-detector-cpu:
+    build:
+      context: .
+      dockerfile: Dockerfile.cpu
+    image: bias-detector:cpu
+    container_name: bias-detector-cpu
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount model weights directory
+      - ../bias-detector-output:/app/bias-detector-output:ro
+      # Optional: Mount HuggingFace cache for faster startup
+      - ~/.cache/huggingface:/root/.cache/huggingface
+    environment:
+      - MODEL_PATH=/app/bias-detector-output
+      - BASE_MODEL_NAME=t5-large
+    profiles:
+      - cpu
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    # Fallback for CPU-only systems (remove deploy section if no GPU)
+
+  # MPS version (Standard)
+  bias-detector-mps:
+    build:
+      context: .
+      dockerfile: Dockerfile.mps
+    image: bias-detector:mps
+    container_name: bias-detector-mps
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount model weights directory
+      - ../bias-detector-output:/app/bias-detector-output:ro
+      # Optional: Mount HuggingFace cache for faster startup
+      - ~/.cache/huggingface:/root/.cache/huggingface
+    environment:
+      - MODEL_PATH=/app/bias-detector-output
+      - BASE_MODEL_NAME=t5-large
+    profiles:
+      - mps
+    restart: unless-stopped
+
+# Network configuration
+networks:
+  default:
+    name: bias-detector-network

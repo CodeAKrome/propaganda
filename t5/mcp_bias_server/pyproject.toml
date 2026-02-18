@@ -1,0 +1,103 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bias-mcp-server"
+version = "0.2.0"
+description = "MCP server for political bias detection using fine-tuned T5 model with LoRA adapters"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    {name = "Bias Detector Team", email = "bias-detector@example.com"}
+]
+keywords = [
+    "mcp",
+    "model-context-protocol",
+    "bias",
+    "detection",
+    "nlp",
+    "news",
+    "political",
+    "t5",
+    "machine-learning",
+    "lora",
+    "peft"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Text Processing :: Linguistic",
+    "Typing :: Typed",
+]
+dependencies = [
+    "mcp>=1.0.0",
+    "torch>=2.0.0",
+    "transformers>=4.35.0",
+    "peft>=0.7.0",
+    "accelerate>=0.24.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+]
+mps = [
+    # For Apple Silicon MPS support
+    "torch>=2.0.0",
+]
+cuda = [
+    # For CUDA GPU support - install with: pip install bias-mcp-server[cuda]
+    # Note: Users should install PyTorch with CUDA separately
+]
+
+[project.scripts]
+bias-mcp-server = "mcp_bias_server.server:run_server"
+bias = "mcp_bias_server.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/yourusername/bias-mcp-server"
+Documentation = "https://github.com/yourusername/bias-mcp-server#readme"
+Repository = "https://github.com/yourusername/bias-mcp-server.git"
+Issues = "https://github.com/yourusername/bias-mcp-server/issues"
+Changelog = "https://github.com/yourusername/bias-mcp-server/blob/main/CHANGELOG.md"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+mcp_bias_server = ["bias-detector-output/*"]
+
+[tool.black]
+line-length = 100
+target-version = ["py310", "py311", "py312"]
+
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-v --cov=mcp_bias_server --cov-report=term-missing"

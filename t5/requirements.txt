@@ -1,3 +1,5 @@
+requests
+tqdm
 torch
 transformers
 datasets
@@ -5,3 +7,6 @@ peft
 accelerate
 pymongo
 fire
+fastapi
+uvicorn[standard]
+pydantic

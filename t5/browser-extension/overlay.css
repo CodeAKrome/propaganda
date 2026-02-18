@@ -1,0 +1,757 @@
+/**
+ * Bias Detector - Overlay Styles
+ * 
+ * Design Philosophy: Intentional Minimalism
+ * - Anti-generic: Bespoke visual language
+ * - High contrast for accessibility
+ * - Micro-interactions for feedback
+ * - Non-intrusive but visible
+ */
+
+/* Reset for overlay context */
+#bias-detector-overlay,
+#bias-detector-overlay * {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+}
+
+/* Main overlay container */
+#bias-detector-overlay {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 2147483647;
+  width: 320px;
+  max-height: 80vh;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+#bias-detector-overlay.bias-detector-hidden {
+  opacity: 0;
+  transform: translateX(20px);
+  pointer-events: none;
+}
+
+/* Inner container with glass effect */
+.bias-detector-inner {
+  background: rgba(15, 15, 20, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 
+    0 4px 24px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+  overflow: hidden;
+  color: #e8e8ec;
+}
+
+/* Close button */
+.bias-detector-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+  border-radius: 6px;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bias-detector-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+/* Header */
+.bias-detector-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.bias-detector-icon {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+  color: #fff;
+}
+
+.bias-detector-title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* Content area */
+.bias-detector-content {
+  padding: 16px;
+}
+
+/* Loading state */
+.bias-detector-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 0;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+}
+
+.bias-detector-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: bias-spin 0.8s linear infinite;
+}
+
+@keyframes bias-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Result sections */
+.bias-detector-direction,
+.bias-detector-degree,
+.bias-detector-reason {
+  margin-bottom: 16px;
+}
+
+.bias-detector-label {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.4);
+  margin-bottom: 8px;
+}
+
+/* Direction bars */
+.bias-detector-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bias-bar {
+  display: grid;
+  grid-template-columns: 24px 1fr 40px;
+  align-items: center;
+  gap: 8px;
+  height: 24px;
+}
+
+.bias-bar-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.bias-bar-track {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.bias-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+  width: 0%;
+}
+
+.bias-bar-left .bias-bar-fill {
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+}
+
+.bias-bar-center .bias-bar-fill {
+  background: linear-gradient(90deg, #6b7280, #9ca3af);
+}
+
+.bias-bar-right .bias-bar-fill {
+  background: linear-gradient(90deg, #ef4444, #f87171);
+}
+
+.bias-bar-value {
+  font-size: 12px;
+  font-weight: 500;
+  text-align: right;
+  color: rgba(255, 255, 255, 0.7);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Degree meter */
+.bias-detector-meter {
+  display: flex;
+  gap: 4px;
+}
+
+.bias-meter-segment {
+  flex: 1;
+  padding: 8px 4px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.4);
+  transition: all 0.2s ease;
+}
+
+.bias-meter-segment.bias-meter-active {
+  background: rgba(99, 102, 241, 0.3);
+  color: #a5b4fc;
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.4);
+}
+
+.bias-meter-low.bias-meter-active {
+  background: rgba(34, 197, 94, 0.2);
+  color: #86efac;
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.3);
+}
+
+.bias-meter-medium.bias-meter-active {
+  background: rgba(234, 179, 8, 0.2);
+  color: #fde047;
+  box-shadow: 0 0 0 1px rgba(234, 179, 8, 0.3);
+}
+
+.bias-meter-high.bias-meter-active {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.3);
+}
+
+/* Reasoning */
+.bias-detector-reason-text {
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.7);
+  max-height: 120px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.bias-detector-reason-text::-webkit-scrollbar {
+  width: 4px;
+}
+
+.bias-detector-reason-text::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+}
+
+.bias-detector-reason-text::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+/* Error state */
+.bias-detector-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 0;
+  text-align: center;
+}
+
+.bias-detector-error-icon {
+  width: 40px;
+  height: 40px;
+  background: rgba(239, 68, 68, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  color: #f87171;
+}
+
+.bias-detector-error-text {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  max-width: 240px;
+}
+
+/* Footer */
+.bias-detector-footer {
+  padding: 10px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.bias-detector-source {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  #bias-detector-overlay {
+    width: calc(100vw - 40px);
+    right: 20px;
+    left: 20px;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .bias-detector-inner {
+    background: #000;
+    border: 2px solid #fff;
+  }
+  
+  .bias-detector-label,
+  .bias-detector-source {
+    color: #fff;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  #bias-detector-overlay {
+    transition: none;
+  }
+  
+  .bias-detector-spinner {
+    animation: none;
+    border-color: #6366f1;
+  }
+}
+
+/* Rolling Bias Graph */
+.bias-graph-container {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.bias-graph-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.bias-graph-title {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.bias-graph-clear {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.3);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 3px;
+  transition: all 0.15s ease;
+}
+
+.bias-graph-clear:hover {
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.bias-graph-wrapper {
+  position: relative;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+#biasGraphCanvas {
+  display: block;
+  width: 100%;
+  height: 100px;
+}
+
+.bias-graph-markers {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.bias-graph-marker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: background 0.15s ease;
+}
+
+.bias-graph-marker:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.bias-graph-legend {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  flex-wrap: wrap;
+}
+
+.bias-graph-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.bias-graph-legend-line {
+  width: 12px;
+  height: 3px;
+  border-radius: 1px;
+}
+
+.bias-graph-legend-line.left {
+  background: #3b82f6;
+}
+
+.bias-graph-legend-line.center {
+  background: #6b7280;
+}
+
+.bias-graph-legend-line.right {
+  background: #ef4444;
+}
+
+.bias-graph-legend-line.intensity {
+  background: linear-gradient(90deg, transparent, #fbbf24);
+}
+
+/* Text Viewer */
+.bias-text-toggle {
+  display: flex;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.bias-text-toggle-btn {
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.bias-text-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+/* Text Display Container */
+.bias-text-container {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  display: none;
+}
+
+.bias-text-container.visible {
+  display: block;
+}
+
+.bias-text-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.bias-text-title {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.bias-text-close {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.3);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.bias-text-close:hover {
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.bias-text-content {
+  max-height: 150px;
+  overflow-y: auto;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.bias-text-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.bias-text-content::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+}
+
+.bias-text-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+/* Rolling Text Display (YouTube) */
+.bias-rolling-text {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.bias-rolling-text-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.bias-rolling-text-title {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.bias-caption-status {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.3);
+  margin-left: auto;
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+  transition: all 0.3s ease;
+}
+
+.bias-caption-status.active {
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.bias-caption-status.waiting {
+  color: #fde047;
+  background: rgba(234, 179, 8, 0.1);
+}
+
+.bias-caption-status.error {
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.bias-rolling-text-content {
+  max-height: 120px;
+  overflow-y: auto;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  font-size: 11px;
+  line-height: 1.8;
+}
+
+.bias-rolling-segment {
+  padding: 4px 6px;
+  margin: 2px 0;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.bias-rolling-segment.active {
+  background: rgba(99, 102, 241, 0.3);
+  color: #fff;
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.4);
+}
+
+.bias-rolling-segment.left {
+  border-left: 3px solid #3b82f6;
+}
+
+.bias-rolling-segment.center {
+  border-left: 3px solid #6b7280;
+}
+
+.bias-rolling-segment.right {
+  border-left: 3px solid #ef4444;
+}
+
+.bias-rolling-segment.mixed {
+  border-left: 3px solid #8b5cf6;
+}
+
+/* Text Modal (for static pages) */
+.bias-text-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  z-index: 2147483648;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.bias-text-modal.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.bias-text-modal-inner {
+  background: rgba(20, 20, 25, 0.98);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  max-width: 600px;
+  max-height: 80vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.bias-text-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.bias-text-modal-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e8e8ec;
+}
+
+.bias-text-modal-close {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+  border-radius: 6px;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bias-text-modal-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.bias-text-modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.bias-text-modal-text {
+  font-size: 13px;
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.8);
+  white-space: pre-wrap;
+}
+
+.bias-text-modal-footer {
+  padding: 12px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.bias-text-modal-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.bias-text-modal-btn.primary {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: #fff;
+}
+
+.bias-text-modal-btn.primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+.bias-text-modal-btn.secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.bias-text-modal-btn.secondary:hover {
+  background: rgba(255, 255, 255, 0.15);
+}

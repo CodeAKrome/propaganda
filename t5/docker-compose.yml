@@ -1,0 +1,84 @@
+version: "3.8"
+
+services:
+  bias-processor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: yourname/bias-detector:latest
+    container_name: bias-processor
+    restart: "no"
+    environment:
+      - MONGO_USER=${MONGO_USER}
+      - MONGO_PASS=${MONGO_PASS}
+    command: >
+      --api-url http://t5-server:8000
+      --batch-size ${BATCH_SIZE:-100}
+      --max-failures ${MAX_FAILURES:-3}
+    depends_on:
+      t5-server:
+        condition: service_healthy
+    networks:
+      - bias-network
+    volumes:
+      - ./output:/app/output
+
+  bias-validator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: yourname/bias-detector:latest
+    container_name: bias-validator
+    restart: "no"
+    environment:
+      - MONGO_USER=${MONGO_USER}
+      - MONGO_PASS=${MONGO_PASS}
+    command: >
+      validator
+      --api-url http://t5-server:8000
+      --sample ${SAMPLE_SIZE:-10}
+    depends_on:
+      t5-server:
+        condition: service_healthy
+    networks:
+      - bias-network
+    volumes:
+      - ./output:/app/output
+    profiles:
+      - validate
+
+  t5-server:
+    image: yourname/t5-bias-server:latest
+    container_name: t5-server
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - MODEL_PATH=/app/bias-detector-output
+      - BASE_MODEL=t5-large
+    volumes:
+      - model-data:/app/bias-detector-output
+    networks:
+      - bias-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    profiles:
+      - with-server
+
+networks:
+  bias-network:
+    driver: bridge
+
+volumes:
+  model-data:

@@ -1,0 +1,12 @@
+# Requirements for MPS version (Standard)
+# Latest compatible versions
+torch
+transformers
+datasets
+peft
+accelerate
+pymongo
+fire
+fastapi
+uvicorn[standard]
+pydantic

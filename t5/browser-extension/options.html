@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bias Detector - Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="options-container">
+    <!-- Header -->
+    <header class="options-header">
+      <div class="header-content">
+        <div class="logo">
+          <span class="logo-icon">B</span>
+          <div class="logo-text">
+            <h1>Bias Detector</h1>
+            <p class="subtitle">Settings & Configuration</p>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="options-main">
+      <!-- API Configuration -->
+      <section class="settings-section">
+        <h2 class="section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/>
+          </svg>
+          API Configuration
+        </h2>
+        
+        <div class="setting-group">
+          <label class="setting-label" for="apiEndpoint">
+            API Endpoint
+            <span class="setting-hint">URL of your bias detection server</span>
+          </label>
+          <div class="input-with-status">
+            <input 
+              type="url" 
+              id="apiEndpoint" 
+              placeholder="http://localhost:8000"
+              class="text-input"
+            >
+            <button class="test-button" id="testConnection">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+                <path d="M22 4L12 14.01l-3-3"/>
+              </svg>
+              Test
+            </button>
+          </div>
+          <div class="connection-status" id="connectionStatus"></div>
+        </div>
+
+        <div class="setting-group">
+          <label class="setting-label" for="apiType">
+            API Type
+            <span class="setting-hint">Protocol used by your server</span>
+          </label>
+          <select id="apiType" class="select-input">
+            <option value="http">HTTP REST API</option>
+            <option value="mcp">MCP Server</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- Analysis Settings -->
+      <section class="settings-section">
+        <h2 class="section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="M21 21l-4.35-4.35"/>
+          </svg>
+          Analysis Settings
+        </h2>
+
+        <div class="setting-group">
+          <label class="setting-label" for="minTextLength">
+            Minimum Text Length
+            <span class="setting-hint">Characters required for analysis</span>
+          </label>
+          <input 
+            type="number" 
+            id="minTextLength" 
+            min="50" 
+            max="5000" 
+            value="100"
+            class="text-input"
+          >
+        </div>
+
+        <div class="setting-group inline">
+          <label class="setting-label">
+            <span>Auto-analyze news pages</span>
+            <span class="setting-hint">Automatically detect bias when visiting news sites</span>
+          </label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="autoAnalyze">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-group inline">
+          <label class="setting-label">
+            <span>Enable caching</span>
+            <span class="setting-hint">Cache results to avoid re-analyzing same content</span>
+          </label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="cacheEnabled" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </section>
+
+      <!-- YouTube Settings -->
+      <section class="settings-section">
+        <h2 class="section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22.54 6.42a2.78 2.78 0 00-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 00-1.94 2A29 29 0 001 11.75a29 29 0 00.46 5.33A2.78 2.78 0 003.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 001.94-2 29 29 0 00.46-5.25 29 29 0 00-.46-5.33z"/>
+            <path d="M9.75 15.02l5.75-3.27-5.75-3.27v6.54z"/>
+          </svg>
+          YouTube Caption Analysis
+        </h2>
+
+        <div class="setting-group inline">
+          <label class="setting-label">
+            <span>Enable YouTube analysis</span>
+            <span class="setting-hint">Analyze captions in real-time while watching</span>
+          </label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="youtubeEnabled" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-group">
+          <label class="setting-label" for="youtubeBufferSeconds">
+            Caption Buffer Window
+            <span class="setting-hint">Seconds of captions to accumulate before analysis</span>
+          </label>
+          <div class="range-container">
+            <input 
+              type="range" 
+              id="youtubeBufferSeconds" 
+              min="10" 
+              max="120" 
+              value="30"
+              class="range-input"
+            >
+            <div class="range-labels">
+              <span>10s</span>
+              <span id="bufferValue">30s</span>
+              <span>120s</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Data Management -->
+      <section class="settings-section">
+        <h2 class="section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/>
+          </svg>
+          Data & Cache
+        </h2>
+
+        <div class="setting-group">
+          <label class="setting-label">
+            Cache Statistics
+            <span class="setting-hint">View cached analysis results</span>
+          </label>
+          <div class="cache-stats" id="cacheStats">
+            <div class="stat-item">
+              <span class="stat-value" id="cacheSize">0</span>
+              <span class="stat-label">Cached Items</span>
+            </div>
+          </div>
+          <button class="secondary-button" id="clearCache">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+            </svg>
+            Clear Cache
+          </button>
+        </div>
+      </section>
+
+      <!-- Save Button -->
+      <div class="save-section">
+        <button class="save-button" id="saveSettings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+            <path d="M17 21v-8H7v8M7 3v5h8"/>
+          </svg>
+          Save Settings
+        </button>
+        <div class="save-status" id="saveStatus"></div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="options-footer">
+      <p>Bias Detector v1.0.0</p>
+      <p class="footer-links">
+        <a href="https://github.com/yourusername/bias-detector" target="_blank">GitHub</a>
+        <span>·</span>
+        <a href="#" id="exportSettings">Export Settings</a>
+        <span>·</span>
+        <a href="#" id="importSettings">Import Settings</a>
+      </p>
+    </footer>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

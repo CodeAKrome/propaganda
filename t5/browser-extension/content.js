@@ -1,0 +1,693 @@
+/**
+ * Bias Detector - Content Script
+ * 
+ * Captures YouTube captions in real-time and analyzes for political bias.
+ * Design: Single unified caption capture system with rolling graph display.
+ */
+
+(function() {
+  'use strict';
+
+  // ========================================
+  // STATE - Single source of truth
+  // ========================================
+  const state = {
+    isYouTube: false,
+    videoId: null,
+    overlay: null,
+    canvas: null,
+    ctx: null,
+    
+    // Caption capture
+    captionBuffer: '',
+    lastCaptionText: '',
+    captionCheckInterval: null,
+    lastCaptureTime: 0,
+    
+    // Analysis
+    analysisInterval: null,
+    lastAnalysisTime: 0,
+    isAnalyzing: false,
+    
+    // Graph data
+    biasHistory: [], // { time, dir: {L,C,R}, deg: {L,M,H} }
+    maxHistoryPoints: 60,
+    
+    // Config
+    config: {
+      minTextLength: 100,
+      analysisIntervalMs: 5000,
+      captionCheckIntervalMs: 500,
+      apiEndpoint: 'http://localhost:8000'
+    }
+  };
+
+  // ========================================
+  // INITIALIZATION
+  // ========================================
+  
+  function init() {
+    console.log('[BiasDetector] Initializing...');
+    
+    // Detect YouTube
+    state.isYouTube = window.location.hostname.includes('youtube.com');
+    
+    if (state.isYouTube) {
+      console.log('[BiasDetector] YouTube detected');
+      waitForVideo().then(() => {
+        console.log('[BiasDetector] Video found, starting caption capture');
+        createOverlay();
+        startCaptionCapture();
+        startAnalysisLoop();
+      });
+    } else {
+      // For non-YouTube pages, just listen for manual analysis
+      console.log('[BiasDetector] Non-YouTube page, manual analysis only');
+    }
+    
+    // Listen for messages from popup/background
+    chrome.runtime.onMessage.addListener(handleMessage);
+  }
+
+  function waitForVideo(timeout = 10000) {
+    return new Promise((resolve, reject) => {
+      const startTime = Date.now();
+      
+      function check() {
+        const video = document.querySelector('video');
+        if (video) {
+          resolve(video);
+          return;
+        }
+        
+        if (Date.now() - startTime > timeout) {
+          reject(new Error('Video not found'));
+          return;
+        }
+        
+        requestAnimationFrame(check);
+      }
+      
+      check();
+    });
+  }
+
+  // ========================================
+  // CAPTION CAPTURE - Direct DOM polling
+  // ========================================
+  
+  function startCaptionCapture() {
+    console.log('[BiasDetector] Starting caption capture...');
+    
+    // Clear any existing interval
+    if (state.captionCheckInterval) {
+      clearInterval(state.captionCheckInterval);
+    }
+    
+    // Poll for captions every 500ms
+    state.captionCheckInterval = setInterval(() => {
+      captureCaptions();
+    }, state.config.captionCheckIntervalMs);
+    
+    // Also set up MutationObserver for immediate feedback
+    setupCaptionObserver();
+  }
+  
+  function captureCaptions() {
+    try {
+      // Method 1: Query caption segments directly
+      const segments = document.querySelectorAll('.ytp-caption-segment');
+      
+      if (segments.length > 0) {
+        let text = '';
+        segments.forEach(seg => {
+          const t = seg.textContent?.trim();
+          if (t) text += t + ' ';
+        });
+        
+        text = text.trim();
+        
+        if (text && text !== state.lastCaptionText) {
+          state.lastCaptionText = text;
+          state.lastCaptureTime = Date.now();
+          
+          // Add to buffer
+          state.captionBuffer += ' ' + text;
+          
+          console.log('[BiasDetector] Caption captured:', text.substring(0, 50) + '...');
+          console.log('[BiasDetector] Buffer length:', state.captionBuffer.length);
+        }
+      }
+    } catch (e) {
+      // Extension context invalidated - stop capture
+      if (e.message?.includes('Extension context invalidated')) {
+        console.log('[BiasDetector] Extension context invalidated, stopping capture');
+        stopCaptionCapture();
+      }
+    }
+  }
+  
+  function setupCaptionObserver() {
+    const captionContainer = document.querySelector('.ytp-caption-window-container');
+    
+    if (captionContainer) {
+      const observer = new MutationObserver((mutations) => {
+        // Don't process here, just log for debugging
+        const segments = document.querySelectorAll('.ytp-caption-segment');
+        if (segments.length > 0) {
+          console.log('[BiasDetector] MutationObserver: captions visible');
+        }
+      });
+      
+      observer.observe(captionContainer, {
+        childList: true,
+        subtree: true,
+        characterData: true
+      });
+      
+      console.log('[BiasDetector] MutationObserver set up on caption container');
+    } else {
+      console.log('[BiasDetector] Caption container not found yet, will retry...');
+      // Retry after a delay
+      setTimeout(setupCaptionObserver, 2000);
+    }
+  }
+  
+  function stopCaptionCapture() {
+    if (state.captionCheckInterval) {
+      clearInterval(state.captionCheckInterval);
+      state.captionCheckInterval = null;
+    }
+  }
+
+  // ========================================
+  // ANALYSIS LOOP
+  // ========================================
+  
+  function startAnalysisLoop() {
+    console.log('[BiasDetector] Starting analysis loop...');
+    
+    if (state.analysisInterval) {
+      clearInterval(state.analysisInterval);
+    }
+    
+    state.analysisInterval = setInterval(() => {
+      analyzeBuffer();
+    }, state.config.analysisIntervalMs);
+  }
+  
+  async function analyzeBuffer() {
+    // Skip if already analyzing or buffer too small
+    if (state.isAnalyzing) {
+      console.log('[BiasDetector] Analysis already in progress, skipping');
+      return;
+    }
+    
+    const bufferLength = state.captionBuffer.trim().length;
+    
+    if (bufferLength < state.config.minTextLength) {
+      console.log('[BiasDetector] Buffer too small:', bufferLength, '/', state.config.minTextLength);
+      return;
+    }
+    
+    state.isAnalyzing = true;
+    state.lastAnalysisTime = Date.now();
+    
+    const textToAnalyze = state.captionBuffer.trim();
+    console.log('[BiasDetector] ANALYZING CAPTIONS:', bufferLength, 'chars');
+    
+    try {
+      const result = await callBiasAPI(textToAnalyze);
+      
+      if (result && !result.error) {
+        console.log('[BiasDetector] Analysis result:', result);
+        
+        // Add to history
+        state.biasHistory.push({
+          time: Date.now(),
+          dir: result.dir || { L: 0, C: 0, R: 0 },
+          deg: result.deg || { L: 0, M: 0, H: 0 },
+          reason: result.reason || ''
+        });
+        
+        // Trim history
+        if (state.biasHistory.length > state.maxHistoryPoints) {
+          state.biasHistory.shift();
+        }
+        
+        // Update UI
+        updateOverlay(result);
+        drawGraph();
+        
+        // Clear buffer after successful analysis
+        state.captionBuffer = '';
+        console.log('[BiasDetector] Buffer cleared after analysis');
+      } else {
+        console.log('[BiasDetector] Analysis error:', result?.error);
+        // Show error in overlay
+        updateOverlayWithError(result?.error || 'Unknown error');
+      }
+    } catch (e) {
+      console.error('[BiasDetector] Analysis failed:', e);
+      updateOverlayWithError(e.message);
+    }
+    
+    state.isAnalyzing = false;
+  }
+  
+  async function callBiasAPI(text) {
+    console.log('[BiasDetector] Calling API with', text.length, 'chars');
+    
+    try {
+      const response = await fetch(`${state.config.apiEndpoint}/predict`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+      });
+      
+      console.log('[BiasDetector] API response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[BiasDetector] API error response:', errorText);
+        return { error: `API returned ${response.status}: ${errorText.substring(0, 100)}` };
+      }
+      
+      const data = await response.json();
+      console.log('[BiasDetector] API response data:', data);
+      
+      // Parse result
+      let result = data.result || data;
+      
+      if (result.raw_output) {
+        result = parseRawOutput(result.raw_output);
+      }
+      
+      return {
+        dir: result.dir || { L: 0, C: 0, R: 0 },
+        deg: result.deg || { L: 0, M: 0, H: 0 },
+        reason: result.reason || result.reasoning || 'Analysis complete',
+        device: data.device || 'unknown'
+      };
+    } catch (e) {
+      console.error('[BiasDetector] API call failed:', e);
+      return { error: e.message };
+    }
+  }
+  
+  function updateOverlayWithError(errorMsg) {
+    const reasonEl = document.getElementById('bias-reason');
+    if (reasonEl) {
+      reasonEl.textContent = `Error: ${errorMsg}`;
+      reasonEl.style.color = '#f87171';
+    }
+  }
+  
+  function parseRawOutput(rawOutput) {
+    const result = {
+      dir: { L: 0, C: 0, R: 0 },
+      deg: { L: 0, M: 0, H: 0 },
+      reason: ''
+    };
+    
+    console.log('[BiasDetector] Parsing raw_output:', rawOutput);
+    
+    try {
+      // The raw_output format is malformed JSON like:
+      // "dir":"L":0.3,"C":0.6,"R":0.1,"deg":"L":0.2,"M":0.3,"H":0.5,"reason":"..."
+      // Note: M and H don't have quotes around them
+      
+      // Find all key:value pairs (with or without quotes on key)
+      // Pattern: "L":0.3 or L:0.3 or "M":0.4 or M:0.4
+      const allPairs = [];
+      
+      // Match quoted keys like "L":0.3
+      const quotedRegex = /"(L|C|R|M|H)"\s*:\s*([\d.]+)/g;
+      let match;
+      while ((match = quotedRegex.exec(rawOutput)) !== null) {
+        allPairs.push({ key: match[1], value: parseFloat(match[2]) });
+      }
+      
+      // Match unquoted keys like M:0.4 (but not inside strings)
+      const unquotedRegex = /[,}]?\s*(M|H)\s*:\s*([\d.]+)/g;
+      while ((match = unquotedRegex.exec(rawOutput)) !== null) {
+        // Check if this M or H is already captured
+        const alreadyCaptured = allPairs.some(p => p.key === match[1]);
+        if (!alreadyCaptured) {
+          allPairs.push({ key: match[1], value: parseFloat(match[2]) });
+        }
+      }
+      
+      console.log('[BiasDetector] All pairs found:', allPairs);
+      
+      // Separate direction and degree values
+      // Direction comes first (L, C, R), then degree (L, M, H)
+      const lcrValues = allPairs.filter(p => ['L', 'C', 'R'].includes(p.key));
+      const mhValues = allPairs.filter(p => ['M', 'H'].includes(p.key));
+      
+      // First 3 L/C/R values are direction
+      const dirValues = lcrValues.slice(0, 3);
+      // Remaining L value (if any) and M/H are degree
+      const degL = lcrValues.length > 3 ? lcrValues[3] : null;
+      
+      // Assign direction values
+      dirValues.forEach(v => {
+        result.dir[v.key] = v.value;
+      });
+      
+      // Assign degree values
+      if (degL) result.deg.L = degL.value;
+      mhValues.forEach(v => {
+        result.deg[v.key] = v.value;
+      });
+      
+      // Extract reason
+      const reasonMatch = rawOutput.match(/"reason"\s*:\s*"([^"]+)"/);
+      if (reasonMatch) result.reason = reasonMatch[1];
+      
+      console.log('[BiasDetector] Parsed result:', result);
+    } catch (e) {
+      console.error('[BiasDetector] Parse error:', e);
+    }
+    
+    return result;
+  }
+
+  // ========================================
+  // OVERLAY UI
+  // ========================================
+  
+  function createOverlay() {
+    // Remove existing overlay
+    const existing = document.getElementById('bias-detector-overlay');
+    if (existing) existing.remove();
+    
+    // Create overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'bias-detector-overlay';
+    overlay.innerHTML = `
+      <div class="bias-detector-inner">
+        <button class="bias-detector-close" title="Close">×</button>
+        
+        <div class="bias-detector-header">
+          <div class="bias-detector-icon">B</div>
+          <div class="bias-detector-title">Bias Detector</div>
+        </div>
+        
+        <div class="bias-detector-content">
+          <!-- Direction bars -->
+          <div class="bias-detector-direction">
+            <div class="bias-detector-label">Political Leaning</div>
+            <div class="bias-detector-bars">
+              <div class="bias-bar bias-bar-left">
+                <span class="bias-bar-label">L</span>
+                <div class="bias-bar-track">
+                  <div class="bias-bar-fill" id="bias-bar-left"></div>
+                </div>
+                <span class="bias-bar-value" id="bias-val-left">0%</span>
+              </div>
+              <div class="bias-bar bias-bar-center">
+                <span class="bias-bar-label">C</span>
+                <div class="bias-bar-track">
+                  <div class="bias-bar-fill" id="bias-bar-center"></div>
+                </div>
+                <span class="bias-bar-value" id="bias-val-center">0%</span>
+              </div>
+              <div class="bias-bar bias-bar-right">
+                <span class="bias-bar-label">R</span>
+                <div class="bias-bar-track">
+                  <div class="bias-bar-fill" id="bias-bar-right"></div>
+                </div>
+                <span class="bias-bar-value" id="bias-val-right">0%</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Degree meter -->
+          <div class="bias-detector-degree">
+            <div class="bias-detector-label">Intensity</div>
+            <div class="bias-detector-meter">
+              <div class="bias-meter-segment bias-meter-low" id="bias-deg-low">Low</div>
+              <div class="bias-meter-segment bias-meter-medium" id="bias-deg-medium">Med</div>
+              <div class="bias-meter-segment bias-meter-high" id="bias-deg-high">High</div>
+            </div>
+          </div>
+          
+          <!-- Reasoning -->
+          <div class="bias-detector-reason">
+            <div class="bias-detector-label">Analysis</div>
+            <div class="bias-detector-reason-text" id="bias-reason">
+              Waiting for captions...
+            </div>
+          </div>
+          
+          <!-- Graph -->
+          <div class="bias-graph-container">
+            <div class="bias-graph-header">
+              <span class="bias-graph-title">Bias Over Time</span>
+              <span class="bias-graph-samples" id="bias-samples">0 samples</span>
+            </div>
+            <div class="bias-graph-wrapper">
+              <canvas id="biasGraphCanvas" width="288" height="100"></canvas>
+            </div>
+            <div class="bias-graph-legend">
+              <div class="bias-graph-legend-item">
+                <div class="bias-graph-legend-line left"></div>
+                <span>Left</span>
+              </div>
+              <div class="bias-graph-legend-item">
+                <div class="bias-graph-legend-line center"></div>
+                <span>Center</span>
+              </div>
+              <div class="bias-graph-legend-item">
+                <div class="bias-graph-legend-line right"></div>
+                <span>Right</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="bias-detector-footer">
+          <span class="bias-detector-source" id="bias-source">YouTube Captions</span>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    state.overlay = overlay;
+    
+    // Get canvas
+    state.canvas = document.getElementById('biasGraphCanvas');
+    state.ctx = state.canvas.getContext('2d');
+    
+    // Close button
+    overlay.querySelector('.bias-detector-close').addEventListener('click', () => {
+      overlay.classList.add('bias-detector-hidden');
+    });
+    
+    console.log('[BiasDetector] Overlay created');
+  }
+  
+  function updateOverlay(result) {
+    if (!state.overlay) return;
+    
+    // Update direction bars
+    const leftBar = document.getElementById('bias-bar-left');
+    const centerBar = document.getElementById('bias-bar-center');
+    const rightBar = document.getElementById('bias-bar-right');
+    
+    const leftVal = document.getElementById('bias-val-left');
+    const centerVal = document.getElementById('bias-val-center');
+    const rightVal = document.getElementById('bias-val-right');
+    
+    if (leftBar && result.dir) {
+      leftBar.style.width = `${(result.dir.L * 100).toFixed(0)}%`;
+      leftVal.textContent = `${(result.dir.L * 100).toFixed(0)}%`;
+    }
+    
+    if (centerBar && result.dir) {
+      centerBar.style.width = `${(result.dir.C * 100).toFixed(0)}%`;
+      centerVal.textContent = `${(result.dir.C * 100).toFixed(0)}%`;
+    }
+    
+    if (rightBar && result.dir) {
+      rightBar.style.width = `${(result.dir.R * 100).toFixed(0)}%`;
+      rightVal.textContent = `${(result.dir.R * 100).toFixed(0)}%`;
+    }
+    
+    // Update degree meter
+    const lowSeg = document.getElementById('bias-deg-low');
+    const medSeg = document.getElementById('bias-deg-medium');
+    const highSeg = document.getElementById('bias-deg-high');
+    
+    if (lowSeg) lowSeg.classList.remove('bias-meter-active');
+    if (medSeg) medSeg.classList.remove('bias-meter-active');
+    if (highSeg) highSeg.classList.remove('bias-meter-active');
+    
+    if (result.deg) {
+      const maxDeg = Math.max(result.deg.L, result.deg.M, result.deg.H);
+      if (maxDeg === result.deg.L && lowSeg) lowSeg.classList.add('bias-meter-active');
+      else if (maxDeg === result.deg.M && medSeg) medSeg.classList.add('bias-meter-active');
+      else if (maxDeg === result.deg.H && highSeg) highSeg.classList.add('bias-meter-active');
+    }
+    
+    // Update reason
+    const reasonEl = document.getElementById('bias-reason');
+    if (reasonEl) {
+      reasonEl.textContent = result.reason || 'Analysis complete';
+    }
+    
+    // Update sample count
+    const samplesEl = document.getElementById('bias-samples');
+    if (samplesEl) {
+      samplesEl.textContent = `${state.biasHistory.length} samples`;
+    }
+  }
+
+  // ========================================
+  // GRAPH DRAWING
+  // ========================================
+  
+  function drawGraph() {
+    if (!state.canvas || !state.ctx) return;
+    
+    const ctx = state.ctx;
+    const width = state.canvas.width;
+    const height = state.canvas.height;
+    
+    // Clear
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+    ctx.fillRect(0, 0, width, height);
+    
+    // Draw grid
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.lineWidth = 1;
+    
+    // Horizontal lines
+    for (let i = 0; i <= 4; i++) {
+      const y = (height / 4) * i;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+      ctx.stroke();
+    }
+    
+    // Draw data
+    const history = state.biasHistory;
+    if (history.length < 2) {
+      // Draw "waiting" text
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.font = '12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Waiting for data...', width / 2, height / 2);
+      return;
+    }
+    
+    const xStep = width / (state.maxHistoryPoints - 1);
+    
+    // Draw lines for each direction
+    const drawLine = (data, color) => {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      
+      history.forEach((point, i) => {
+        const x = i * xStep;
+        const y = height - (data(point) * height);
+        
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      
+      ctx.stroke();
+    };
+    
+    // Left (blue)
+    drawLine(p => p.dir?.L || 0, '#3b82f6');
+    
+    // Center (gray)
+    drawLine(p => p.dir?.C || 0, '#6b7280');
+    
+    // Right (red)
+    drawLine(p => p.dir?.R || 0, '#ef4444');
+    
+    // Draw dots at latest point
+    if (history.length > 0) {
+      const lastPoint = history[history.length - 1];
+      const lastX = (history.length - 1) * xStep;
+      
+      // Left dot
+      ctx.fillStyle = '#3b82f6';
+      ctx.beginPath();
+      ctx.arc(lastX, height - (lastPoint.dir?.L || 0) * height, 3, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Center dot
+      ctx.fillStyle = '#6b7280';
+      ctx.beginPath();
+      ctx.arc(lastX, height - (lastPoint.dir?.C || 0) * height, 3, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Right dot
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.arc(lastX, height - (lastPoint.dir?.R || 0) * height, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // ========================================
+  // MESSAGE HANDLING
+  // ========================================
+  
+  function handleMessage(message, sender, sendResponse) {
+    console.log('[BiasDetector] Message received:', message.type);
+    
+    switch (message.type) {
+      case 'ANALYZE_TEXT':
+        // Manual analysis from popup
+        callBiasAPI(message.text)
+          .then(result => sendResponse({ success: true, result }))
+          .catch(error => sendResponse({ success: false, error: error.message }));
+        return true;
+        
+      case 'GET_STATE':
+        sendResponse({
+          isYouTube: state.isYouTube,
+          bufferLength: state.captionBuffer.length,
+          historyLength: state.biasHistory.length,
+          isAnalyzing: state.isAnalyzing
+        });
+        return false;
+        
+      case 'TOGGLE_OVERLAY':
+        if (state.overlay) {
+          state.overlay.classList.toggle('bias-detector-hidden');
+        }
+        sendResponse({ success: true });
+        return false;
+        
+      case 'CLEAR_HISTORY':
+        state.biasHistory = [];
+        drawGraph();
+        sendResponse({ success: true });
+        return false;
+        
+      default:
+        sendResponse({ error: 'Unknown message type' });
+        return false;
+    }
+  }
+
+  // ========================================
+  // START
+  // ========================================
+  
+  // Wait for DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+  
+})();

@@ -1,0 +1,106 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cline-bias-server"
+version = "1.1.0"
+description = "MCP server for political bias detection using fine-tuned T5 model with LoRA adapters"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    {name = "Cline Team", email = "cline-bias@example.com"}
+]
+keywords = [
+    "mcp",
+    "model-context-protocol",
+    "bias",
+    "detection",
+    "nlp",
+    "news",
+    "political",
+    "t5",
+    "machine-learning",
+    "lora",
+    "peft",
+    "cline"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Text Processing :: Linguistic",
+    "Typing :: Typed",
+]
+dependencies = [
+    "mcp>=1.0.0",
+    "torch>=2.0.0",
+    "transformers>=4.35.0",
+    "peft>=0.7.0",
+    "accelerate>=0.24.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+]
+mps = [
+    # For Apple Silicon MPS support
+    "torch>=2.0.0",
+]
+cuda = [
+    # For CUDA GPU support - install with: pip install cline-bias-server[cuda]
+]
+
+[project.scripts]
+cline-bias-server = "cline_bias_server.server:run_server"
+cline-bias = "cline_bias_server.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/yourusername/cline-bias-server"
+Documentation = "https://github.com/yourusername/cline-bias-server#readme"
+Repository = "https://github.com/yourusername/cline-bias-server.git"
+Issues = "https://github.com/yourusername/cline-bias-server/issues"
+Changelog = "https://github.com/yourusername/cline-bias-server/blob/main/CHANGELOG.md"
+
+[project.entry-points."mcp.server"]
+cline-bias-server = "cline_bias_server.server:create_server"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+cline_bias_server = ["bias-detector-output/*"]
+
+[tool.black]
+line-length = 100
+target-version = ["py310", "py311", "py312"]
+
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-v --cov=cline_bias_server --cov-report=term-missing"

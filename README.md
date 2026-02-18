@@ -1,2 +1,0 @@
-# propaganda
-Propaganda analysis.

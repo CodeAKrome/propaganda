@@ -1,0 +1,5 @@
+sentence-transformers
+hdbscan
+scikit-learn
+numpy
+requests

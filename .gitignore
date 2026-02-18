@@ -1,73 +1,133 @@
-*.ids
-*.vec
-*.cypher
-db/cluster/*
-!db/cluster/.gitkeep
-checkpoint-*
-user_agent_stats.txt
-db/timestamp.txt
-mp3/biasmp3
-mp3/mp3/
-mp3/batch.sh
-db/output/*
-!db/output/.gitkeep
+# Python
 __pycache__/
-ids.txt
-*.log
-TTS
-outputs
-out
-logs
-huggingface
-CLAUDE.md
-node_modules
-.github
-.vscode
-propaganda
-ans
-tmp*
-.autoenv*
-.venv
-chroma
-chroma_db
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+
+# Jupyter
+.ipynb_checkpoints
+
+# Distribution
+*.manifest
+*.spec
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# OS
 .DS_Store
-# If you prefer the allow list template instead of the deny list, see community template:
-# https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
-#
-# Binaries for programs and plugins
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Project specific
+*.json
+!pyproject.toml
+processed_articles_*.json
+validation_results.json
+output/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.bak
+
+# ChromaDB vector stores
+chroma/
+db/chroma/
+
+# Model weights and caches
+*.bin
+*.safetensors
+*.pt
+*.pth
+*.onnx
+bias-detector-output/
+t5/bias-detector-output/
+
+# HuggingFace cache
+.cache/
+hub/
+
+# MCP server build artifacts
+t5/mcp_bias_server/dist/
+t5/mcp_bias_server/build/
+t5/mcp_bias_server/*.egg-info/
+
+# Node modules (if any frontend)
+node_modules/
+
+# Go build artifacts
 *.exe
 *.exe~
 *.dll
 *.so
 *.dylib
-
-# Test binary, built with `go test -c`
 *.test
-
-# Code coverage profiles and other test artifacts
 *.out
-coverage.*
-*.coverprofile
-profile.cov
+go.sum
 
-# Dependency directories (remove the comment below to include it)
-# vendor/
-
-# Go workspace file
-go.work
-go.work.sum
-
-# env file
-.env
-
-# Editor/IDE
-# .idea/
-# .vscode/
-.clinerules/byterover-rules.md
-.kilocode/rules/byterover-rules.md
-.roo/rules/byterover-rules.md
-.windsurf/rules/byterover-rules.md
-.cursor/rules/byterover-rules.mdc
-.kiro/steering/byterover-rules.md
-.qoder/rules/byterover-rules.md
-.augment/rules/byterover-rules.md
+# Database files
+*.db
+*.sqlite
+*.sqlite3

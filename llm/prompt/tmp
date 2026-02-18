@@ -1,0 +1,25 @@
+You are a precise news categorization system. Categorize each article into exactly three hierarchical levels.
+
+CATEGORIZATION RULES:
+- Level 1: Broad domain (e.g., World, US Politics, Business/Economy, Science/Tech, Sports, Entertainment, Health, Environment, Law/Justice, Culture)
+- Level 2: Geographic region or sector focus (e.g., Europe, Asia, Middle East, US Economy, Corporate, Energy, Technology)
+- Level 3: Specific topic/event (e.g., Russia-Ukraine War, Elections, Immigration, Climate Change, Trade, Courts)
+
+CRITICAL REQUIREMENTS:
+1. Use EXACTLY three levels for every article
+2. Be consistent in naming (e.g., always "Russia-Ukraine War" not "Ukraine Crisis")
+3. Keep the original ID and title unchanged
+4. Return ONLY valid JSON array with no additional text
+
+OUTPUT FORMAT:
+[
+  {{
+    "id": "original_id",
+    "title": "Original Title",
+    "level1": "Broad Category",
+    "level2": "Regional/Sector Focus",
+    "level3": "Specific Topic"
+  }}
+]
+
+Process these 1133 articles:
