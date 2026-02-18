@@ -46,7 +46,36 @@
   // INITIALIZATION
   // ========================================
   
+  // Track if extension context is valid
+  let extensionContextValid = true;
+  let reloadNotificationShown = false;
+  
+  function checkExtensionContext() {
+    try {
+      // This will throw if extension context is invalidated
+      chrome.runtime.id;
+      return true;
+    } catch (e) {
+      console.log('[BiasDetector] Extension context invalidated');
+      extensionContextValid = false;
+      
+      // Show notification once
+      if (!reloadNotificationShown) {
+        reloadNotificationShown = true;
+        showReloadNotification();
+      }
+      
+      return false;
+    }
+  }
+  
   function init() {
+    // Check if extension context is valid
+    if (!checkExtensionContext()) {
+      console.log('[BiasDetector] Extension context invalid, skipping init');
+      return;
+    }
+    
     console.log('[BiasDetector] Initializing...');
     
     // Detect YouTube
@@ -59,6 +88,8 @@
         createOverlay();
         startCaptionCapture();
         startAnalysisLoop();
+      }).catch(err => {
+        console.log('[BiasDetector] Video not found:', err.message);
       });
     } else {
       // For non-YouTube pages, just listen for manual analysis
@@ -66,7 +97,11 @@
     }
     
     // Listen for messages from popup/background
-    chrome.runtime.onMessage.addListener(handleMessage);
+    try {
+      chrome.runtime.onMessage.addListener(handleMessage);
+    } catch (e) {
+      console.log('[BiasDetector] Could not add message listener:', e.message);
+    }
   }
 
   function waitForVideo(timeout = 10000) {
@@ -114,6 +149,13 @@
   }
   
   function captureCaptions() {
+    // Check extension context first
+    if (!extensionContextValid || !checkExtensionContext()) {
+      console.log('[BiasDetector] Extension context invalid, stopping caption capture');
+      stopCaptionCapture();
+      return;
+    }
+    
     try {
       // Method 1: Query caption segments directly
       const segments = document.querySelectorAll('.ytp-caption-segment');
@@ -139,9 +181,9 @@
         }
       }
     } catch (e) {
-      // Extension context invalidated - stop capture
-      if (e.message?.includes('Extension context invalidated')) {
-        console.log('[BiasDetector] Extension context invalidated, stopping capture');
+      console.log('[BiasDetector] Caption capture error:', e.message);
+      // Check if extension context invalidated
+      if (!checkExtensionContext()) {
         stopCaptionCapture();
       }
     }
@@ -197,6 +239,12 @@
   }
   
   async function analyzeBuffer() {
+    // Check extension context first
+    if (!extensionContextValid || !checkExtensionContext()) {
+      console.log('[BiasDetector] Extension context invalid, skipping analysis');
+      return;
+    }
+    
     // Skip if already analyzing or buffer too small
     if (state.isAnalyzing) {
       console.log('[BiasDetector] Analysis already in progress, skipping');
@@ -218,6 +266,13 @@
     
     try {
       const result = await callBiasAPI(textToAnalyze);
+      
+      // Check context again after async operation
+      if (!extensionContextValid || !checkExtensionContext()) {
+        console.log('[BiasDetector] Extension context invalid after API call');
+        state.isAnalyzing = false;
+        return;
+      }
       
       if (result && !result.error) {
         console.log('[BiasDetector] Analysis result:', result);
@@ -301,6 +356,41 @@
       reasonEl.textContent = `Error: ${errorMsg}`;
       reasonEl.style.color = '#f87171';
     }
+  }
+  
+  function showReloadNotification() {
+    // Create a notification to tell user to reload
+    const notification = document.createElement('div');
+    notification.id = 'bias-detector-reload-notification';
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 2147483647;
+      background: rgba(239, 68, 68, 0.95);
+      color: white;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font-size: 13px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    `;
+    notification.innerHTML = `
+      <span>⚠️ Extension reloaded. Please refresh the page.</span>
+      <button style="
+        background: rgba(255,255,255,0.2);
+        border: none;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+      " onclick="location.reload()">Refresh</button>
+    `;
+    document.body.appendChild(notification);
   }
   
   function parseRawOutput(rawOutput) {
@@ -555,7 +645,10 @@
     const width = state.canvas.width;
     const height = state.canvas.height;
     
-    // Clear
+    // Clear the canvas completely (no ghosting)
+    ctx.clearRect(0, 0, width, height);
+    
+    // Fill with background color
     ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
     ctx.fillRect(0, 0, width, height);
     
@@ -641,14 +734,33 @@
   // ========================================
   
   function handleMessage(message, sender, sendResponse) {
+    // Check extension context
+    if (!extensionContextValid || !checkExtensionContext()) {
+      console.log('[BiasDetector] Extension context invalid, cannot handle message');
+      try {
+        sendResponse({ error: 'Extension context invalidated. Please reload the page.' });
+      } catch (e) {
+        // Ignore - can't send response if context is invalid
+      }
+      return false;
+    }
+    
     console.log('[BiasDetector] Message received:', message.type);
     
     switch (message.type) {
       case 'ANALYZE_TEXT':
         // Manual analysis from popup
         callBiasAPI(message.text)
-          .then(result => sendResponse({ success: true, result }))
-          .catch(error => sendResponse({ success: false, error: error.message }));
+          .then(result => {
+            if (checkExtensionContext()) {
+              sendResponse({ success: true, result });
+            }
+          })
+          .catch(error => {
+            if (checkExtensionContext()) {
+              sendResponse({ success: false, error: error.message });
+            }
+          });
         return true;
         
       case 'GET_STATE':
