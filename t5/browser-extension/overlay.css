@@ -755,3 +755,60 @@
 .bias-text-modal-btn.secondary:hover {
   background: rgba(255, 255, 255, 0.15);
 }
+
+/* Caption Text Display */
+.bias-caption-container {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.bias-caption-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.bias-caption-title {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.bias-caption-count {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.3);
+  font-variant-numeric: tabular-nums;
+}
+
+.bias-caption-scroll {
+  max-height: 80px;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.bias-caption-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.bias-caption-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+}
+
+.bias-caption-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+.bias-caption-text {
+  font-size: 11px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.4);
+  word-wrap: break-word;
+}

@@ -178,9 +178,6 @@
           
           console.log('[BiasDetector] Caption captured:', text.substring(0, 50) + '...');
           console.log('[BiasDetector] Buffer length:', state.captionBuffer.length);
-          
-          // Update the caption display
-          updateCaptionDisplay();
         }
       }
     } catch (e) {
@@ -299,7 +296,6 @@
         
         // Clear buffer after successful analysis
         state.captionBuffer = '';
-        updateCaptionDisplay(); // Update display to show cleared state
         console.log('[BiasDetector] Buffer cleared after analysis');
       } else {
         console.log('[BiasDetector] Analysis error:', result?.error);
@@ -359,32 +355,6 @@
     if (reasonEl) {
       reasonEl.textContent = `Error: ${errorMsg}`;
       reasonEl.style.color = '#f87171';
-    }
-  }
-  
-  function updateCaptionDisplay() {
-    const captionText = document.getElementById('bias-caption-text');
-    const captionCount = document.getElementById('bias-caption-count');
-    const captionScroll = document.getElementById('bias-caption-scroll');
-    
-    if (captionText) {
-      const text = state.captionBuffer.trim();
-      if (text) {
-        captionText.textContent = text;
-        captionText.style.color = 'rgba(255, 255, 255, 0.8)';
-      } else {
-        captionText.textContent = 'Waiting for captions...';
-        captionText.style.color = 'rgba(255, 255, 255, 0.4)';
-      }
-    }
-    
-    if (captionCount) {
-      captionCount.textContent = `${state.captionBuffer.trim().length} chars`;
-    }
-    
-    // Auto-scroll to bottom
-    if (captionScroll) {
-      captionScroll.scrollTop = captionScroll.scrollHeight;
     }
   }
   
@@ -585,19 +555,6 @@
               </div>
             </div>
           </div>
-          
-          <!-- Caption Text View -->
-          <div class="bias-caption-container">
-            <div class="bias-caption-header">
-              <span class="bias-caption-title">Captured Text</span>
-              <span class="bias-caption-count" id="bias-caption-count">0 chars</span>
-            </div>
-            <div class="bias-caption-scroll" id="bias-caption-scroll">
-              <div class="bias-caption-text" id="bias-caption-text">
-                Waiting for captions...
-              </div>
-            </div>
-          </div>
         </div>
         
         <div class="bias-detector-footer">
@@ -688,10 +645,7 @@
     const width = state.canvas.width;
     const height = state.canvas.height;
     
-    // Clear the canvas completely (no ghosting)
-    ctx.clearRect(0, 0, width, height);
-    
-    // Fill with background color
+    // Clear
     ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
     ctx.fillRect(0, 0, width, height);
     
