@@ -17,8 +17,8 @@
     overlay: null,
     canvas: null,
     ctx: null,
-    barCanvas: null,
-    barCtx: null,
+    meterCanvas: null,
+    meterCtx: null,
     
     // Caption capture
     captionBuffer: '',
@@ -298,7 +298,7 @@
         // Update UI
         updateOverlay(result);
         drawGraph();
-        drawBarGraph();
+        drawBiasMeter();
         
         // Clear buffer after successful analysis
         state.captionBuffer = '';
@@ -592,13 +592,13 @@
             </div>
           </div>
           
-          <!-- Current Bias Bar Graph -->
-          <div class="bias-bar-graph-container">
-            <div class="bias-bar-graph-header">
-              <span class="bias-bar-graph-title">Current Bias Distribution</span>
+          <!-- Current Bias Meter -->
+          <div class="bias-meter-container">
+            <div class="bias-meter-header">
+              <span class="bias-meter-title">Current Bias</span>
             </div>
-            <div class="bias-bar-graph-wrapper">
-              <canvas id="biasBarGraphCanvas" width="288" height="60"></canvas>
+            <div class="bias-meter-wrapper">
+              <canvas id="biasMeterCanvas" width="288" height="80"></canvas>
             </div>
           </div>
           
@@ -628,8 +628,8 @@
     // Get canvases
     state.canvas = document.getElementById('biasGraphCanvas');
     state.ctx = state.canvas.getContext('2d');
-    state.barCanvas = document.getElementById('biasBarGraphCanvas');
-    state.barCtx = state.barCanvas.getContext('2d');
+    state.meterCanvas = document.getElementById('biasMeterCanvas');
+    state.meterCtx = state.meterCanvas.getContext('2d');
     
     // Close button
     overlay.querySelector('.bias-detector-close').addEventListener('click', () => {
@@ -836,15 +836,15 @@
   }
   
   // ========================================
-  // BAR GRAPH DRAWING
+  // BIAS METER DRAWING (Analog Gauge)
   // ========================================
   
-  function drawBarGraph() {
-    if (!state.barCanvas || !state.barCtx) return;
+  function drawBiasMeter() {
+    if (!state.meterCanvas || !state.meterCtx) return;
     
-    const ctx = state.barCtx;
-    const width = state.barCanvas.width;
-    const height = state.barCanvas.height;
+    const ctx = state.meterCtx;
+    const width = state.meterCanvas.width;
+    const height = state.meterCanvas.height;
     
     // Clear
     ctx.clearRect(0, 0, width, height);
@@ -868,51 +868,141 @@
     const C = latest.dir?.C || 0;
     const R = latest.dir?.R || 0;
     
-    // Bar settings
-    const barWidth = 70;
-    const barSpacing = 20;
-    const maxBarHeight = height - 20;
-    const startX = (width - (3 * barWidth + 2 * barSpacing)) / 2;
-    const baseY = height - 8;
+    // Meter settings
+    const centerX = width / 2;
+    const centerY = height - 10;
+    const radius = Math.min(width / 2 - 20, height - 25);
     
-    // Draw bars
-    const bars = [
-      { label: 'Left', value: L, color: '#3b82f6', x: startX },
-      { label: 'Center', value: C, color: '#6b7280', x: startX + barWidth + barSpacing },
-      { label: 'Right', value: R, color: '#ef4444', x: startX + 2 * (barWidth + barSpacing) }
-    ];
+    // Draw arc background (semi-circle on top)
+    // Clockwise from PI (left) through 3PI/2 (top) to 0 (right)
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, Math.PI, 0, true);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.lineWidth = 8;
+    ctx.stroke();
     
-    bars.forEach(bar => {
-      const barHeight = bar.value * maxBarHeight;
-      const barY = baseY - barHeight;
+    // Draw colored zones
+    // Left zone (blue) - from PI to 5PI/4
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, Math.PI, Math.PI * 1.25, true);
+    ctx.strokeStyle = 'rgba(59, 130, 246, 0.6)';
+    ctx.lineWidth = 8;
+    ctx.stroke();
+    
+    // Center zone (gray) - from 5PI/4 to 3PI/4
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, Math.PI * 1.25, Math.PI * 0.75, true);
+    ctx.strokeStyle = 'rgba(107, 114, 128, 0.6)';
+    ctx.lineWidth = 8;
+    ctx.stroke();
+    
+    // Right zone (red) - from 3PI/4 to 0
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, Math.PI * 0.75, 0, true);
+    ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
+    ctx.lineWidth = 8;
+    ctx.stroke();
+    
+    // Draw tick marks
+    for (let i = 0; i <= 10; i++) {
+      // Angle goes from PI (left) to 0 (right) clockwise
+      const angle = Math.PI - (i / 10) * Math.PI;
+      const innerR = radius - 12;
+      const outerR = radius - 4;
       
-      // Bar background
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-      ctx.fillRect(bar.x, 8, barWidth, maxBarHeight);
+      const x1 = centerX + Math.cos(angle) * innerR;
+      const y1 = centerY + Math.sin(angle) * innerR;
+      const x2 = centerX + Math.cos(angle) * outerR;
+      const y2 = centerY + Math.sin(angle) * outerR;
       
-      // Bar fill
-      const gradient = ctx.createLinearGradient(bar.x, barY, bar.x, baseY);
-      gradient.addColorStop(0, bar.color);
-      gradient.addColorStop(1, bar.color + '80');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(bar.x, barY, barWidth, barHeight);
-      
-      // Bar border
-      ctx.strokeStyle = bar.color;
-      ctx.lineWidth = 1;
-      ctx.strokeRect(bar.x, 8, barWidth, maxBarHeight);
-      
-      // Value label
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 11px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(`${(bar.value * 100).toFixed(0)}%`, bar.x + barWidth / 2, barY - 3);
-      
-      // Label below bar
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-      ctx.font = '9px sans-serif';
-      ctx.fillText(bar.label, bar.x + barWidth / 2, baseY + 10);
-    });
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.lineWidth = i % 5 === 0 ? 2 : 1;
+      ctx.stroke();
+    }
+    
+    // Draw labels
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'center';
+    
+    // Left label (at left end of arc)
+    const leftLabelX = centerX + Math.cos(Math.PI) * (radius + 12);
+    const leftLabelY = centerY + Math.sin(Math.PI) * (radius + 12);
+    ctx.fillText('L', leftLabelX, leftLabelY);
+    
+    // Center label (at top of arc)
+    const centerLabelX = centerX + Math.cos(-Math.PI / 2) * (radius + 12);
+    const centerLabelY = centerY + Math.sin(-Math.PI / 2) * (radius + 12);
+    ctx.fillText('C', centerLabelX, centerLabelY);
+    
+    // Right label (at right end of arc)
+    const rightLabelX = centerX + Math.cos(0) * (radius + 12);
+    const rightLabelY = centerY + Math.sin(0) * (radius + 12);
+    ctx.fillText('R', rightLabelX, rightLabelY);
+    
+    // Calculate needle angle
+    // Bias score: -1 (left) to +1 (right)
+    // Angle: PI (left) to 0 (right), with -PI/2 being center (top)
+    const biasScore = R - L;
+    // Map biasScore from [-1, 1] to angle [PI, 0] through -PI/2
+    // Using: angle = PI - (biasScore + 1) * PI / 2
+    // For biasScore = -1: angle = PI - 0 = PI (left)
+    // For biasScore = 0: angle = PI - PI/2 = PI/2... but we want -PI/2 (up)
+    // 
+    // Correct mapping: angle = PI + (biasScore + 1) * PI / 2, then normalize
+    // For biasScore = -1: angle = PI + 0 = PI (left) ✓
+    // For biasScore = 0: angle = PI + PI/2 = 3PI/2 = -PI/2 (up) ✓
+    // For biasScore = 1: angle = PI + PI = 2PI = 0 (right) ✓
+    let needleAngle = Math.PI + (biasScore + 1) * Math.PI / 2;
+    if (needleAngle > Math.PI * 2) needleAngle -= Math.PI * 2;
+    
+    // Get needle color based on bias
+    const getNeedleColor = (score) => {
+      if (score < -0.2) return '#3b82f6'; // Blue (left)
+      if (score > 0.2) return '#ef4444';  // Red (right)
+      return '#6b7280'; // Gray (center)
+    };
+    
+    // Draw needle
+    const needleLength = radius - 15;
+    const needleX = centerX + Math.cos(needleAngle) * needleLength;
+    const needleY = centerY + Math.sin(needleAngle) * needleLength;
+    
+    // Needle shadow
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY);
+    ctx.lineTo(needleX + 1, needleY + 1);
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    
+    // Needle
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY);
+    ctx.lineTo(needleX, needleY);
+    ctx.strokeStyle = getNeedleColor(biasScore);
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+    
+    // Center dot
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 5, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+    
+    // Draw percentage values at top
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(`L: ${(L * 100).toFixed(0)}%`, 8, 14);
+    ctx.textAlign = 'center';
+    ctx.fillText(`C: ${(C * 100).toFixed(0)}%`, width / 2, 14);
+    ctx.textAlign = 'right';
+    ctx.fillText(`R: ${(R * 100).toFixed(0)}%`, width - 8, 14);
   }
 
   // ========================================
