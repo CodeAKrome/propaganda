@@ -812,3 +812,38 @@
   color: rgba(255, 255, 255, 0.4);
   word-wrap: break-word;
 }
+
+/* Bar Graph Container */
+.bias-bar-graph-container {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.bias-bar-graph-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.bias-bar-graph-title {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.bias-bar-graph-wrapper {
+  position: relative;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+#biasBarGraphCanvas {
+  display: block;
+  width: 100%;
+  height: 60px;
+}

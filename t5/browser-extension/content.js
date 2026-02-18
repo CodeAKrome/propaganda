@@ -17,6 +17,8 @@
     overlay: null,
     canvas: null,
     ctx: null,
+    barCanvas: null,
+    barCtx: null,
     
     // Caption capture
     captionBuffer: '',
@@ -296,6 +298,7 @@
         // Update UI
         updateOverlay(result);
         drawGraph();
+        drawBarGraph();
         
         // Clear buffer after successful analysis
         state.captionBuffer = '';
@@ -583,6 +586,19 @@
                 <div class="bias-graph-legend-line right"></div>
                 <span>Right</span>
               </div>
+              <div class="bias-graph-legend-item">
+                <span style="font-size: 9px; color: rgba(255,255,255,0.3);">• Dot = current</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Current Bias Bar Graph -->
+          <div class="bias-bar-graph-container">
+            <div class="bias-bar-graph-header">
+              <span class="bias-bar-graph-title">Current Bias Distribution</span>
+            </div>
+            <div class="bias-bar-graph-wrapper">
+              <canvas id="biasBarGraphCanvas" width="288" height="60"></canvas>
             </div>
           </div>
           
@@ -609,9 +625,11 @@
     document.body.appendChild(overlay);
     state.overlay = overlay;
     
-    // Get canvas
+    // Get canvases
     state.canvas = document.getElementById('biasGraphCanvas');
     state.ctx = state.canvas.getContext('2d');
+    state.barCanvas = document.getElementById('biasBarGraphCanvas');
+    state.barCtx = state.barCanvas.getContext('2d');
     
     // Close button
     overlay.querySelector('.bias-detector-close').addEventListener('click', () => {
@@ -695,22 +713,34 @@
     ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
     ctx.fillRect(0, 0, width, height);
     
-    // Draw grid
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+    // Draw center line (neutral)
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
     ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(0, height / 2);
+    ctx.lineTo(width, height / 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
     
-    // Horizontal lines
-    for (let i = 0; i <= 4; i++) {
-      const y = (height / 4) * i;
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(width, y);
-      ctx.stroke();
-    }
+    // Draw left/right zone labels
+    ctx.fillStyle = 'rgba(59, 130, 246, 0.3)'; // Blue for left
+    ctx.fillRect(0, 0, width, height / 2);
+    
+    ctx.fillStyle = 'rgba(239, 68, 68, 0.3)'; // Red for right
+    ctx.fillRect(0, height / 2, width, height / 2);
+    
+    // Draw Y-axis labels
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.font = '9px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('L', 4, 12);
+    ctx.fillText('R', 4, height - 4);
+    ctx.fillText('C', 4, height / 2 + 3);
     
     // Draw data
     const history = state.biasHistory;
-    if (history.length < 2) {
+    if (history.length < 1) {
       // Draw "waiting" text
       ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
       ctx.font = '12px sans-serif';
@@ -721,55 +751,168 @@
     
     const xStep = width / (state.maxHistoryPoints - 1);
     
-    // Draw lines for each direction
-    const drawLine = (data, color) => {
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      
-      history.forEach((point, i) => {
-        const x = i * xStep;
-        const y = height - (data(point) * height);
-        
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-      
-      ctx.stroke();
+    // Calculate bias score: -1 (left) to +1 (right)
+    // Formula: R - L (positive = right, negative = left)
+    const getBiasScore = (point) => {
+      const L = point.dir?.L || 0;
+      const R = point.dir?.R || 0;
+      return R - L; // -1 to +1
     };
     
-    // Left (blue)
-    drawLine(p => p.dir?.L || 0, '#3b82f6');
+    // Get color based on bias score
+    const getBiasColor = (score) => {
+      if (score < -0.2) return '#3b82f6'; // Blue (left)
+      if (score > 0.2) return '#ef4444';  // Red (right)
+      return '#6b7280'; // Gray (center)
+    };
     
-    // Center (gray)
-    drawLine(p => p.dir?.C || 0, '#6b7280');
+    // Draw bias line with gradient coloring
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
     
-    // Right (red)
-    drawLine(p => p.dir?.R || 0, '#ef4444');
+    for (let i = 1; i < history.length; i++) {
+      const prevPoint = history[i - 1];
+      const point = history[i];
+      
+      const prevScore = getBiasScore(prevPoint);
+      const score = getBiasScore(point);
+      
+      const x1 = (i - 1) * xStep;
+      const x2 = i * xStep;
+      
+      // Y position: 0 = left (top), 1 = right (bottom)
+      const y1 = (prevScore + 1) / 2 * height; // Convert -1..+1 to 0..height
+      const y2 = (score + 1) / 2 * height;
+      
+      // Draw line segment
+      ctx.strokeStyle = getBiasColor(score);
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    }
     
-    // Draw dots at latest point
+    // Draw dots at each data point
+    history.forEach((point, i) => {
+      const score = getBiasScore(point);
+      const x = i * xStep;
+      const y = (score + 1) / 2 * height;
+      
+      ctx.fillStyle = getBiasColor(score);
+      ctx.beginPath();
+      ctx.arc(x, y, 3, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    
+    // Draw current bias indicator (larger dot at end)
     if (history.length > 0) {
       const lastPoint = history[history.length - 1];
+      const lastScore = getBiasScore(lastPoint);
       const lastX = (history.length - 1) * xStep;
+      const lastY = (lastScore + 1) / 2 * height;
       
-      // Left dot
-      ctx.fillStyle = '#3b82f6';
+      // Outer glow
+      ctx.fillStyle = getBiasColor(lastScore);
       ctx.beginPath();
-      ctx.arc(lastX, height - (lastPoint.dir?.L || 0) * height, 3, 0, Math.PI * 2);
+      ctx.arc(lastX, lastY, 6, 0, Math.PI * 2);
       ctx.fill();
       
-      // Center dot
-      ctx.fillStyle = '#6b7280';
+      // Inner dot
+      ctx.fillStyle = '#fff';
       ctx.beginPath();
-      ctx.arc(lastX, height - (lastPoint.dir?.C || 0) * height, 3, 0, Math.PI * 2);
+      ctx.arc(lastX, lastY, 3, 0, Math.PI * 2);
       ctx.fill();
       
-      // Right dot
-      ctx.fillStyle = '#ef4444';
-      ctx.beginPath();
-      ctx.arc(lastX, height - (lastPoint.dir?.R || 0) * height, 3, 0, Math.PI * 2);
-      ctx.fill();
+      // Draw bias label at end
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 10px sans-serif';
+      ctx.textAlign = 'right';
+      let label = 'C';
+      if (lastScore < -0.2) label = 'L';
+      else if (lastScore > 0.2) label = 'R';
+      ctx.fillText(label, width - 4, lastY + 4);
     }
+  }
+  
+  // ========================================
+  // BAR GRAPH DRAWING
+  // ========================================
+  
+  function drawBarGraph() {
+    if (!state.barCanvas || !state.barCtx) return;
+    
+    const ctx = state.barCtx;
+    const width = state.barCanvas.width;
+    const height = state.barCanvas.height;
+    
+    // Clear
+    ctx.clearRect(0, 0, width, height);
+    
+    // Background
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+    ctx.fillRect(0, 0, width, height);
+    
+    // Get latest bias data
+    const history = state.biasHistory;
+    if (history.length === 0) {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('No data yet', width / 2, height / 2 + 4);
+      return;
+    }
+    
+    const latest = history[history.length - 1];
+    const L = latest.dir?.L || 0;
+    const C = latest.dir?.C || 0;
+    const R = latest.dir?.R || 0;
+    
+    // Bar settings
+    const barWidth = 70;
+    const barSpacing = 20;
+    const maxBarHeight = height - 20;
+    const startX = (width - (3 * barWidth + 2 * barSpacing)) / 2;
+    const baseY = height - 8;
+    
+    // Draw bars
+    const bars = [
+      { label: 'Left', value: L, color: '#3b82f6', x: startX },
+      { label: 'Center', value: C, color: '#6b7280', x: startX + barWidth + barSpacing },
+      { label: 'Right', value: R, color: '#ef4444', x: startX + 2 * (barWidth + barSpacing) }
+    ];
+    
+    bars.forEach(bar => {
+      const barHeight = bar.value * maxBarHeight;
+      const barY = baseY - barHeight;
+      
+      // Bar background
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.fillRect(bar.x, 8, barWidth, maxBarHeight);
+      
+      // Bar fill
+      const gradient = ctx.createLinearGradient(bar.x, barY, bar.x, baseY);
+      gradient.addColorStop(0, bar.color);
+      gradient.addColorStop(1, bar.color + '80');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(bar.x, barY, barWidth, barHeight);
+      
+      // Bar border
+      ctx.strokeStyle = bar.color;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(bar.x, 8, barWidth, maxBarHeight);
+      
+      // Value label
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${(bar.value * 100).toFixed(0)}%`, bar.x + barWidth / 2, barY - 3);
+      
+      // Label below bar
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+      ctx.font = '9px sans-serif';
+      ctx.fillText(bar.label, bar.x + barWidth / 2, baseY + 10);
+    });
   }
 
   // ========================================
