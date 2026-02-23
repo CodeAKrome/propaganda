@@ -9,6 +9,7 @@ Usage:
 
 import os
 import sys
+import json
 import fire
 from pymongo import MongoClient
 from bson.objectid import ObjectId
@@ -58,8 +59,6 @@ class MongoFieldTool:
 
             # If value is dict or list, output as JSON only
             if isinstance(value, (dict, list)):
-                import json
-
                 print(json.dumps(value))
             else:
                 print(value)
@@ -106,6 +105,14 @@ class MongoFieldTool:
                 if field in doc and doc[field] not in (None, ""):
                     print(f"Skipped: Field '{field}' already has data. Use --force to overwrite.")
                     return False
+
+            # For bias field, parse JSON string and store as object
+            if field == "bias":
+                try:
+                    data = json.loads(data)
+                except json.JSONDecodeError:
+                    # If not valid JSON, store as-is (legacy behavior)
+                    pass
 
             # Perform the update
             result = self.collection.update_one(

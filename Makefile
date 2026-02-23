@@ -24,6 +24,8 @@ testrun: timestamp load ner vector mkvecsmall bias mkvecsmall querysmall cleanmp
 smallthingsthatgo: timestamp load ner vector entity mkvecsmall bias mkvecsmall querysmall cleanmp3 mp3small fini
 # Doesn't clean db/output or mp3/mp3
 smallestthingsthatgo: timestamp load ner vector entity mkvecsmallest bias mkvecsmallest querysmallest mp3small fini
+
+# old
 oldthingsthatgo: entity mkvecsmall bias mkvecsmall querysmall cleanmp3 mp3small fini
 thingsthatgo: load ner vector entity mkvec bias query mp3 fini
 # new stuff, just query

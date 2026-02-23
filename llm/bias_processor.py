@@ -16,10 +16,34 @@ import re
 import signal
 import argparse
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 from tqdm import tqdm
 from pymongo import MongoClient
 from bson.objectid import ObjectId
+
+
+def parse_date_arg(date_str: str) -> datetime:
+    """
+    Parse date argument. Supports:
+    - Negative integers (e.g., '-1' = 1 day ago, '-7' = 7 days ago)
+    - ISO-8601 date strings (e.g., '2025-09-06T08:00:58+00:00')
+    """
+    if date_str.startswith("-") and date_str[1:].isdigit():
+        days_ago = int(date_str)
+        return datetime.now() + timedelta(days=days_ago)
+    else:
+        return datetime.fromisoformat(date_str)
+
+
+def parse_id_file(filepath: str) -> list[str]:
+    """Read MongoDB IDs from a file, one per line. Lines starting with # are skipped."""
+    ids = []
+    with open(filepath, "r") as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#"):
+                ids.append(line)
+    return ids
 
 
 class BiasProcessor:
@@ -74,12 +98,21 @@ class BiasProcessor:
         except Exception as e:
             print(f"Error saving processed IDs: {e}")
 
-    def get_articles_without_bias(self, batch_size: int | None = None):
+    def get_articles_without_bias(
+        self,
+        batch_size: int | None = None,
+        start_date: str | None = None,
+        end_date: str | None = None,
+        id_list: list[str] | None = None,
+    ):
         """
         Get articles missing the bias field, sorted by published date descending.
 
         Args:
             batch_size: Number of articles to fetch per batch
+            start_date: Optional start date filter (ISO format or -N days)
+            end_date: Optional end date filter (ISO format or -N days)
+            id_list: Optional list of specific MongoDB IDs to process
 
         Returns:
             MongoDB cursor for articles without bias
@@ -93,14 +126,37 @@ class BiasProcessor:
             "article": {"$exists": True, "$ne": None, "$ne": ""},
         }
 
+        # Add date filters if provided
+        if start_date or end_date:
+            date_filter = {}
+            if start_date:
+                date_filter["$gte"] = parse_date_arg(start_date)
+            if end_date:
+                date_filter["$lte"] = parse_date_arg(end_date)
+            query["published"] = date_filter
+
+        # Add ID filter if provided
+        if id_list:
+            query["_id"] = {"$in": [ObjectId(id_str) for id_str in id_list]}
+
         cursor = self.collection.find(query).sort("published", -1)
         if batch_size:
             cursor = cursor.limit(batch_size)
         return cursor
 
-    def count_articles_without_bias(self) -> int:
+    def count_articles_without_bias(
+        self,
+        start_date: str | None = None,
+        end_date: str | None = None,
+        id_list: list[str] | None = None,
+    ) -> int:
         """
         Count total articles missing the bias field.
+
+        Args:
+            start_date: Optional start date filter (ISO format or -N days)
+            end_date: Optional end date filter (ISO format or -N days)
+            id_list: Optional list of specific MongoDB IDs to process
 
         Returns:
             Count of articles without bias
@@ -113,6 +169,20 @@ class BiasProcessor:
             ],
             "article": {"$exists": True, "$ne": None, "$ne": ""},
         }
+
+        # Add date filters if provided
+        if start_date or end_date:
+            date_filter = {}
+            if start_date:
+                date_filter["$gte"] = parse_date_arg(start_date)
+            if end_date:
+                date_filter["$lte"] = parse_date_arg(end_date)
+            query["published"] = date_filter
+
+        # Add ID filter if provided
+        if id_list:
+            query["_id"] = {"$in": [ObjectId(id_str) for id_str in id_list]}
+
         return self.collection.count_documents(query)
 
     def repair_json_string(self, raw: str, pbar=None) -> dict | None:
@@ -449,7 +519,7 @@ class BiasProcessor:
 
         Args:
             article_id: MongoDB document ID
-            bias_result: Bias detection result to store
+            bias_result: Bias detection result to store (stored as object, not JSON string)
 
         Returns:
             True if successful, False otherwise
@@ -457,14 +527,22 @@ class BiasProcessor:
         try:
             result = self.collection.update_one(
                 {"_id": article_id},
-                {"$set": {"bias": json.dumps(bias_result)}}
+                {"$set": {"bias": bias_result}}
             )
             return result.modified_count > 0
         except Exception as e:
             print(f"\nMongoDB Error: {e}")
             return False
 
-    def process_articles(self, batch_size: int | None = None, dry_run: bool = False, max_failures: int = 3):
+    def process_articles(
+        self,
+        batch_size: int | None = None,
+        dry_run: bool = False,
+        max_failures: int = 3,
+        start_date: str | None = None,
+        end_date: str | None = None,
+        id_list: list[str] | None = None,
+    ):
         """
         Process all articles missing bias field.
 
@@ -472,8 +550,11 @@ class BiasProcessor:
             batch_size: Optional limit on number of articles to process
             dry_run: If True, don't write to database
             max_failures: Stop after this many consecutive failures (default: 3)
+            start_date: Optional start date filter (ISO format or -N days)
+            end_date: Optional end date filter (ISO format or -N days)
+            id_list: Optional list of specific MongoDB IDs to process
         """
-        total_count = self.count_articles_without_bias()
+        total_count = self.count_articles_without_bias(start_date, end_date, id_list)
         
         if total_count == 0:
             print("No articles found without bias field.")
@@ -487,7 +568,7 @@ class BiasProcessor:
         
         print(f"Max failures before shutdown: {max_failures}")
 
-        cursor = self.get_articles_without_bias(batch_size)
+        cursor = self.get_articles_without_bias(batch_size, start_date, end_date, id_list)
 
         processed = 0
         failed = 0
@@ -608,7 +689,42 @@ def main():
         default=3,
         help="Stop after this many consecutive failures (default: 3)",
     )
+    parser.add_argument(
+        "--start-date",
+        type=str,
+        default=None,
+        help="Start date filter (ISO format or -N days, e.g., '-7' for 7 days ago)",
+    )
+    parser.add_argument(
+        "--end-date",
+        type=str,
+        default=None,
+        help="End date filter (ISO format or -N days, e.g., '-1' for 1 day ago)",
+    )
+    parser.add_argument(
+        "--id",
+        type=str,
+        default=None,
+        help="Comma-separated list of MongoDB IDs to process",
+    )
+    parser.add_argument(
+        "--idfile",
+        type=str,
+        default=None,
+        help="File containing MongoDB IDs to process (one per line)",
+    )
     args = parser.parse_args()
+
+    # Build ID list from --id and/or --idfile
+    id_list = None
+    if args.id:
+        id_list = [id_str.strip() for id_str in args.id.split(",")]
+    if args.idfile:
+        file_ids = parse_id_file(args.idfile)
+        if id_list:
+            id_list.extend(file_ids)
+        else:
+            id_list = file_ids
 
     processor = None
     try:
@@ -616,7 +732,10 @@ def main():
         processor.process_articles(
             batch_size=args.batch_size, 
             dry_run=args.dry_run,
-            max_failures=args.max_failures
+            max_failures=args.max_failures,
+            start_date=args.start_date,
+            end_date=args.end_date,
+            id_list=id_list,
         )
     except ValueError as e:
         print(f"Error: {e}")

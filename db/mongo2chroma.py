@@ -8,6 +8,7 @@ ChromaDB stores only vectors and IDs. All filtering and data lookup via MongoDB.
 
 import os
 import sys
+import json
 import argparse
 from typing import List, Dict, Set, Tuple, Optional
 from datetime import datetime, timedelta
@@ -393,6 +394,50 @@ def format_entities(entities_by_type: Dict[str, Set[str]]) -> str:
     return "\n".join(lines)
 
 
+def format_bias(bias: Dict | str | None) -> str:
+    """
+    Format bias for display. Handles both object and legacy string formats.
+    
+    Args:
+        bias: Bias data - either a dict with dir/deg/reason, or a JSON string
+        
+    Returns:
+        Formatted string for display
+    """
+    if not bias:
+        return "(none)"
+    
+    # Handle legacy string format
+    if isinstance(bias, str):
+        try:
+            import json
+            bias = json.loads(bias)
+        except (json.JSONDecodeError, ValueError):
+            return bias  # Return as-is if not valid JSON
+    
+    if not isinstance(bias, dict):
+        return str(bias)
+    
+    # Format as object
+    lines = []
+    if "dir" in bias:
+        dir_data = bias["dir"]
+        if isinstance(dir_data, dict):
+            dir_str = ", ".join(f"{k}: {v:.2f}" for k, v in sorted(dir_data.items()))
+            lines.append(f"Direction: {dir_str}")
+    
+    if "deg" in bias:
+        deg_data = bias["deg"]
+        if isinstance(deg_data, dict):
+            deg_str = ", ".join(f"{k}: {v:.2f}" for k, v in sorted(deg_data.items()))
+            lines.append(f"Degree: {deg_str}")
+    
+    if "reason" in bias:
+        lines.append(f"Reason: {bias['reason']}")
+    
+    return "\n".join(lines) if lines else str(bias)
+
+
 def export_titles(
     start_date: Optional[str] = None, end_date: Optional[str] = None
 ) -> None:
@@ -551,7 +596,7 @@ def export_articles(
         print(f"Title: {title}")
         print(f"Published: {published_iso}")
         print(f"Source: {source}")
-        print(f"Bias: {bias}")
+        print(f"Bias: {format_bias(bias)}")
 
         if show_entities is not None:
             entities = format_entities(extract_entities_from_doc(doc, show_entities))
