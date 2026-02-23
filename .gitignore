@@ -1,3 +1,4 @@
+llm/cluster/*
 chroma_db/*
 dbscan/chroma_db/*
 chromadb/*
