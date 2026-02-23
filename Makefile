@@ -5,14 +5,10 @@ SHELL := /bin/zsh
 #NUMDAYS = -2
 TITLEFILE = output/titles.tsv
 
-
-
-# Final recommended version
 # DATE := $(shell cat db/timestamp.txt 2>/dev/null | cut -d'T' -f1)
 # DATE ?= $(shell date +%F)  # fallback to today if file missing
 NUMDAYS := $(shell cat db/timestamp.txt 2>/dev/null | cut -d'T' -f1)
 NUMDAYS ?= $(shell date +%F)  # fallback to today if file missing
-
 
 .PHONY: mkvecsmallest build load back front vector query mp3 mgconsole testload \
 	thingsthatgo fini ner fner fnervector entity fvector bias mkvec fbias \
@@ -20,17 +16,22 @@ NUMDAYS ?= $(shell date +%F)  # fallback to today if file missing
 	fquerymp3 fquery fmp3 black querysmallest cleanmp3 mp3small smallestthingsthatgo \
 	timestamp testrun dbscan vecdbscan mddbscan biast5 t5server categorize
 
+# <=-- Main --=>
+
 testrun: timestamp load ner vector mkvecsmall bias mkvecsmall querysmall cleanmp3 mp3small fini
 smallthingsthatgo: timestamp load ner vector entity mkvecsmall bias mkvecsmall querysmall cleanmp3 mp3small fini
+
 # Doesn't clean db/output or mp3/mp3
 smallestthingsthatgo: timestamp load ner vector entity mkvecsmallest bias mkvecsmallest querysmallest mp3small fini
+
+# <=-- Main --=>
 
 # old
 oldthingsthatgo: entity mkvecsmall bias mkvecsmall querysmall cleanmp3 mp3small fini
 thingsthatgo: load ner vector entity mkvec bias query mp3 fini
+
 # new stuff, just query
 fquerymp3: cleanoutput querysmall cleanmp3 mp3small fini
-
 
 fvector: load ner vector fini
 fload: load ner vector entity fini
@@ -43,6 +44,8 @@ fbias: mkvec bias query mp3 fini
 # sort articles into categories ID,title -> json category clusters
 # needs entity: run to create titles file
 categorize: entity dbscan vecdbscan mddbscan
+
+# <=-- Wurk --=>
 
 dbscan:
 	(echo "article_id\ttitle" && cut -f3,4 db/output/titles.tsv) > db/output/titles_dbscan.tsv

@@ -1,3 +1,4 @@
+db/migrate_fail_ids.txt
 db/migrate_ids.txt
 llm/cluster/*
 chroma_db/*

@@ -6,7 +6,7 @@ This script finds all documents where the 'bias' field is a string (legacy forma
 and converts it to a proper MongoDB object for better queryability.
 
 Usage:
-    python migrate_bias_to_object.py [--dry-run] [--batch-size N] [--idfile FILE]
+    python migrate_bias_to_object.py [--dry-run] [--batch-size N] [--idfile FILE] [--failfile FILE]
 
 Example queries after migration:
     # Find all articles with strong left bias (L > 0.5)
@@ -61,7 +61,8 @@ def parse_bias_string(bias_str: str) -> dict | None:
 def migrate_bias_fields(
     dry_run: bool = False, 
     batch_size: int | None = None,
-    idfile: str = "migrate_ids.txt"
+    idfile: str = "migrate_ids.txt",
+    failfile: str = "migrate_fail_ids.txt"
 ):
     """
     Migrate all bias fields from string to object format.
@@ -70,6 +71,7 @@ def migrate_bias_fields(
         dry_run: If True, only report what would be changed without making changes
         batch_size: Optional limit on number of documents to process
         idfile: Path to file for storing migrated MongoDB IDs
+        failfile: Path to file for storing failed MongoDB IDs
     """
     mongo_user = os.getenv("MONGO_USER")
     mongo_pass = os.getenv("MONGO_PASS")
@@ -111,6 +113,7 @@ def migrate_bias_fields(
     failed = 0
     skipped = 0
     migrated_ids = []
+    failed_ids = []
     
     for doc in tqdm(cursor, total=total_count, desc="Migrating bias fields"):
         doc_id = doc["_id"]
@@ -130,6 +133,7 @@ def migrate_bias_fields(
         
         if bias_obj is None:
             failed += 1
+            failed_ids.append(str(doc_id))
             tqdm.write(f"  FAILED to parse bias for {doc_id}: {bias_data[:100]}...")
             continue
         
@@ -155,6 +159,7 @@ def migrate_bias_fields(
                     tqdm.write(f"  SKIPPED {doc_id} (no modification needed)")
             except Exception as e:
                 failed += 1
+                failed_ids.append(str(doc_id))
                 tqdm.write(f"  FAILED to update {doc_id}: {e}")
     
     # Write migrated IDs to file
@@ -168,6 +173,18 @@ def migrate_bias_fields(
             print(f"\nWrote {len(migrated_ids)} migrated IDs to: {idfile}")
         except Exception as e:
             print(f"\nError writing ID file: {e}")
+    
+    # Write failed IDs to file
+    if failed_ids:
+        try:
+            with open(failfile, "w") as f:
+                f.write(f"# Migration: {datetime.now().isoformat()}\n")
+                f.write(f"# Total failed: {failed}\n")
+                for mongo_id in failed_ids:
+                    f.write(f"{mongo_id}\n")
+            print(f"Wrote {len(failed_ids)} failed IDs to: {failfile}")
+        except Exception as e:
+            print(f"Error writing fail file: {e}")
     
     print(f"\nMigration complete:")
     print(f"  Migrated: {migrated}")
@@ -201,13 +218,20 @@ def main():
         default="migrate_ids.txt",
         help="File to write migrated MongoDB IDs to (default: migrate_ids.txt)",
     )
+    parser.add_argument(
+        "--failfile",
+        type=str,
+        default="migrate_fail_ids.txt",
+        help="File to write failed MongoDB IDs to (default: migrate_fail_ids.txt)",
+    )
     args = parser.parse_args()
     
     try:
         migrate_bias_fields(
             dry_run=args.dry_run, 
             batch_size=args.batch_size,
-            idfile=args.idfile
+            idfile=args.idfile,
+            failfile=args.failfile
         )
     except ValueError as e:
         print(f"Error: {e}")
