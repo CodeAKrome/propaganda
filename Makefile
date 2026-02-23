@@ -18,14 +18,14 @@ NUMDAYS ?= $(shell date +%F)  # fallback to today if file missing
 	thingsthatgo fini ner fner fnervector entity fvector bias mkvec fbias \
 	querysmall mkvecsmall smallthingsthatgo cleanoutput fload oldthingsthatgo \
 	fquerymp3 fquery fmp3 black querysmallest cleanmp3 mp3small smallestthingsthatgo \
-	timestamp testrun
+	timestamp testrun dbscan vecdbscan mddbscan biast5 t5server categorize
 
-testrun: querysmall cleanmp3 mp3small fini
-thingsthatgo: load ner vector entity mkvec bias query mp3 fini
+testrun: timestamp load ner vector mkvecsmall bias mkvecsmall querysmall cleanmp3 mp3small fini
 smallthingsthatgo: timestamp load ner vector entity mkvecsmall bias mkvecsmall querysmall cleanmp3 mp3small fini
 # Doesn't clean db/output or mp3/mp3
 smallestthingsthatgo: timestamp load ner vector entity mkvecsmallest bias mkvecsmallest querysmallest mp3small fini
 oldthingsthatgo: entity mkvecsmall bias mkvecsmall querysmall cleanmp3 mp3small fini
+thingsthatgo: load ner vector entity mkvec bias query mp3 fini
 # new stuff, just query
 fquerymp3: cleanoutput querysmall cleanmp3 mp3small fini
 
@@ -37,6 +37,32 @@ fnervector: ner vector fini
 fquery: load ner vector query fini
 fmp3: mp3 fini
 fbias: mkvec bias query mp3 fini
+
+# sort articles into categories ID,title -> json category clusters
+# needs entity: run to create titles file
+categorize: entity dbscan vecdbscan mddbscan
+
+dbscan:
+	(echo "article_id\ttitle" && cut -f3,4 db/output/titles.tsv) > db/output/titles_dbscan.tsv
+	dbscan/main.py --input db/output/titles_dbscan.tsv --output db/output/categories.json --similarity-threshold 0.70 --min-cluster-size 2
+
+vecdbscan:
+	find db/cluster -name '*.vec' -exec rm {} \;
+	source $(DB_ENV)/bin/activate && cd db && ./convert_to_vec.py output/categories.json cluster
+	ls -1 db/cluster/*.vec | db/extract_ids.py > db/cluster/ids.txt
+
+mddbscan:
+	find db/cluster -name '*.md' -exec rm {} \;
+	cd db && ./clustervec2md.sh
+
+biast5:
+	source $$(conda info --base)/etc/profile.d/conda.sh && \
+	conda activate mlx2 && \
+	cd llm && \
+	./bias_processor.py --batch-size 2000
+
+t5server:
+	source t5/.venv/bin/activate && cd t5 && ./server_mps.py
 
 # this is -1 day
 timestamp:
