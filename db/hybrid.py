@@ -298,20 +298,9 @@ def main(argv=None):
         return
 
     # 2. Build ChromaDB where filter for date range
+    # Note: ChromaDB only supports numeric comparisons for $gte/$lte, not strings
+    # Date filtering will be done post-query via MongoDB
     where_filter = None
-    if args.start_date or args.end_date:
-        date_conditions = []
-        if args.start_date:
-            start_dt = parse_date_arg(args.start_date)
-            date_conditions.append({"published": {"$gte": start_dt.isoformat()}})
-        if args.end_date:
-            end_dt = parse_date_arg(args.end_date)
-            date_conditions.append({"published": {"$lte": end_dt.isoformat()}})
-        
-        if len(date_conditions) == 1:
-            where_filter = date_conditions[0]
-        else:
-            where_filter = {"$and": date_conditions}
 
     # 3. Handle fulltext search mode (MongoDB text search first, then ChromaDB)
     if fulltext_search_string:
@@ -393,72 +382,191 @@ def main(argv=None):
         # 4. Vector search mode using ChromaDB
         search_text = args.text
         
-        # Build query embedding
-        query_emb = (
-            encoder.encode(
-                f"Represent this sentence for searching relevant passages: {search_text}",
-                convert_to_tensor=True,
-            )
-            .cpu()
-            .numpy()
-            .tolist()
-        )
-        
-        # Query ChromaDB with metadata filter
-        k_results = args.top * 10 if args.bm25 else args.top
-        res = collection.query(
-            query_embeddings=[query_emb],
-            n_results=k_results,
-            where=where_filter,
-            include=["documents", "metadatas"]
-        )
-        
-        hit_ids = res["ids"][0]
-        hit_docs = res["documents"][0]
-        hit_metas = res["metadatas"][0]
-        
-        debug(f"ChromaDB vector search returned: {len(hit_ids)} hits")
-        
-        # Filter by entities using metadata
-        if and_entities or or_entities:
-            filtered_ids = []
-            filtered_docs = []
-            for _id, doc, meta in zip(hit_ids, hit_docs, hit_metas):
-                entities_str = meta.get("entities", "[]")
-                try:
-                    entities = json.loads(entities_str)
-                except (json.JSONDecodeError, TypeError):
-                    entities = []
-                
-                # Check AND entities - all must be present
-                and_match = True
-                for label, text_val in and_entities:
-                    if text_val not in entities:
-                        and_match = False
-                        break
-                
-                # Check OR entities - at least one must be present
-                or_match = True
-                if or_entities:
-                    or_match = False
-                    for label, text_val in or_entities:
-                        if text_val in entities:
-                            or_match = True
-                            break
-                
-                if and_match and or_match:
-                    filtered_ids.append(_id)
-                    filtered_docs.append(doc)
+        # Special case: If no text query but entity filtering is requested,
+        # query MongoDB directly for entities instead of doing meaningless vector search
+        if not search_text.strip() and (and_entities or or_entities):
+            debug("Entity-only search mode: querying MongoDB for entities")
             
-            hit_ids = filtered_ids
-            hit_docs = filtered_docs
-            debug(f"After entity filtering: {len(hit_ids)} records")
+            # Build MongoDB filter for entities
+            mongo_filter = {
+                "article": {"$exists": True, "$ne": None},
+                "$or": [
+                    {"fetch_error": {"$exists": False}},
+                    {"fetch_error": {"$in": [None, ""]}},
+                ],
+            }
+            
+            # Add date filter if specified
+            if args.start_date or args.end_date:
+                dr = {}
+                if args.start_date:
+                    dr["$gte"] = parse_date_arg(args.start_date)
+                if args.end_date:
+                    dr["$lte"] = parse_date_arg(args.end_date)
+                mongo_filter["published"] = dr
+            
+            # Add entity filters - query MongoDB's ner.entities.text field
+            entity_conditions = []
+            
+            # For OR entities: at least one must match
+            if or_entities:
+                for label, text_val in or_entities:
+                    entity_conditions.append({"ner.entities.text": text_val})
+                mongo_filter["$or"] = entity_conditions
+            
+            # For AND entities: all must match (use $and)
+            if and_entities:
+                and_conditions = []
+                for label, text_val in and_entities:
+                    and_conditions.append({"ner.entities.text": text_val})
+                if "$or" in mongo_filter:
+                    # Combine: (OR conditions) AND (AND conditions)
+                    mongo_filter = {
+                        "$and": [
+                            {"article": {"$exists": True, "$ne": None}},
+                            {"$or": [{"fetch_error": {"$exists": False}}, {"fetch_error": {"$in": [None, ""]}}]},
+                            {"$or": entity_conditions} if or_entities else {},
+                            *and_conditions
+                        ]
+                    }
+                    # Re-add date filter if present
+                    if args.start_date or args.end_date:
+                        dr = {}
+                        if args.start_date:
+                            dr["$gte"] = parse_date_arg(args.start_date)
+                        if args.end_date:
+                            dr["$lte"] = parse_date_arg(args.end_date)
+                        mongo_filter["$and"].append({"published": dr})
+                else:
+                    # Only AND entities, no OR
+                    for cond in and_conditions:
+                        mongo_filter.update(cond)
+            
+            # Get matching IDs from MongoDB
+            mongo_docs = list(mongo_coll.find(mongo_filter, {"_id": 1}).sort("published", -1).limit(args.top * 10))
+            candidate_ids = [str(d["_id"]) for d in mongo_docs]
+            debug(f"MongoDB entity search matched: {len(candidate_ids)} records")
+            
+            if not candidate_ids:
+                debug("No candidates found.")
+                print("No articles match the filter.")
+                return
+            
+            # Get documents from ChromaDB for these IDs
+            chroma_res = collection.get(ids=candidate_ids, include=["documents", "metadatas"])
+            id_to_doc = {_id: doc for _id, doc in zip(chroma_res["ids"], chroma_res["documents"])}
+            id_to_meta = {_id: meta for _id, meta in zip(chroma_res["ids"], chroma_res["metadatas"])}
+            
+            hit_ids = candidate_ids[:args.top]
+            hit_docs = [id_to_doc.get(_id, "") for _id in hit_ids]
+            hit_metas = [id_to_meta.get(_id, {}) for _id in hit_ids]
+            
+        else:
+            # Standard vector search mode
+            # Step 1: If date filtering is needed, first get matching IDs from MongoDB
+            date_filtered_ids = None
+            if args.start_date or args.end_date:
+                mongo_date_filter = {
+                    "article": {"$exists": True, "$ne": None},
+                    "$or": [
+                        {"fetch_error": {"$exists": False}},
+                        {"fetch_error": {"$in": [None, ""]}},
+                    ],
+                }
+                date_filter = {}
+                if args.start_date:
+                    date_filter["$gte"] = parse_date_arg(args.start_date)
+                if args.end_date:
+                    date_filter["$lte"] = parse_date_arg(args.end_date)
+                mongo_date_filter["published"] = date_filter
+                
+                # Get IDs from MongoDB that match date range
+                date_filtered_ids = set(str(d["_id"]) for d in mongo_coll.find(mongo_date_filter, {"_id": 1}))
+                debug(f"MongoDB date filter matched: {len(date_filtered_ids)} records")
+            
+            # Build query embedding
+            query_emb = (
+                encoder.encode(
+                    f"Represent this sentence for searching relevant passages: {search_text}",
+                    convert_to_tensor=True,
+                )
+                .cpu()
+                .numpy()
+                .tolist()
+            )
+            
+            # Query ChromaDB
+            # Fetch more results to account for date filtering
+            k_results = args.top * 20 if date_filtered_ids is not None else (args.top * 10 if args.bm25 else args.top)
+            res = collection.query(
+                query_embeddings=[query_emb],
+                n_results=k_results,
+                include=["documents", "metadatas"]
+            )
+            
+            hit_ids = res["ids"][0]
+            hit_docs = res["documents"][0]
+            hit_metas = res["metadatas"][0]
+            
+            debug(f"ChromaDB vector search returned: {len(hit_ids)} hits")
+            
+            # Step 2: Filter by date if we have a date filter
+            if date_filtered_ids is not None:
+                filtered_ids = []
+                filtered_docs = []
+                filtered_metas = []
+                for _id, doc, meta in zip(hit_ids, hit_docs, hit_metas):
+                    if _id in date_filtered_ids:
+                        filtered_ids.append(_id)
+                        filtered_docs.append(doc)
+                        filtered_metas.append(meta)
+                hit_ids = filtered_ids
+                hit_docs = filtered_docs
+                hit_metas = filtered_metas
+                debug(f"After date filtering: {len(hit_ids)} records")
+            
+            # Filter by entities using metadata
+            if and_entities or or_entities:
+                filtered_ids = []
+                filtered_docs = []
+                for _id, doc, meta in zip(hit_ids, hit_docs, hit_metas):
+                    entities_str = meta.get("entities", "[]")
+                    try:
+                        entities = json.loads(entities_str)
+                    except (json.JSONDecodeError, TypeError):
+                        entities = []
+                    
+                    # Check AND entities - all must be present
+                    and_match = True
+                    for label, text_val in and_entities:
+                        if text_val not in entities:
+                            and_match = False
+                            break
+                    
+                    # Check OR entities - at least one must be present
+                    or_match = True
+                    if or_entities:
+                        or_match = False
+                        for label, text_val in or_entities:
+                            if text_val in entities:
+                                or_match = True
+                                break
+                    
+                    if and_match and or_match:
+                        filtered_ids.append(_id)
+                        filtered_docs.append(doc)
+                
+                hit_ids = filtered_ids
+                hit_docs = filtered_docs
+                debug(f"After entity filtering: {len(hit_ids)} records")
 
     # --- BM25 Reranking Logic ---
     if args.bm25:
         if not HAS_BM25:
             debug("WARNING: rank_bm25 not installed. Skipping BM25 reranking.")
             hit_ids = hit_ids[: args.top]
+        elif not hit_docs:
+            debug("No documents for BM25 reranking.")
         else:
             debug("Applying BM25 reranking...")
             search_text = fulltext_search_string if fulltext_search_string else args.text
@@ -479,6 +587,11 @@ def main(argv=None):
             hit_ids = [item[0] for item in scored_results[: args.top]]
             debug("BM25 reranking complete.")
 
+    if not hit_ids:
+        debug("No results found.")
+        print("No articles match the query.")
+        return
+
     # Write IDs to file if requested
     if args.ids:
         with open(args.ids, "a") as f:
@@ -487,15 +600,11 @@ def main(argv=None):
                 f.write(f"{mongo_id}\n")
         debug(f"Appended {len(hit_ids)} MongoDB IDs to {args.ids}")
 
-    if not hit_ids:
-        debug("No results found.")
-        print("No articles match the query.")
-        return
-
     # Fetch additional data from MongoDB for display
     mongo_filter = {
         "_id": {"$in": [ObjectId(i) for i in hit_ids]},
     }
+    
     mongo_docs = list(
         mongo_coll.find(
             mongo_filter,

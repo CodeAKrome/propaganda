@@ -366,29 +366,35 @@ def query_chroma(
     or_entities = or_entities or []
     show_entities = show_entities or []
 
-    # Build ChromaDB where filter for date range
-    where_filter = None
+    # Step 1: If date filtering is needed, first get matching IDs from MongoDB
+    date_filtered_ids = None
     if start_date or end_date:
-        date_conditions = []
+        mongo_date_filter = {
+            "article": {"$exists": True, "$ne": None},
+            "$or": [
+                {"fetch_error": {"$exists": False}},
+                {"fetch_error": {"$in": [None, ""]}},
+            ],
+        }
+        date_filter = {}
         if start_date:
-            start_dt = parse_date_arg(start_date)
-            date_conditions.append({"published": {"$gte": start_dt.isoformat()}})
+            date_filter["$gte"] = parse_date_arg(start_date)
         if end_date:
-            end_dt = parse_date_arg(end_date)
-            date_conditions.append({"published": {"$lte": end_dt.isoformat()}})
+            date_filter["$lte"] = parse_date_arg(end_date)
+        mongo_date_filter["published"] = date_filter
         
-        if len(date_conditions) == 1:
-            where_filter = date_conditions[0]
-        else:
-            where_filter = {"$and": date_conditions}
+        # Get IDs from MongoDB that match date range
+        date_filtered_ids = set(str(d["_id"]) for d in mongo_coll.find(mongo_date_filter, {"_id": 1}))
 
+    # Step 2: Query ChromaDB
     if text.strip():
         query_text = f"Represent this sentence for searching relevant passages: {text}"
         emb = encoder.encode(query_text, convert_to_tensor=True).cpu().numpy().tolist()
+        # Fetch more results to account for date filtering
+        k_results = n * 20 if date_filtered_ids is not None else n * 10
         res = collection.query(
             query_embeddings=[emb],
-            n_results=n * 10,
-            where=where_filter,
+            n_results=k_results,
             include=["documents", "metadatas"],
         )
         candidate_ids = res["ids"][0]
@@ -399,10 +405,17 @@ def query_chroma(
             _id: meta for _id, meta in zip(res["ids"][0], res["metadatas"][0])
         }
     else:
-        res = collection.get(where=where_filter, limit=10000, include=["documents", "metadatas"])
+        res = collection.get(limit=10000, include=["documents", "metadatas"])
         candidate_ids = res["ids"]
         candidate_docs = {_id: doc for _id, doc in zip(res["ids"], res["documents"])}
         candidate_metas = {_id: meta for _id, meta in zip(res["ids"], res["metadatas"])}
+
+    if not candidate_ids:
+        return []
+
+    # Step 3: Filter by date if we have a date filter
+    if date_filtered_ids is not None:
+        candidate_ids = [_id for _id in candidate_ids if _id in date_filtered_ids]
 
     if not candidate_ids:
         return []

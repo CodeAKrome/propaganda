@@ -39,9 +39,9 @@ if [[ -z "$fulltext" ]]; then
     ./hybrid.py "${common_args[@]}" > "$vec"
 else
     text="${fulltext#+}" # remove leading '+' if present
-    filter_arg=$([[ $fulltext == +* ]] && echo "--filter" || echo "")
+#    filter_arg=$([[ $fulltext == +* ]] && echo "--fulltext" || echo "")
 
-    mode=$([[ -z "$filter_arg" ]] && echo "UNION" || echo "PREFILTER")
+#    mode=$([[ -z "$filter_arg" ]] && echo "UNION" || echo "PREFILTER")
     printf "%s %s Entity %s Full text %s search\n" "$mode" "$filename" "$entity" "$text"
     
     ./hybrid.py "${common_args[@]}" --fulltext "$text" $filter_arg > "$vec"

@@ -109,8 +109,13 @@ mkvec:
 	cat db/output/*.ids | grep -v '#' | sort | uniq > db/ids.txt
 
 mkvecsmall:
+	find db/output -name "*.md" -delete
+	find db/output -name "*.txt" -delete
 	find db/output -name "*.vec" -delete
+	find db/output -name "*.tsv" -delete
 	find db/output -name "*.ids" -delete
+	find db/output -name "*.cypher" -delete
+	find db/output -name "*.reporter" -delete
 	@source $(DB_ENV)/bin/activate && cd db && ./batchquery.sh './mkvec.sh' $(NUMDAYS)
 	cat db/output/*.ids | grep -v '#' | sort | uniq > db/ids.txt
 

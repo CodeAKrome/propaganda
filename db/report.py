@@ -233,7 +233,7 @@ Only reply with what the reporter says, not any stage direction like musical int
 Do not use markup. Do not make tables. Reply with plain text only."""
 
     # Model configurations - define your preferred failover order
-    cypher_pairs = ["ollama", "gpt-oss:20b"]
+    cypher_pairs = ["ollama", "gpt-oss:120b"]
 
     report_pairs = [
         "gemini",
@@ -241,7 +241,7 @@ Do not use markup. Do not make tables. Reply with plain text only."""
         "gemini",
         "models/gemini-2.5-flash",
         "ollama",
-        "gpt-oss:20b",
+        "gpt-oss:120b",
     ]
 
     # Run cypher generation
