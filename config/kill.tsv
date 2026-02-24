@@ -1,3 +1,14 @@
+straits-times	^FAQs\s*$
+straits-times	^Podcasts\s*$
+straits-times	^Visual\s*$
+straits-times	^sport\s*$
+straits-times	^business\s*$
+straits-times	^life\s*$
+straits-times	^opinion\s*$
+straits-times	^world\s*$
+straits-times	^asia\s*$
+straits-times	^singapore\s*$
+straits-times	^Search\s*$
 abc-int	24\/7 coverage.*
 syrian-obs	This article was translated and edited by The Syrian Observer.*
 abc-pol	___.*

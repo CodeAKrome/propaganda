@@ -2,6 +2,8 @@
 import sys
 from datetime import datetime, timedelta, timezone
 
+# Set a timestamp file a certane number of days in the past for a start point to load data.
+
 # Default to 1 day if no argument provided
 days = 1
 

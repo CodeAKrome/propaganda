@@ -1,14 +1,10 @@
 CONDA_MP3_ENV = kokoro
 DB_ENV = db/.venv
 SHELL := /bin/zsh
-#MLX_MODEL = mlx-community/Llama-4-Scout-17B-16E-Instruct-4bit
-#NUMDAYS = -2
 TITLEFILE = output/titles.tsv
-
-# DATE := $(shell cat db/timestamp.txt 2>/dev/null | cut -d'T' -f1)
-# DATE ?= $(shell date +%F)  # fallback to today if file missing
 NUMDAYS := $(shell cat db/timestamp.txt 2>/dev/null | cut -d'T' -f1)
 NUMDAYS ?= $(shell date +%F)  # fallback to today if file missing
+TIMESTAMP_OFFSET = 3
 
 .PHONY: mkvecsmallest build load back front vector query mp3 mgconsole testload \
 	thingsthatgo fini ner fner fnervector entity fvector bias mkvec fbias \
@@ -24,7 +20,7 @@ smallthingsthatgo: timestamp load ner vector entity mkvecsmall bias mkvecsmall q
 # Doesn't clean db/output or mp3/mp3
 smallestthingsthatgo: timestamp load ner vector entity mkvecsmallest bias mkvecsmallest querysmallest mp3small fini
 
-# <=-- Main --=>
+# <=-- END Main --=>
 
 # old
 oldthingsthatgo: entity mkvecsmall bias mkvecsmall querysmall cleanmp3 mp3small fini
@@ -60,18 +56,18 @@ mddbscan:
 	find db/cluster -name '*.md' -exec rm {} \;
 	cd db && ./clustervec2md.sh
 
-biast5:
+t5bias:
 	source $$(conda info --base)/etc/profile.d/conda.sh && \
 	conda activate mlx2 && \
 	cd llm && \
-	./bias_processor.py --batch-size 2000
+	./bias_processor.py --start-date $(NUMDAYS)
 
 t5server:
 	source t5/.venv/bin/activate && cd t5 && ./server_mps.py
 
-# this is -1 day
+# this is -offset days
 timestamp:
-	db/mktimestamp.py 1
+	db/mktimestamp.py $(TIMESTAMP_OFFSET)
 
 black:
 	black db/*.py
@@ -100,7 +96,7 @@ front:
 	front/RUNME.sh
 # read data from mongodb and create vectors in chroma
 vector:
-	$(DB_ENV)/bin/python db/mongo2chroma.py load --start-date $(NUMDAYS) --force
+	@source $(DB_ENV)/bin/activate && cd db && ./mongo2chroma.py load --start-date $(NUMDAYS) --force
 # Do NER
 ner:
 	cd ../ner && ./RUNME.sh $(NUMDAYS)
@@ -119,8 +115,8 @@ mkvecsmall:
 	cat db/output/*.ids | grep -v '#' | sort | uniq > db/ids.txt
 
 mkvecsmallest:
-	find db/output -name "*.vec" -delete
-	find db/output -name "*.ids" -delete
+#	find db/output -name "*.vec" -delete
+#	find db/output -name "*.ids" -delete
 	@source $(DB_ENV)/bin/activate && cd db && ./batchquerysmallest.sh './mkvec.sh' $(NUMDAYS)
 	cat db/output/*.ids | grep -v '#' | sort | uniq > db/ids.txt
 

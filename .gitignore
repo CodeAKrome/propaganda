@@ -1,3 +1,5 @@
+db/chroma_db/*
+db/timestamp.txt
 db/migrate_fail_ids.txt
 db/migrate_ids.txt
 llm/cluster/*

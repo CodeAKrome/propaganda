@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 """
 hybrid.py
-Hybrid search:  MongoDB filter  →  temporary Chroma collection  →  vector search
-Uses the same DB/collection credentials as mongo2chroma.py
+Hybrid search using ChromaDB with metadata filtering.
+Uses the same ChromaDB collection as mongo2chroma.py with metadata for date and entity filtering.
 """
 
 import os
-import uuid
 import sys
 import json
 import argparse
@@ -34,10 +33,8 @@ MONGO_URI = os.getenv("MONGO_URI", "mongodb://root:example@localhost:27017")
 MONGO_DB = "rssnews"
 MONGO_COLL = "articles"
 
-CHROMA_PATH = "./chroma"  # same persistent path
-
-# HYBRID_COLL = "hybrid_tmp"  # temporary collection – wiped each run
-HYBRID_COLL = f"hybrid_tmp_{os.getpid()}_{uuid.uuid4().hex[:8]}"
+CHROMA_PATH = os.getenv("CHROMA_PATH", "./chroma_db")  # same persistent path
+CHROMA_COLL = "articles"  # use the same collection as mongo2chroma.py
 
 EMBED_MODEL = "BAAI/bge-large-en-v1.5"
 # ------------------------------------------------------------------
@@ -70,37 +67,6 @@ def parse_entity_list(entity_str: Optional[str]) -> List[Tuple[Optional[str], st
     if not entity_str:
         return []
     return [parse_entity_spec(e.strip()) for e in entity_str.split(",")]
-
-
-def build_mongo_entity_filter(
-    and_list: List[Tuple[Optional[str], str]], or_list: List[Tuple[Optional[str], str]]
-) -> Dict:
-    clauses = []
-    for label, text in and_list:
-        if label and text:
-            clauses.append(
-                {"ner.entities": {"$elemMatch": {"label": label, "text": text}}}
-            )
-        elif label:
-            clauses.append({"ner.entities.label": label})
-        else:
-            clauses.append({"ner.entities.text": text})
-    if or_list:
-        or_clauses = []
-        for label, text in or_list:
-            if label and text:
-                or_clauses.append(
-                    {"ner.entities": {"$elemMatch": {"label": label, "text": text}}}
-                )
-            elif label:
-                or_clauses.append({"ner.entities.label": label})
-            else:
-                or_clauses.append({"ner.entities.text": text})
-        clauses.append({"$or": or_clauses})
-    if not clauses:
-        return {}
-    # ---  always wrap in a dict  ---
-    return {"$and": clauses} if len(clauses) > 1 else clauses[0]
 
 
 def format_bias(bias: Dict | str | None) -> str:
@@ -153,7 +119,7 @@ def debug(msg: str):
 
 # ------------------------------------------------------------------
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="Hybrid Mongo→Chroma vector search")
+    parser = argparse.ArgumentParser(description="Hybrid ChromaDB vector search with metadata filtering")
     parser.add_argument("text", help="Query string for vector search")
     parser.add_argument(
         "--andentity",
@@ -182,11 +148,6 @@ def main(argv=None):
         help="How many results to return (default 10)",
     )
     parser.add_argument(
-        "--filter",
-        action="store_true",
-        help="Use entity search results as the candidate pool for full-text search.",
-    )
-    parser.add_argument(
         "--ids",
         help="File to write the MongoDB IDs of matched records to.",
     )
@@ -212,179 +173,180 @@ def main(argv=None):
         # Wrap each phrase in quotes for an exact phrase search.
         fulltext_search_string = " ".join([f'"{phrase}"' for phrase in phrases])
 
-    # 1. Build Mongo filter
-    mongo_filter = {
-        "article": {"$exists": True, "$ne": None},
-        "$or": [
-            {"fetch_error": {"$exists": False}},
-            {"fetch_error": {"$in": [None, ""]}},
-        ],
-    }
-    if args.start_date or args.end_date:
-        dr = {}
-        if args.start_date:
-            dr["$gte"] = parse_date_arg(args.start_date)
-        if args.end_date:
-            dr["$lte"] = parse_date_arg(args.end_date)
-        mongo_filter["published"] = dr
-    entity_filter = build_mongo_entity_filter(and_entities, or_entities)
-    if entity_filter:
-        mongo_filter.update(entity_filter)
-
-    # 2. Fetch candidates based on filter logic
-    if args.filter and fulltext_search_string:
-        # --filter: Entity search provides candidates for full-text search (2-stage)
-        debug("Filter mode: Using entity search results for full-text search.")
-        # Stage 1: Get IDs from entity/date filter
-        initial_candidates = list(mongo_coll.find(mongo_filter, {"_id": 1}))
-        candidate_ids = [c["_id"] for c in initial_candidates]
-        debug(f"Entity filter matched: {len(candidate_ids)} records")
-
-        if not candidate_ids:
-            candidates = []
-        else:
-            # Stage 2: Run full-text search only on those IDs
-            fulltext_filter = {
-                "_id": {"$in": candidate_ids},
-                "$text": {"$search": fulltext_search_string},
-            }
-            candidates = list(
-                mongo_coll.find(
-                    fulltext_filter,
-                    {
-                        "_id": 1,
-                        "title": 1,
-                        "source": 1,
-                        "published": 1,
-                        "ner": 1,
-                        "article": 1,
-                        "bias": 1,
-                    },
-                )
-            )
-    else:
-        # Default behavior (no --filter): Union of entity and full-text results
-        debug("Default mode: Combining entity and full-text search results.")
-        # Start with the entity/date filtered list
-        candidates = list(
-            mongo_coll.find(
-                mongo_filter,
-                {
-                    "_id": 1,
-                    "title": 1,
-                    "source": 1,
-                    "published": 1,
-                    "ner": 1,
-                    "article": 1,
-                    "bias": 1,
-                },
-            ).sort("published", -1)
-        )
-        debug(f"Mongo filter matched: {len(candidates)} records")
-
-        # If full-text search is specified, run it and combine results
-        if fulltext_search_string:
-            text_filter = {"$text": {"$search": fulltext_search_string}}
-            if "published" in mongo_filter:
-                text_filter["published"] = mongo_filter["published"]
-            text_candidates = list(
-                mongo_coll.find(
-                    text_filter,
-                    {
-                        "_id": 1,
-                        "title": 1,
-                        "source": 1,
-                        "published": 1,
-                        "ner": 1,
-                        "article": 1,
-                        "bias": 1,
-                    },
-                )
-            )
-            debug(f"Full-text search matched: {len(text_candidates)} records")
-            # Combine and de-duplicate
-            candidate_dict = {str(c["_id"]): c for c in candidates}
-            for c in text_candidates:
-                candidate_dict[str(c["_id"])] = c
-            candidates = list(candidate_dict.values())
-
-    if args.ids:
-        command_line_args = " ".join(sys.argv)
-        candidate_ids_to_write = [str(c["_id"]) for c in candidates]
-        with open(args.ids, "a") as f:
-            f.write(f"# {' '.join(sys.argv)}\n")
-            for mongo_id in candidate_ids_to_write:
-                f.write(f"{mongo_id}\n")
-        debug(f"Appended {len(candidate_ids_to_write)} MongoDB IDs to {args.ids}")
-
-    if not candidates:
-        debug("No candidates found.")
-        print("No articles match the filter.")
+    # 1. Get or create the main ChromaDB collection
+    try:
+        collection = chroma_client.get_collection(name=CHROMA_COLL)
+        debug(f"Using existing ChromaDB collection: {CHROMA_COLL}")
+    except Exception:
+        debug(f"Collection {CHROMA_COLL} not found. Please run mongo2chroma.py load first.")
+        print("No articles found. Run 'python db/mongo2chroma.py load' first.")
         return
 
-    candidate_ids = [str(c["_id"]) for c in candidates]
-    debug(f"Total unique candidates for vector search: {len(candidates)}")
-    # debug("Mongo _ids: " + ",".join(candidate_ids))
+    # 2. Build ChromaDB where filter for date range
+    where_filter = None
+    if args.start_date or args.end_date:
+        date_conditions = []
+        if args.start_date:
+            start_dt = parse_date_arg(args.start_date)
+            date_conditions.append({"published": {"$gte": start_dt.isoformat()}})
+        if args.end_date:
+            end_dt = parse_date_arg(args.end_date)
+            date_conditions.append({"published": {"$lte": end_dt.isoformat()}})
+        
+        if len(date_conditions) == 1:
+            where_filter = date_conditions[0]
+        else:
+            where_filter = {"$and": date_conditions}
 
-    # 3. Wipe / create temporary Chroma collection
-    try:
-        chroma_client.delete_collection(HYBRID_COLL)
-    except Exception:
-        pass
-    tmp_coll = chroma_client.create_collection(
-        name=HYBRID_COLL, metadata={"hnsw:space": "cosine"}
-    )
-
-    # 4. Embed + insert candidates in batches
-    batch_size = 4096
-    for i in range(0, len(candidates), batch_size):
-        batch = candidates[i : i + batch_size]
-        ids = [str(c["_id"]) for c in batch]
-        docs = [c.get("article", "").strip() for c in batch]
-
-        debug(
-            f"Processing batch {i//batch_size + 1}/{(len(candidates) + batch_size - 1)//batch_size}..."
+    # 3. Handle fulltext search mode (MongoDB text search first, then ChromaDB)
+    if fulltext_search_string:
+        debug(f"Full-text search mode: {fulltext_search_string}")
+        
+        # Build MongoDB filter
+        mongo_filter = {
+            "article": {"$exists": True, "$ne": None},
+            "$or": [
+                {"fetch_error": {"$exists": False}},
+                {"fetch_error": {"$in": [None, ""]}},
+            ],
+            "$text": {"$search": fulltext_search_string},
+        }
+        
+        if args.start_date or args.end_date:
+            dr = {}
+            if args.start_date:
+                dr["$gte"] = parse_date_arg(args.start_date)
+            if args.end_date:
+                dr["$lte"] = parse_date_arg(args.end_date)
+            mongo_filter["published"] = dr
+        
+        # Get matching IDs from MongoDB
+        mongo_docs = list(mongo_coll.find(mongo_filter, {"_id": 1}).sort("published", -1))
+        candidate_ids = [str(d["_id"]) for d in mongo_docs]
+        debug(f"MongoDB full-text search matched: {len(candidate_ids)} records")
+        
+        if not candidate_ids:
+            debug("No candidates found.")
+            print("No articles match the filter.")
+            return
+        
+        # Get documents from ChromaDB for these IDs
+        chroma_res = collection.get(ids=candidate_ids, include=["documents", "metadatas"])
+        id_to_doc = {_id: doc for _id, doc in zip(chroma_res["ids"], chroma_res["documents"])}
+        id_to_meta = {_id: meta for _id, meta in zip(chroma_res["ids"], chroma_res["metadatas"])}
+        
+        # Filter by entities using metadata
+        if and_entities or or_entities:
+            filtered_ids = []
+            for _id in candidate_ids:
+                if _id not in id_to_meta:
+                    continue
+                meta = id_to_meta[_id]
+                entities_str = meta.get("entities", "[]")
+                try:
+                    entities = json.loads(entities_str)
+                except (json.JSONDecodeError, TypeError):
+                    entities = []
+                
+                # Check AND entities - all must be present
+                and_match = True
+                for label, text_val in and_entities:
+                    if text_val not in entities:
+                        and_match = False
+                        break
+                
+                # Check OR entities - at least one must be present
+                or_match = True
+                if or_entities:
+                    or_match = False
+                    for label, text_val in or_entities:
+                        if text_val in entities:
+                            or_match = True
+                            break
+                
+                if and_match and or_match:
+                    filtered_ids.append(_id)
+            
+            candidate_ids = filtered_ids
+            debug(f"After entity filtering: {len(candidate_ids)} records")
+        
+        # For fulltext mode, we already have the results, just need to display them
+        hit_ids = candidate_ids[:args.top * 10] if args.bm25 else candidate_ids[:args.top]
+        hit_docs = [id_to_doc.get(_id, "") for _id in hit_ids]
+        
+    else:
+        # 4. Vector search mode using ChromaDB
+        search_text = args.text
+        
+        # Build query embedding
+        query_emb = (
+            encoder.encode(
+                f"Represent this sentence for searching relevant passages: {search_text}",
+                convert_to_tensor=True,
+            )
+            .cpu()
+            .numpy()
+            .tolist()
         )
-
-        embeddings = encoder.encode(docs, convert_to_tensor=True).cpu().numpy().tolist()
-        tmp_coll.add(documents=docs, embeddings=embeddings, ids=ids)
-
-    # 5. Vector search
-
-    # If reranking, fetch a larger candidate pool (e.g., 10x the requested top N)
-    # This gives BM25 enough material to re-order meaningfully.
-    k_results = args.top * 10 if args.bm25 else args.top
-
-    # Ensure we don't request more results than we have candidates
-    k_results = min(k_results, len(candidates))
-
-    search_text = fulltext_search_string if fulltext_search_string else args.text
-
-    query_emb = (
-        encoder.encode(
-            f"Represent this sentence for searching relevant passages: {search_text}",
-            convert_to_tensor=True,
+        
+        # Query ChromaDB with metadata filter
+        k_results = args.top * 10 if args.bm25 else args.top
+        res = collection.query(
+            query_embeddings=[query_emb],
+            n_results=k_results,
+            where=where_filter,
+            include=["documents", "metadatas"]
         )
-        .cpu()
-        .numpy()
-        .tolist()
-    )
-    res = tmp_coll.query(
-        query_embeddings=[query_emb], n_results=k_results, include=["documents"]
-    )
-    hit_ids = res["ids"][0]
-    hit_docs = res["documents"][0]
-
-    debug(f"Vector search returned: {len(hit_ids)} hits")
+        
+        hit_ids = res["ids"][0]
+        hit_docs = res["documents"][0]
+        hit_metas = res["metadatas"][0]
+        
+        debug(f"ChromaDB vector search returned: {len(hit_ids)} hits")
+        
+        # Filter by entities using metadata
+        if and_entities or or_entities:
+            filtered_ids = []
+            filtered_docs = []
+            for _id, doc, meta in zip(hit_ids, hit_docs, hit_metas):
+                entities_str = meta.get("entities", "[]")
+                try:
+                    entities = json.loads(entities_str)
+                except (json.JSONDecodeError, TypeError):
+                    entities = []
+                
+                # Check AND entities - all must be present
+                and_match = True
+                for label, text_val in and_entities:
+                    if text_val not in entities:
+                        and_match = False
+                        break
+                
+                # Check OR entities - at least one must be present
+                or_match = True
+                if or_entities:
+                    or_match = False
+                    for label, text_val in or_entities:
+                        if text_val in entities:
+                            or_match = True
+                            break
+                
+                if and_match and or_match:
+                    filtered_ids.append(_id)
+                    filtered_docs.append(doc)
+            
+            hit_ids = filtered_ids
+            hit_docs = filtered_docs
+            debug(f"After entity filtering: {len(hit_ids)} records")
 
     # --- BM25 Reranking Logic ---
     if args.bm25:
         if not HAS_BM25:
             debug("WARNING: rank_bm25 not installed. Skipping BM25 reranking.")
-            # Fallback to slicing the original list if we fetched extra
             hit_ids = hit_ids[: args.top]
         else:
             debug("Applying BM25 reranking...")
+            search_text = fulltext_search_string if fulltext_search_string else args.text
             # Tokenize corpus and query (simple whitespace tokenization)
             tokenized_corpus = [doc.lower().split() for doc in hit_docs]
             tokenized_query = search_text.lower().split()
@@ -393,7 +355,6 @@ def main(argv=None):
             doc_scores = bm25.get_scores(tokenized_query)
 
             # Combine ids and scores, then sort
-            # hit_ids and doc_scores are index-aligned
             scored_results = list(zip(hit_ids, doc_scores))
 
             # Sort by score descending
@@ -403,8 +364,38 @@ def main(argv=None):
             hit_ids = [item[0] for item in scored_results[: args.top]]
             debug("BM25 reranking complete.")
 
-    # 6. Build id→doc map and print
-    id_to_doc = {str(c["_id"]): c for c in candidates}
+    # Write IDs to file if requested
+    if args.ids:
+        with open(args.ids, "a") as f:
+            f.write(f"# {' '.join(sys.argv)}\n")
+            for mongo_id in hit_ids:
+                f.write(f"{mongo_id}\n")
+        debug(f"Appended {len(hit_ids)} MongoDB IDs to {args.ids}")
+
+    if not hit_ids:
+        debug("No results found.")
+        print("No articles match the query.")
+        return
+
+    # Fetch additional data from MongoDB for display
+    mongo_filter = {
+        "_id": {"$in": [ObjectId(i) for i in hit_ids]},
+    }
+    mongo_docs = list(
+        mongo_coll.find(
+            mongo_filter,
+            {
+                "_id": 1,
+                "title": 1,
+                "source": 1,
+                "published": 1,
+                "ner": 1,
+                "article": 1,
+                "bias": 1,
+            },
+        )
+    )
+    id_to_doc = {str(d["_id"]): d for d in mongo_docs}
     show_entities = (
         parse_entity_list(args.showentity) if args.showentity is not None else None
     )
@@ -425,8 +416,6 @@ def main(argv=None):
         if show_entities is not None:
             from mongo2chroma import extract_entities_from_doc, format_entities
 
-            # The logic in extract_entities_from_doc handles Optional[str] for the label,
-            # so we can safely ignore the linter warning here.
             print(format_entities(extract_entities_from_doc(doc, show_entities)))  # type: ignore
         print(f"Text: {doc.get('article', '')}")
 

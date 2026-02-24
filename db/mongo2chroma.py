@@ -24,7 +24,7 @@ MONGO_URI = os.getenv("MONGO_URI", "mongodb://root:example@localhost:27017")
 MONGO_DB = "rssnews"
 MONGO_COLL = "articles"
 
-CHROMA_PATH = "./chroma"
+CHROMA_PATH = os.getenv("CHROMA_PATH", "./chroma_db")
 CHROMA_COLL = "articles"
 EMBED_MODEL = "BAAI/bge-large-en-v1.5"
 BATCH_SIZE = 32
@@ -210,12 +210,12 @@ def load_into_chroma(
         total_docs = min(total_docs, limit)
 
     cursor = (
-        mongo_coll.find(q, {"_id": 1, "article": 1}).sort("published", -1).limit(limit)
+        mongo_coll.find(q, {"_id": 1, "article": 1, "published": 1, "ner": 1}).sort("published", -1).limit(limit)
         if limit
-        else mongo_coll.find(q, {"_id": 1, "article": 1}).sort("published", -1)
+        else mongo_coll.find(q, {"_id": 1, "article": 1, "published": 1, "ner": 1}).sort("published", -1)
     )
 
-    docs, ids = [], []
+    docs, ids, metadatas = [], [], []
     stored = 0
     skipped = 0
 
@@ -230,18 +230,35 @@ def load_into_chroma(
             skipped += 1
             continue
 
+        # Build metadata
+        metadata = {}
+        
+        # Add publication date as ISO string for filtering
+        published_dt = doc.get("published")
+        if published_dt and isinstance(published_dt, datetime):
+            metadata["published"] = published_dt.isoformat()
+        
+        # Add entities as JSON string for filtering
+        ner = doc.get("ner")
+        if ner and "entities" in ner:
+            # Store entity texts as a JSON string for filtering
+            entity_texts = [e.get("text", "") for e in ner["entities"] if e.get("text")]
+            if entity_texts:
+                metadata["entities"] = json.dumps(entity_texts)
+        
         docs.append(text)
         ids.append(_id)
+        metadatas.append(metadata)
 
         if len(docs) >= BATCH_SIZE:
             embs = encoder.encode(docs, convert_to_tensor=True).cpu().numpy().tolist()
-            collection.add(documents=docs, embeddings=embs, ids=ids)
+            collection.add(documents=docs, embeddings=embs, ids=ids, metadatas=metadatas)
             stored += len(ids)
-            docs, ids = [], []
+            docs, ids, metadatas = [], [], []
 
     if docs:
         embs = encoder.encode(docs, convert_to_tensor=True).cpu().numpy().tolist()
-        collection.add(documents=docs, embeddings=embs, ids=ids)
+        collection.add(documents=docs, embeddings=embs, ids=ids, metadatas=metadatas)
         stored += len(ids)
 
     if skipped > 0:
@@ -259,7 +276,7 @@ def query_chroma(
     or_entities: Optional[List[Tuple[str | None, str]]] = None,
     show_entities: Optional[List[Tuple[str | None, str]]] = None,
 ) -> List[Dict[str, str]]:
-    """Return the `n` most similar articles."""
+    """Return the `n` most similar articles using ChromaDB metadata filtering for dates."""
     collection = get_chroma_collection()
     encoder = get_encoder()
 
@@ -267,26 +284,80 @@ def query_chroma(
     or_entities = or_entities or []
     show_entities = show_entities or []
 
+    # Build ChromaDB where filter for date range
+    where_filter = None
+    if start_date or end_date:
+        date_conditions = []
+        if start_date:
+            start_dt = parse_date_arg(start_date)
+            date_conditions.append({"published": {"$gte": start_dt.isoformat()}})
+        if end_date:
+            end_dt = parse_date_arg(end_date)
+            date_conditions.append({"published": {"$lte": end_dt.isoformat()}})
+        
+        if len(date_conditions) == 1:
+            where_filter = date_conditions[0]
+        else:
+            where_filter = {"$and": date_conditions}
+
     if text.strip():
         query_text = f"Represent this sentence for searching relevant passages: {text}"
         emb = encoder.encode(query_text, convert_to_tensor=True).cpu().numpy().tolist()
         res = collection.query(
             query_embeddings=[emb],
             n_results=n * 10,
-            include=["documents"],
+            where=where_filter,
+            include=["documents", "metadatas"],
         )
         candidate_ids = res["ids"][0]
         candidate_docs = {
             _id: doc for _id, doc in zip(res["ids"][0], res["documents"][0])
         }
+        candidate_metas = {
+            _id: meta for _id, meta in zip(res["ids"][0], res["metadatas"][0])
+        }
     else:
-        res = collection.get(limit=10000, include=["documents"])
+        res = collection.get(where=where_filter, limit=10000, include=["documents", "metadatas"])
         candidate_ids = res["ids"]
         candidate_docs = {_id: doc for _id, doc in zip(res["ids"], res["documents"])}
+        candidate_metas = {_id: meta for _id, meta in zip(res["ids"], res["metadatas"])}
 
     if not candidate_ids:
         return []
 
+    # Filter by entities using metadata (entities stored as JSON string)
+    if and_entities or or_entities:
+        filtered_ids = []
+        for _id in candidate_ids:
+            meta = candidate_metas.get(_id, {})
+            entities_str = meta.get("entities", "[]")
+            try:
+                entities = json.loads(entities_str)
+            except (json.JSONDecodeError, TypeError):
+                entities = []
+            
+            # Check AND entities - all must be present
+            and_match = True
+            for label, text_val in and_entities:
+                if text_val not in entities:
+                    and_match = False
+                    break
+            
+            # Check OR entities - at least one must be present
+            or_match = True
+            if or_entities:
+                or_match = False
+                for label, text_val in or_entities:
+                    if text_val in entities:
+                        or_match = True
+                        break
+            
+            if and_match and or_match:
+                filtered_ids.append(_id)
+        
+        candidate_ids = filtered_ids
+
+    # Fetch additional data from MongoDB for display
     mongo_filter = {
         "_id": {"$in": [ObjectId(i) for i in candidate_ids]},
         "$or": [
@@ -294,18 +365,6 @@ def query_chroma(
             {"fetch_error": {"$in": [None, ""]}},
         ],
     }
-
-    if start_date or end_date:
-        date_filter = {}
-        if start_date:
-            date_filter["$gte"] = parse_date_arg(start_date)
-        if end_date:
-            date_filter["$lte"] = parse_date_arg(end_date)
-        mongo_filter["published"] = date_filter
-
-    entity_filter = build_mongo_entity_filter(and_entities, or_entities)
-    if entity_filter:
-        mongo_filter.update(entity_filter)
 
     mongo_docs = list(
         mongo_coll.find(
