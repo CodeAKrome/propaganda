@@ -26,8 +26,12 @@ MONGO_COLL = "articles"
 
 CHROMA_PATH = os.getenv("CHROMA_PATH", "./chroma_db")
 CHROMA_COLL = "articles"
-EMBED_MODEL = "BAAI/bge-large-en-v1.5"
 BATCH_SIZE = 32
+
+# Embedding model defaults - can be overridden via CLI
+DEFAULT_EMBED_TYPE = "flair-pooled"  # Options: flair-pooled, bge-large, sentence-transformer
+EMBED_MODEL = "BAAI/bge-large-en-v1.5"
+FLAIR_MODEL = "news-forward"
 # ------------------------------------------------------------------
 
 mongo_client = pymongo.MongoClient(MONGO_URI)
@@ -37,6 +41,7 @@ mongo_coll = mongo_client[MONGO_DB][MONGO_COLL]
 _chroma_client = None
 _collection = None
 _encoder = None
+_embed_type = None  # Track which encoder type is loaded
 
 
 def get_chroma_collection():
@@ -55,14 +60,87 @@ def get_chroma_collection():
     return _collection
 
 
-def get_encoder():
-    """Lazy-load sentence transformer encoder."""
-    global _encoder
-    if _encoder is None:
-        from sentence_transformers import SentenceTransformer
-
-        _encoder = SentenceTransformer(EMBED_MODEL)
+def get_encoder(embed_type: str = "flair-pooled", embed_model: str = None):
+    """
+    Lazy-load encoder based on type.
+    
+    Args:
+        embed_type: Type of embedding - 'flair-pooled', 'bge-large', or 'sentence-transformer'
+        embed_model: Model name/path (for sentence-transformer type)
+    
+    Returns:
+        Encoder object with .encode() method
+    """
+    global _encoder, _embed_type
+    
+    # Determine if we need to (re)load the encoder
+    if _encoder is None or _embed_type != embed_type:
+        if embed_type == "flair-pooled":
+            from flair.embeddings import PooledFlairEmbeddings
+            from flair.data import Sentence
+            import numpy as np
+            
+            model_name = embed_model or FLAIR_MODEL
+            _encoder = FlairPooledEncoder(PooledFlairEmbeddings(model_name))
+        elif embed_type == "bge-large":
+            from sentence_transformers import SentenceTransformer
+            _encoder = SentenceTransformer("BAAI/bge-large-en-v1.5")
+        else:  # sentence-transformer
+            from sentence_transformers import SentenceTransformer
+            model = embed_model or EMBED_MODEL
+            _encoder = SentenceTransformer(model)
+        
+        _embed_type = embed_type
+    
     return _encoder
+
+
+class FlairPooledEncoder:
+    """Wrapper for Flair PooledFlairEmbeddings to match sentence-transformers API."""
+    
+    def __init__(self, flair_embedding):
+        self._flair = flair_embedding
+    
+    def encode(self, texts, convert_to_tensor=True, **kwargs):
+        """Encode texts to embeddings. Returns tensor-like object with .cpu().numpy() method."""
+        from flair.data import Sentence
+        import numpy as np
+        import torch
+        
+        single_input = isinstance(texts, str)
+        if single_input:
+            texts = [texts]
+        
+        embeddings = []
+        for text in texts:
+            sent = Sentence(text)
+            self._flair.embed(sent)
+            # Get the embedding from the first token (pooled representation)
+            # PooledFlairEmbeddings provides a single embedding per sentence
+            if len(sent) > 0:
+                emb = sent[0].embedding.detach().cpu().numpy()
+            else:
+                emb = np.zeros(self._flair.embedding_length)
+            embeddings.append(emb)
+        
+        result = np.array(embeddings)
+        
+        # For single input, squeeze to 1D to match sentence-transformers behavior
+        if single_input:
+            result = result[0]
+        
+        # Create a tensor-like wrapper that matches sentence-transformers output
+        class TensorWrapper:
+            def __init__(self, arr):
+                self._arr = arr
+            
+            def cpu(self):
+                return self
+            
+            def numpy(self):
+                return self._arr
+        
+        return TensorWrapper(result)
 
 
 # ------------------------------------------------------------------
@@ -161,12 +239,14 @@ def load_into_chroma(
     and_entities: Optional[List[Tuple[str | None, str]]] = None,
     or_entities: Optional[List[Tuple[str | None, str]]] = None,
     force: bool = False,
+    embed_type: str = "flair-pooled",
+    embed_model: Optional[str] = None,
 ) -> int:
     """Embed every article and add into Chroma."""
     from tqdm import tqdm
 
     collection = get_chroma_collection()
-    encoder = get_encoder()
+    encoder = get_encoder(embed_type, embed_model)
 
     if force:
         print("Clearing existing Chroma collection...")
@@ -275,10 +355,12 @@ def query_chroma(
     and_entities: Optional[List[Tuple[str | None, str]]] = None,
     or_entities: Optional[List[Tuple[str | None, str]]] = None,
     show_entities: Optional[List[Tuple[str | None, str]]] = None,
+    embed_type: str = "flair-pooled",
+    embed_model: Optional[str] = None,
 ) -> List[Dict[str, str]]:
     """Return the `n` most similar articles using ChromaDB metadata filtering for dates."""
     collection = get_chroma_collection()
-    encoder = get_encoder()
+    encoder = get_encoder(embed_type, embed_model)
 
     and_entities = and_entities or []
     or_entities = or_entities or []
@@ -461,24 +543,23 @@ def format_bias(bias: Dict | str | None) -> str:
         bias: Bias data - either a dict with dir/deg/reason, or a JSON string
         
     Returns:
-        Formatted string for display
+        Formatted string for display wrapped in <bias> tags
     """
     if not bias:
-        return "(none)"
+        return "<bias>\n(none)\n</bias>"
     
     # Handle legacy string format
     if isinstance(bias, str):
         try:
-            import json
             bias = json.loads(bias)
         except (json.JSONDecodeError, ValueError):
-            return bias  # Return as-is if not valid JSON
+            return f"<bias>\n{bias}\n</bias>"  # Return as-is if not valid JSON
     
     if not isinstance(bias, dict):
-        return str(bias)
+        return f"<bias>\n{str(bias)}\n</bias>"
     
     # Format as object
-    lines = []
+    lines = ["<bias>"]
     if "dir" in bias:
         dir_data = bias["dir"]
         if isinstance(dir_data, dict):
@@ -494,7 +575,8 @@ def format_bias(bias: Dict | str | None) -> str:
     if "reason" in bias:
         lines.append(f"Reason: {bias['reason']}")
     
-    return "\n".join(lines) if lines else str(bias)
+    lines.append("</bias>")
+    return "\n".join(lines)
 
 
 def export_titles(
@@ -694,6 +776,21 @@ def main(argv=None):
         action="store_true",
         help="Clear existing collection and reload all articles",
     )
+    p_load.add_argument(
+        "--flair-pooled",
+        action="store_true",
+        help="Use Flair PooledFlairEmbeddings (news-forward) as embedding model (default)",
+    )
+    p_load.add_argument(
+        "--bge-large",
+        action="store_true",
+        help="Use BAAI/bge-large-en-v1.5 sentence transformer as embedding model",
+    )
+    p_load.add_argument(
+        "--embedding",
+        type=str,
+        help="Use a custom sentence transformer model as embedding model",
+    )
 
     p_query = sub.add_parser("query", help="Search articles by text")
     p_query.add_argument(
@@ -726,6 +823,21 @@ def main(argv=None):
         nargs="?",
         const="",
         help="Display entities. Provide comma-separated list or use flag alone to show all",
+    )
+    p_query.add_argument(
+        "--flair-pooled",
+        action="store_true",
+        help="Use Flair PooledFlairEmbeddings (news-forward) as embedding model (default)",
+    )
+    p_query.add_argument(
+        "--bge-large",
+        action="store_true",
+        help="Use BAAI/bge-large-en-v1.5 sentence transformer as embedding model",
+    )
+    p_query.add_argument(
+        "--embedding",
+        type=str,
+        help="Use a custom sentence transformer model as embedding model",
     )
 
     p_title = sub.add_parser(
@@ -797,9 +909,21 @@ def main(argv=None):
 
     args = parser.parse_args(argv)
 
+    # Helper to determine embed_type and embed_model from args
+    def get_embed_args(args):
+        """Determine embedding type and model from CLI args."""
+        if hasattr(args, 'embedding') and args.embedding:
+            return "sentence-transformer", args.embedding
+        elif hasattr(args, 'bge_large') and args.bge_large:
+            return "bge-large", None
+        else:
+            # Default to flair-pooled
+            return "flair-pooled", None
+
     if args.cmd == "load":
         and_entities = parse_entity_list(args.andentity) if args.andentity else []
         or_entities = parse_entity_list(args.orentity) if args.orentity else []
+        embed_type, embed_model = get_embed_args(args)
 
         count = load_into_chroma(
             limit=int(args.limit) if args.limit is not None else None,
@@ -808,6 +932,8 @@ def main(argv=None):
             and_entities=and_entities,
             or_entities=or_entities,
             force=args.force,
+            embed_type=embed_type,
+            embed_model=embed_model,
         )
         print(f"✅  Stored {count} new vectors in Chroma")
         return
@@ -815,6 +941,7 @@ def main(argv=None):
     if args.cmd == "query":
         and_entities = parse_entity_list(args.andentity) if args.andentity else []
         or_entities = parse_entity_list(args.orentity) if args.orentity else []
+        embed_type, embed_model = get_embed_args(args)
 
         if args.showentity is not None:
             if args.showentity == "":
@@ -832,6 +959,8 @@ def main(argv=None):
             and_entities=and_entities,
             or_entities=or_entities,
             show_entities=show_entities,
+            embed_type=embed_type,
+            embed_model=embed_model,
         )
         for h in hits:
             print("---")

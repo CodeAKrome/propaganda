@@ -36,7 +36,10 @@ MONGO_COLL = "articles"
 CHROMA_PATH = os.getenv("CHROMA_PATH", "./chroma_db")  # same persistent path
 CHROMA_COLL = "articles"  # use the same collection as mongo2chroma.py
 
+# Embedding model defaults - can be overridden via CLI
+DEFAULT_EMBED_TYPE = "flair-pooled"  # Options: flair-pooled, bge-large, sentence-transformer
 EMBED_MODEL = "BAAI/bge-large-en-v1.5"
+FLAIR_MODEL = "news-forward"
 # ------------------------------------------------------------------
 
 mongo_client = pymongo.MongoClient(MONGO_URI)
@@ -46,7 +49,91 @@ chroma_client = chromadb.PersistentClient(
     path=CHROMA_PATH, settings=Settings(anonymized_telemetry=False)
 )
 
-encoder = SentenceTransformer(EMBED_MODEL)
+# Lazy-loaded encoder
+_encoder = None
+_embed_type = None
+
+
+class FlairPooledEncoder:
+    """Wrapper for Flair PooledFlairEmbeddings to match sentence-transformers API."""
+    
+    def __init__(self, flair_embedding):
+        self._flair = flair_embedding
+    
+    def encode(self, texts, convert_to_tensor=True, **kwargs):
+        """Encode texts to embeddings. Returns tensor-like object with .cpu().numpy() method."""
+        from flair.data import Sentence
+        import numpy as np
+        
+        single_input = isinstance(texts, str)
+        if single_input:
+            texts = [texts]
+        
+        embeddings = []
+        for text in texts:
+            sent = Sentence(text)
+            self._flair.embed(sent)
+            # Get the embedding from the first token (pooled representation)
+            if len(sent) > 0:
+                emb = sent[0].embedding.detach().cpu().numpy()
+            else:
+                emb = np.zeros(self._flair.embedding_length)
+            embeddings.append(emb)
+        
+        result = np.array(embeddings)
+        
+        # For single input, squeeze to 1D to match sentence-transformers behavior
+        if single_input:
+            result = result[0]
+        
+        # Create a tensor-like wrapper that matches sentence-transformers output
+        class TensorWrapper:
+            def __init__(self, arr):
+                self._arr = arr
+            
+            def cpu(self):
+                return self
+            
+            def numpy(self):
+                return self._arr
+        
+        return TensorWrapper(result)
+
+
+def get_encoder(embed_type: str = "flair-pooled", embed_model: str | None = None):
+    """
+    Lazy-load encoder based on type.
+    
+    Args:
+        embed_type: Type of embedding - 'flair-pooled', 'bge-large', or 'sentence-transformer'
+        embed_model: Model name/path (for sentence-transformer type)
+    
+    Returns:
+        Encoder object with .encode() method
+    """
+    global _encoder, _embed_type
+    
+    # Determine if we need to (re)load the encoder
+    if _encoder is None or _embed_type != embed_type:
+        if embed_type == "flair-pooled":
+            from flair.embeddings import PooledFlairEmbeddings
+            import numpy as np
+            
+            model_name = embed_model or FLAIR_MODEL
+            _encoder = FlairPooledEncoder(PooledFlairEmbeddings(model_name))
+        elif embed_type == "bge-large":
+            _encoder = SentenceTransformer("BAAI/bge-large-en-v1.5")
+        else:  # sentence-transformer
+            model = embed_model or EMBED_MODEL
+            _encoder = SentenceTransformer(model)
+        
+        _embed_type = embed_type
+    
+    return _encoder
+
+
+# Default encoder for backwards compatibility
+encoder = get_encoder()
 
 
 # ----------  re-use helper code from mongo2chroma.py  --------------
@@ -77,23 +164,23 @@ def format_bias(bias: Dict | str | None) -> str:
         bias: Bias data - either a dict with dir/deg/reason, or a JSON string
         
     Returns:
-        Formatted string for display
+        Formatted string for display wrapped in <bias> tags
     """
     if not bias:
-        return "(none)"
+        return "<bias>\n(none)\n</bias>"
     
     # Handle legacy string format
     if isinstance(bias, str):
         try:
             bias = json.loads(bias)
         except (json.JSONDecodeError, ValueError):
-            return bias  # Return as-is if not valid JSON
+            return f"<bias>\n{bias}\n</bias>"  # Return as-is if not valid JSON
     
     if not isinstance(bias, dict):
-        return str(bias)
+        return f"<bias>\n{str(bias)}\n</bias>"
     
     # Format as object
-    lines = []
+    lines = ["<bias>"]
     if "dir" in bias:
         dir_data = bias["dir"]
         if isinstance(dir_data, dict):
@@ -109,7 +196,8 @@ def format_bias(bias: Dict | str | None) -> str:
     if "reason" in bias:
         lines.append(f"Reason: {bias['reason']}")
     
-    return "\n".join(lines) if lines else str(bias)
+    lines.append("</bias>")
+    return "\n".join(lines)
 
 
 # --------------  debug helpers  ------------------------------------
@@ -120,7 +208,7 @@ def debug(msg: str):
 # ------------------------------------------------------------------
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Hybrid ChromaDB vector search with metadata filtering")
-    parser.add_argument("text", help="Query string for vector search")
+    parser.add_argument("text", nargs="?", default="", help="Query string for vector search")
     parser.add_argument(
         "--andentity",
         help="Comma-separated entities (all required). Format: [LABEL/]TEXT",
@@ -156,7 +244,34 @@ def main(argv=None):
         action="store_true",
         help="Enable BM25 reranking on vector search results.",
     )
+    parser.add_argument(
+        "--flair-pooled",
+        action="store_true",
+        help="Use Flair PooledFlairEmbeddings (news-forward) as embedding model (default)",
+    )
+    parser.add_argument(
+        "--bge-large",
+        action="store_true",
+        help="Use BAAI/bge-large-en-v1.5 sentence transformer as embedding model",
+    )
+    parser.add_argument(
+        "--embedding",
+        type=str,
+        help="Use a custom sentence transformer model as embedding model",
+    )
     args = parser.parse_args(argv)
+
+    # Determine embedding type and model from CLI args
+    if hasattr(args, 'embedding') and args.embedding:
+        embed_type, embed_model = "sentence-transformer", args.embedding
+    elif hasattr(args, 'bge_large') and args.bge_large:
+        embed_type, embed_model = "bge-large", None
+    else:
+        # Default to flair-pooled
+        embed_type, embed_model = "flair-pooled", None
+    
+    # Get the appropriate encoder
+    encoder = get_encoder(embed_type, embed_model)
 
     and_entities = parse_entity_list(args.andentity)
     or_entities = parse_entity_list(args.orentity)
@@ -412,7 +527,7 @@ def main(argv=None):
         print(f"Title: {doc.get('title', '')}")
         print(f"Published: {published_iso}")
         print(f"Source: {doc.get('source', '')}")
-        print(f"Bias: {format_bias(doc.get('bias', ''))}")
+        print(f"{format_bias(doc.get('bias', ''))}")
         if show_entities is not None:
             from mongo2chroma import extract_entities_from_doc, format_entities
 
