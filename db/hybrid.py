@@ -264,6 +264,11 @@ def main(argv=None):
         type=str,
         help="Comma-delimited list of search terms. All terms must appear in article text (AND filter). Applied as final filter to results.",
     )
+    parser.add_argument(
+        "--substr",
+        action="store_true",
+        help="Enable substring matching for entity searches. Entity query will match if it appears as a substring within any entity.",
+    )
     args = parser.parse_args(argv)
 
     # Determine embedding type and model from CLI args
@@ -367,18 +372,30 @@ def main(argv=None):
                 # Check AND entities - all must be present
                 and_match = True
                 for label, text_val in and_entities:
-                    if text_val not in entities:
-                        and_match = False
-                        break
+                    if args.substr:
+                        # Substring matching: check if text_val is a substring of any entity
+                        if not any(text_val in entity for entity in entities):
+                            and_match = False
+                            break
+                    else:
+                        if text_val not in entities:
+                            and_match = False
+                            break
                 
                 # Check OR entities - at least one must be present
                 or_match = True
                 if or_entities:
                     or_match = False
                     for label, text_val in or_entities:
-                        if text_val in entities:
-                            or_match = True
-                            break
+                        if args.substr:
+                            # Substring matching: check if text_val is a substring of any entity
+                            if any(text_val in entity for entity in entities):
+                                or_match = True
+                                break
+                        else:
+                            if text_val in entities:
+                                or_match = True
+                                break
                 
                 if and_match and or_match:
                     filtered_ids.append(_id)
@@ -423,14 +440,22 @@ def main(argv=None):
             # For OR entities: at least one must match
             if or_entities:
                 for label, text_val in or_entities:
-                    entity_conditions.append({"ner.entities.text": text_val})
+                    if args.substr:
+                        # Use regex for substring matching
+                        entity_conditions.append({"ner.entities.text": {"$regex": text_val, "$options": "i"}})
+                    else:
+                        entity_conditions.append({"ner.entities.text": text_val})
                 mongo_filter["$or"] = entity_conditions
             
             # For AND entities: all must match (use $and)
             if and_entities:
                 and_conditions = []
                 for label, text_val in and_entities:
-                    and_conditions.append({"ner.entities.text": text_val})
+                    if args.substr:
+                        # Use regex for substring matching
+                        and_conditions.append({"ner.entities.text": {"$regex": text_val, "$options": "i"}})
+                    else:
+                        and_conditions.append({"ner.entities.text": text_val})
                 if "$or" in mongo_filter:
                     # Combine: (OR conditions) AND (AND conditions)
                     mongo_filter = {
@@ -551,18 +576,30 @@ def main(argv=None):
                     # Check AND entities - all must be present
                     and_match = True
                     for label, text_val in and_entities:
-                        if text_val not in entities:
-                            and_match = False
-                            break
+                        if args.substr:
+                            # Substring matching: check if text_val is a substring of any entity
+                            if not any(text_val in entity for entity in entities):
+                                and_match = False
+                                break
+                        else:
+                            if text_val not in entities:
+                                and_match = False
+                                break
                     
                     # Check OR entities - at least one must be present
                     or_match = True
                     if or_entities:
                         or_match = False
                         for label, text_val in or_entities:
-                            if text_val in entities:
-                                or_match = True
-                                break
+                            if args.substr:
+                                # Substring matching: check if text_val is a substring of any entity
+                                if any(text_val in entity for entity in entities):
+                                    or_match = True
+                                    break
+                            else:
+                                if text_val in entities:
+                                    or_match = True
+                                    break
                     
                     if and_match and or_match:
                         filtered_ids.append(_id)
