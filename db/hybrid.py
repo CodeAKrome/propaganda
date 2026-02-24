@@ -259,6 +259,11 @@ def main(argv=None):
         type=str,
         help="Use a custom sentence transformer model as embedding model",
     )
+    parser.add_argument(
+        "--search",
+        type=str,
+        help="Comma-delimited list of search terms. All terms must appear in article text (AND filter). Applied as final filter to results.",
+    )
     args = parser.parse_args(argv)
 
     # Determine embedding type and model from CLI args
@@ -275,6 +280,13 @@ def main(argv=None):
 
     and_entities = parse_entity_list(args.andentity)
     or_entities = parse_entity_list(args.orentity)
+
+    # ---  process search argument (AND filter on article text) ---
+    search_terms = []
+    if args.search:
+        search_terms = [term.strip().lower() for term in args.search.split(",") if term.strip()]
+        if search_terms:
+            debug(f"Search filter terms (all required): {search_terms}")
 
     # ---  process fulltext argument ---
     fulltext_search_string = None
@@ -586,6 +598,28 @@ def main(argv=None):
             # Keep top N
             hit_ids = [item[0] for item in scored_results[: args.top]]
             debug("BM25 reranking complete.")
+
+    # --- Apply search filter (AND filter on article text) ---
+    if search_terms:
+        debug(f"Applying search filter for {len(search_terms)} terms...")
+        # Fetch article text for all hit_ids
+        mongo_filter = {
+            "_id": {"$in": [ObjectId(i) for i in hit_ids]},
+        }
+        mongo_docs = list(mongo_coll.find(mongo_filter, {"_id": 1, "article": 1}))
+        id_to_article = {str(d["_id"]): d.get("article", "") for d in mongo_docs}
+        
+        filtered_ids = []
+        for _id in hit_ids:
+            article_text = id_to_article.get(_id, "").lower()
+            if not article_text:
+                continue
+            # Check if ALL search terms are in the article text
+            if all(term in article_text for term in search_terms):
+                filtered_ids.append(_id)
+        
+        hit_ids = filtered_ids
+        debug(f"After search filter: {len(hit_ids)} records")
 
     if not hit_ids:
         debug("No results found.")

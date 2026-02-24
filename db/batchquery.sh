@@ -1,6 +1,6 @@
 startdate=$2
 $1 "$startdate" mexico "Mexico,Puerto Vallarta,Jalisco" "Summarize current events in Mexico and Puerto Vallarta." "+Mexico"
-$1 "$startdate" mencho "El Mencho" "Summarize events surrounding El Mencho and the repurcussions of his death. Analize factions and their motivations." "+El Mencho"
+$1 "$startdate" mencho "Jalisco New Generation Cartel,Nemesio Oseguera,El Mencho" "Summarize events surrounding Nemesio Oseguera, El Mencho and the repurcussions of his death. Analize factions and their motivations." "+El Mencho,Nemesio Oseguera"
 $1 "$startdate" ai "Artificial Intelligence,AI" "Summarize current events involving Artificial Intelligence. Analize actions, economic impacts and motivations." "+Artificial Intelligence,AI"
 $1 "$startdate" venezuela "Venezuela" "Summarize US involvement in Venezuela. Analize actions and motivations."
 $1 "$startdate" maduro "Maduro" "Summarize legal actions involving Maduro. Analize actions and motivations." "+legal,court,trial,arrest,indictment,charges,prosecution"
