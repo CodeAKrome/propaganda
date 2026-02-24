@@ -265,6 +265,11 @@ def main(argv=None):
         help="Comma-delimited list of search terms. All terms must appear in article text (AND filter). Applied as final filter to results.",
     )
     parser.add_argument(
+        "--orsearch",
+        type=str,
+        help="Comma-delimited list of search terms. At least one term must appear in article text (OR filter). Applied as final filter to results.",
+    )
+    parser.add_argument(
         "--substr",
         action="store_true",
         help="Enable substring matching for entity searches. Entity query will match if it appears as a substring within any entity.",
@@ -292,6 +297,13 @@ def main(argv=None):
         search_terms = [term.strip().lower() for term in args.search.split(",") if term.strip()]
         if search_terms:
             debug(f"Search filter terms (all required): {search_terms}")
+
+    # ---  process orsearch argument (OR filter on article text) ---
+    or_search_terms = []
+    if args.orsearch:
+        or_search_terms = [term.strip().lower() for term in args.orsearch.split(",") if term.strip()]
+        if or_search_terms:
+            debug(f"OR search filter terms (any match): {or_search_terms}")
 
     # ---  process fulltext argument ---
     fulltext_search_string = None
@@ -637,8 +649,8 @@ def main(argv=None):
             debug("BM25 reranking complete.")
 
     # --- Apply search filter (AND filter on article text) ---
-    if search_terms:
-        debug(f"Applying search filter for {len(search_terms)} terms...")
+    if search_terms or or_search_terms:
+        debug(f"Applying search filter...")
         # Fetch article text for all hit_ids
         mongo_filter = {
             "_id": {"$in": [ObjectId(i) for i in hit_ids]},
@@ -651,8 +663,11 @@ def main(argv=None):
             article_text = id_to_article.get(_id, "").lower()
             if not article_text:
                 continue
-            # Check if ALL search terms are in the article text
-            if all(term in article_text for term in search_terms):
+            # Check if ALL AND search terms are in the article text
+            and_match = all(term in article_text for term in search_terms) if search_terms else True
+            # Check if ANY OR search term is in the article text
+            or_match = any(term in article_text for term in or_search_terms) if or_search_terms else True
+            if and_match and or_match:
                 filtered_ids.append(_id)
         
         hit_ids = filtered_ids
