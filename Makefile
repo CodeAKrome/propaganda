@@ -10,11 +10,11 @@ TIMESTAMP_OFFSET = 3
 	thingsthatgo fini ner fner fnervector entity fvector bias mkvec fbias \
 	querysmall mkvecsmall smallthingsthatgo cleanoutput fload oldthingsthatgo \
 	fquerymp3 fquery fmp3 black querysmallest cleanmp3 mp3small smallestthingsthatgo \
-	timestamp testrun dbscan vecdbscan mddbscan biast5 t5server categorize
+	timestamp testrun dbscan vecdbscan mddbscan biast5 t5server categorize cleantext
 
 # <=-- Main --=>
 
-testrun: timestamp load ner vector entity t5bias 
+testrun: timestamp load ner t5bias vector entity cleantext
 smallthingsthatgo: timestamp load ner vector entity mkvecsmall bias mkvecsmall querysmall cleanmp3 mp3small fini
 
 # Doesn't clean db/output or mp3/mp3
@@ -42,6 +42,10 @@ fbias: mkvec bias query mp3 fini
 categorize: entity dbscan vecdbscan mddbscan
 
 # <=-- Wurk --=>
+
+# Remove one word lines and double newlines.
+cleantext:
+	db/clean_article_text.py
 
 dbscan:
 	(echo "article_id\ttitle" && cut -f3,4 db/output/titles.tsv) > db/output/titles_dbscan.tsv

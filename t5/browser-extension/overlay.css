@@ -26,6 +26,23 @@
   width: 320px;
   max-height: 80vh;
   transition: opacity 0.2s ease, transform 0.2s ease;
+  /* Don't capture mouse events - allow page selection/interaction behind it */
+  pointer-events: none;
+}
+
+/* Enable pointer events only for interactive elements inside when overlay is visible */
+#bias-detector-overlay:not(.bias-detector-hidden) .bias-detector-inner,
+#bias-detector-overlay:not(.bias-detector-hidden) .bias-detector-close,
+#bias-detector-overlay:not(.bias-detector-hidden) button,
+#bias-detector-overlay:not(.bias-detector-hidden) input,
+#bias-detector-overlay:not(.bias-detector-hidden) canvas,
+#bias-detector-overlay:not(.bias-detector-hidden) .bias-text-toggle-btn,
+#bias-detector-overlay:not(.bias-detector-hidden) .bias-graph-clear,
+#bias-detector-overlay:not(.bias-detector-hidden) .bias-caption-scroll,
+#bias-detector-overlay:not(.bias-detector-hidden) .bias-text-content,
+#bias-detector-overlay:not(.bias-detector-hidden) .bias-reason,
+#bias-detector-overlay:not(.bias-detector-hidden) [role="button"] {
+  pointer-events: auto;
 }
 
 #bias-detector-overlay.bias-detector-hidden {
@@ -45,7 +62,13 @@
     0 4px 24px rgba(0, 0, 0, 0.4),
     0 0 0 1px rgba(255, 255, 255, 0.05) inset;
   overflow: hidden;
+  overflow-y: auto;
   color: #e8e8ec;
+}
+
+/* Only capture pointer events when overlay is visible */
+#bias-detector-overlay:not(.bias-detector-hidden) .bias-detector-inner {
+  pointer-events: auto;
 }
 
 /* Close button */

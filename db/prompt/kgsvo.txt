@@ -1,34 +1,7 @@
--Goal-
-Given a text document, identify all entities and their entity types from the text and all relationships among the identified entities.
-Given the text, extract up to 50 entity-relation triplets.
- 
--Steps-
-1. Identify all entities. For each identified entity, extract the following information:
-- entity_name: Name of the entity, capitalized
-- entity_type: Type of the entity
-- entity_description: Comprehensive description of the entity's attributes and activities
-Format each entity as ("entity")
- 
-2. From the entities identified in step 1, identify all pairs of (source_entity, target_entity) that are *clearly related* to each other.
-For each pair of related entities, extract the following information:
-- source_entity: name of the source entity, as identified in step 1
-- target_entity: name of the target entity, as identified in step 1
-- relation: relationship between source_entity and target_entity
-- relationship_description: explanation as to why you think the source entity and the target entity are related to each other
-
-3. Format each relationship as ("relationship")
-
-4. Follow the following pattern
-- ("source_entity", "target_entity", "relation", "relationship_description")
-
-5. Examples
-- ("Sergey Tolchenov", "Russia", "represents", "Sergey Tolchenov is Russia's Ambassador, representing Russia.")
-- ("Sergey Tolchenov", "Indonesia", "is_ambassador_to", "Sergey Tolchenov holds the position of Russia's Ambassador to Indonesia.")
-
-6. When finished, output.
-
-7. Place each entity into one of the following types
--Entity Types-
+Chain of Verification Prompt for Entity-Relationship Extraction
+Task
+Given a text document, identify all entities and their entity types, then extract relationships among the identified entities as entity-relation triplets.
+Entity Types Reference
 <entity>CARDINAL</entity><meaning>cardinal value</meaning><example>1, 2, 3, ...</example>
 <entity>DATE</entity><meaning>date value</meaning><example>2023-12-25, January 1st</example>
 <entity>EVENT</entity><meaning>event name</meaning><example>Super Bowl, Olympics</example>
@@ -47,7 +20,82 @@ For each pair of related entities, extract the following information:
 <entity>QUANTITY</entity><meaning>quantity value</meaning><example>10, 20</example>
 <entity>TIME</entity><meaning>time value</meaning><example>12:00 PM, 5:30 AM</example>
 <entity>WORK_OF_ART</entity><meaning>name of work of art</meaning><example>Mona Lisa, Star Wars</example>
+Chain of Verification Process
+Step 1: Initial Entity Extraction
+Action: Identify all entities in the text
+Verification:
 
-8. Only output relationships, do not use any other formatting.
+Have I identified entities of all applicable types from the entity types list?
+Are entity names correctly extracted and capitalized?
+Have I assigned the correct entity type to each entity based on the examples provided?
 
--Real Data-
+Example:
+
+Text: "John Smith visited Paris on January 15th"
+Entities: John Smith (PERSON), Paris (GPE), January 15th (DATE)
+
+Draft: Create initial entity list
+Step 2: Entity List Verification
+Action: Review and refine entity list
+Verification:
+
+Are there duplicate entities that should be merged?
+Have I standardized variant names for the same entity?
+Is each entity properly categorized according to the entity type schema?
+Do my classifications match the examples provided?
+
+Example Check:
+
+"NYC" and "New York City" → Consolidate as "New York City" (GPE)
+"50 percent" → "50%" (PERCENT)
+
+Revise: Consolidate and correct entity list
+Step 3: Relationship Identification
+Action: Identify pairs of related entities
+Verification:
+
+Is there clear textual evidence supporting this relationship?
+Can I articulate why these entities are related?
+Is the relationship direction (source → target) correct?
+
+Example:
+
+("John Smith", "Paris", "visited", "John Smith traveled to Paris")
+
+Draft: Create relationship triplets
+Step 4: Relationship Verification
+Action: Review each relationship triplet
+Verification:
+
+Is the relationship description accurate and supported by the text?
+Have I used a specific, meaningful relation label?
+Are both entities in the relationship present in my entity list?
+Have I avoided vague or unsupported relationships?
+
+Example Format:
+
+✓ Good: ("NASA", "Mars Mission", "launched", "NASA launched the Mars Mission in 2024")
+✗ Poor: ("NASA", "Mars", "related", "They are related")
+
+Revise: Refine relationship triplets
+Step 5: Completeness Check
+Action: Review entire output
+Verification:
+
+Have I extracted the requested number of triplets?
+Are all triplets formatted correctly as ("source_entity", "target_entity", "relation", "relationship_description")?
+Have I included only the requested output format?
+Do the relationships capture the key information in the text?
+
+Finalize: Output verified triplets
+Output Format
+Each triplet must follow this exact format:
+("source_entity", "target_entity", "relation", "relationship_description")
+Example Output:
+("Sergey Tolchenov", "Russia", "represents", "Sergey Tolchenov is Russia's Ambassador, representing Russia.")
+("Sergey Tolchenov", "Indonesia", "is_ambassador_to", "Sergey Tolchenov holds the position of Russia's Ambassador to Indonesia.")
+Final Instructions
+
+Output only the relationship triplets
+No additional formatting, headers, or explanations
+Each relationship on a new line
