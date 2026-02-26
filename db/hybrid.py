@@ -245,6 +245,11 @@ def main(argv=None):
         help="Enable BM25 reranking on vector search results.",
     )
     parser.add_argument(
+        "--bm25-query",
+        type=str,
+        help="Query string for BM25 reranking (if different from vector search query).",
+    )
+    parser.add_argument(
         "--flair-pooled",
         action="store_true",
         help="Use Flair PooledFlairEmbeddings (news-forward) as embedding model (default)",
@@ -630,10 +635,11 @@ def main(argv=None):
             debug("No documents for BM25 reranking.")
         else:
             debug("Applying BM25 reranking...")
-            search_text = fulltext_search_string if fulltext_search_string else args.text
+            # Use bm25_query if provided, otherwise fall back to fulltext_search_string or args.text
+            bm25_search_text = args.bm25_query if args.bm25_query else (fulltext_search_string if fulltext_search_string else args.text)
             # Tokenize corpus and query (simple whitespace tokenization)
             tokenized_corpus = [doc.lower().split() for doc in hit_docs]
-            tokenized_query = search_text.lower().split()
+            tokenized_query = bm25_search_text.lower().split()
 
             bm25 = BM25Okapi(tokenized_corpus)
             doc_scores = bm25.get_scores(tokenized_query)

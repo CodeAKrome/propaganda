@@ -2,6 +2,7 @@
 
 import os
 import google.generativeai as genai
+#import google.genai as genai
 
 # ./geminiai_listmodels.py|./geminimodelfilter.pl>gemtest_runall.sh
 

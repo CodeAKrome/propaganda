@@ -1,7 +1,3 @@
-Model Name: models/embedding-gecko-001
-Description: Obtain a distributed representation of a text.
-Supported Methods: embedText, countTextTokens
---------------------------------------------------
 Model Name: models/gemini-2.5-flash
 Description: Stable version of Gemini 2.5 Flash, our mid-size multimodal model that supports up to 1 million tokens, released in June of 2025.
 Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
@@ -9,10 +5,6 @@ Supported Methods: generateContent, countTokens, createCachedContent, batchGener
 Model Name: models/gemini-2.5-pro
 Description: Stable release (June 17th, 2025) of Gemini 2.5 Pro
 Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
---------------------------------------------------
-Model Name: models/gemini-2.0-flash-exp
-Description: Gemini 2.0 Flash Experimental
-Supported Methods: generateContent, countTokens, bidiGenerateContent
 --------------------------------------------------
 Model Name: models/gemini-2.0-flash
 Description: Gemini 2.0 Flash
@@ -32,18 +24,6 @@ Supported Methods: generateContent, countTokens, createCachedContent, batchGener
 --------------------------------------------------
 Model Name: models/gemini-2.0-flash-lite
 Description: Gemini 2.0 Flash-Lite
-Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
---------------------------------------------------
-Model Name: models/gemini-2.0-flash-lite-preview-02-05
-Description: Preview release (February 5th, 2025) of Gemini 2.0 Flash-Lite
-Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
---------------------------------------------------
-Model Name: models/gemini-2.0-flash-lite-preview
-Description: Preview release (February 5th, 2025) of Gemini 2.0 Flash-Lite
-Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
---------------------------------------------------
-Model Name: models/gemini-exp-1206
-Description: Experimental release (March 25th, 2025) of Gemini 2.5 Pro
 Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
 --------------------------------------------------
 Model Name: models/gemini-2.5-flash-preview-tts
@@ -94,17 +74,9 @@ Model Name: models/gemini-2.5-flash-lite
 Description: Stable version of Gemini 2.5 Flash-Lite, released in July of 2025
 Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
 --------------------------------------------------
-Model Name: models/gemini-2.5-flash-image-preview
-Description: Gemini 2.5 Flash Preview Image
-Supported Methods: generateContent, countTokens, batchGenerateContent
---------------------------------------------------
 Model Name: models/gemini-2.5-flash-image
 Description: Gemini 2.5 Flash Preview Image
 Supported Methods: generateContent, countTokens, batchGenerateContent
---------------------------------------------------
-Model Name: models/gemini-2.5-flash-preview-09-2025
-Description: Gemini 2.5 Flash Preview Sep 2025
-Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
 --------------------------------------------------
 Model Name: models/gemini-2.5-flash-lite-preview-09-2025
 Description: Preview release (Septempber 25th, 2025) of Gemini 2.5 Flash-Lite
@@ -116,6 +88,14 @@ Supported Methods: generateContent, countTokens, createCachedContent, batchGener
 --------------------------------------------------
 Model Name: models/gemini-3-flash-preview
 Description: Gemini 3 Flash Preview
+Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+--------------------------------------------------
+Model Name: models/gemini-3.1-pro-preview
+Description: Gemini 3.1 Pro Preview
+Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
+--------------------------------------------------
+Model Name: models/gemini-3.1-pro-preview-customtools
+Description: Gemini 3.1 Pro Preview optimized for custom tool usage
 Supported Methods: generateContent, countTokens, createCachedContent, batchGenerateContent
 --------------------------------------------------
 Model Name: models/gemini-3-pro-image-preview
@@ -138,22 +118,6 @@ Model Name: models/deep-research-pro-preview-12-2025
 Description: Preview release (December 12th, 2025) of Deep Research Pro
 Supported Methods: generateContent, countTokens
 --------------------------------------------------
-Model Name: models/embedding-001
-Description: Obtain a distributed representation of a text.
-Supported Methods: embedContent
---------------------------------------------------
-Model Name: models/text-embedding-004
-Description: Obtain a distributed representation of a text.
-Supported Methods: embedContent
---------------------------------------------------
-Model Name: models/gemini-embedding-exp-03-07
-Description: Obtain a distributed representation of a text.
-Supported Methods: embedContent, countTextTokens, countTokens
---------------------------------------------------
-Model Name: models/gemini-embedding-exp
-Description: Obtain a distributed representation of a text.
-Supported Methods: embedContent, countTextTokens, countTokens
---------------------------------------------------
 Model Name: models/gemini-embedding-001
 Description: Obtain a distributed representation of a text.
 Supported Methods: embedContent, countTextTokens, countTokens, asyncBatchEmbedContent
@@ -161,14 +125,6 @@ Supported Methods: embedContent, countTextTokens, countTokens, asyncBatchEmbedCo
 Model Name: models/aqa
 Description: Model trained to return answers to questions that are grounded in provided sources, along with estimating answerable probability.
 Supported Methods: generateAnswer
---------------------------------------------------
-Model Name: models/imagen-4.0-generate-preview-06-06
-Description: Vertex served Imagen 4.0 model
-Supported Methods: predict
---------------------------------------------------
-Model Name: models/imagen-4.0-ultra-generate-preview-06-06
-Description: Vertex served Imagen 4.0 ultra model
-Supported Methods: predict
 --------------------------------------------------
 Model Name: models/imagen-4.0-generate-001
 Description: Vertex served Imagen 4.0 model

@@ -35,7 +35,8 @@ FLAIR_MODEL = "news-forward"
 # ------------------------------------------------------------------
 
 mongo_client = pymongo.MongoClient(MONGO_URI)
-mongo_coll = mongo_client[MONGO_DB][MONGO_COLL]
+mongo_db = mongo_client[MONGO_DB]
+mongo_coll = mongo_db[MONGO_COLL]
 
 # Lazy-loaded ChromaDB and encoder
 _chroma_client = None
@@ -285,61 +286,62 @@ def load_into_chroma(
         q.update(entity_filter)
 
     print("Counting documents to load...")
-    total_docs = mongo_coll.count_documents(q)
-    if limit:
-        total_docs = min(total_docs, limit)
+    with mongo_client.start_session() as session:
+        total_docs = mongo_coll.count_documents(q, session=session)
+        if limit:
+            total_docs = min(total_docs, limit)
 
-    cursor = (
-        mongo_coll.find(q, {"_id": 1, "article": 1, "published": 1, "ner": 1}).sort("published", -1).limit(limit)
-        if limit
-        else mongo_coll.find(q, {"_id": 1, "article": 1, "published": 1, "ner": 1}).sort("published", -1)
-    )
+        cursor = (
+            mongo_coll.find(q, {"_id": 1, "article": 1, "published": 1, "ner": 1}, no_cursor_timeout=True, session=session).sort("published", -1).limit(limit)
+            if limit
+            else mongo_coll.find(q, {"_id": 1, "article": 1, "published": 1, "ner": 1}, no_cursor_timeout=True, session=session).sort("published", -1)
+        )
 
-    docs, ids, metadatas = [], [], []
-    stored = 0
-    skipped = 0
+        docs, ids, metadatas = [], [], []
+        stored = 0
+        skipped = 0
 
-    for doc in tqdm(cursor, total=total_docs, desc="Loading articles"):
-        _id = str(doc["_id"])
-        text = doc.get("article", "").strip()
-        if not text:
-            continue
+        for doc in tqdm(cursor, total=total_docs, desc="Loading articles"):
+            _id = str(doc["_id"])
+            text = doc.get("article", "").strip()
+            if not text:
+                continue
 
-        # Skip if already exists (unless force flag is used)
-        if not force and collection.get(ids=[_id])["ids"]:
-            skipped += 1
-            continue
+            # Skip if already exists (unless force flag is used)
+            if not force and collection.get(ids=[_id])["ids"]:
+                skipped += 1
+                continue
 
-        # Build metadata
-        metadata = {}
-        
-        # Add publication date as ISO string for filtering
-        published_dt = doc.get("published")
-        if published_dt and isinstance(published_dt, datetime):
-            metadata["published"] = published_dt.isoformat()
-        
-        # Add entities as JSON string for filtering
-        ner = doc.get("ner")
-        if ner and "entities" in ner:
-            # Store entity texts as a JSON string for filtering
-            entity_texts = [e.get("text", "") for e in ner["entities"] if e.get("text")]
-            if entity_texts:
-                metadata["entities"] = json.dumps(entity_texts)
-        
-        docs.append(text)
-        ids.append(_id)
-        metadatas.append(metadata)
+            # Build metadata
+            metadata = {}
+            
+            # Add publication date as ISO string for filtering
+            published_dt = doc.get("published")
+            if published_dt and isinstance(published_dt, datetime):
+                metadata["published"] = published_dt.isoformat()
+            
+            # Add entities as JSON string for filtering
+            ner = doc.get("ner")
+            if ner and "entities" in ner:
+                # Store entity texts as a JSON string for filtering
+                entity_texts = [e.get("text", "") for e in ner["entities"] if e.get("text")]
+                if entity_texts:
+                    metadata["entities"] = json.dumps(entity_texts)
+            
+            docs.append(text)
+            ids.append(_id)
+            metadatas.append(metadata)
 
-        if len(docs) >= BATCH_SIZE:
+            if len(docs) >= BATCH_SIZE:
+                embs = encoder.encode(docs, convert_to_tensor=True).cpu().numpy().tolist()
+                collection.add(documents=docs, embeddings=embs, ids=ids, metadatas=metadatas)
+                stored += len(ids)
+                docs, ids, metadatas = [], [], []
+
+        if docs:
             embs = encoder.encode(docs, convert_to_tensor=True).cpu().numpy().tolist()
             collection.add(documents=docs, embeddings=embs, ids=ids, metadatas=metadatas)
             stored += len(ids)
-            docs, ids, metadatas = [], [], []
-
-    if docs:
-        embs = encoder.encode(docs, convert_to_tensor=True).cpu().numpy().tolist()
-        collection.add(documents=docs, embeddings=embs, ids=ids, metadatas=metadatas)
-        stored += len(ids)
 
     if skipped > 0:
         print(f"Skipped {skipped} documents already in Chroma (use --force to reload)")

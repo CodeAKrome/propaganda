@@ -14,7 +14,7 @@ TIMESTAMP_OFFSET = 3
 
 # <=-- Main --=>
 
-testrun: timestamp load ner vector mkvecsmall bias mkvecsmall querysmall cleanmp3 mp3small fini
+testrun: timestamp load ner vector entity t5bias 
 smallthingsthatgo: timestamp load ner vector entity mkvecsmall bias mkvecsmall querysmall cleanmp3 mp3small fini
 
 # Doesn't clean db/output or mp3/mp3

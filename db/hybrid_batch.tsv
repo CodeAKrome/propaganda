@@ -1,0 +1,62 @@
+label	n	showentity	substr	orentity	search	orsearch	start_date	query	vector	text	andentity	end_date	fulltext	bm25	ids	flair_pooled	bge_large	embedding
+mexico	42	*	1	"Mexico,Puerto Vallarta,Jalisco"			-2	Summarize current events in Mexico and Puerto Vallarta.										
+mencho	42	*	1	"Jalisco New Generation Cartel,CJNG,Nemesio Oseguera,El Mencho"		"El Mencho,Nemesio Oseguera"	-2	"Summarize events surrounding Nemesio Oseguera, El Mencho and the repurcussions of his death. Analize factions and their motivations."										
+ai	42	*	1	"Artificial Intelligence,AI"			-2	"Summarize current events involving Artificial Intelligence. Analize actions, economic impacts and motivations."										
+venezuela	42	*	1	Venezuela			-2	Summarize US involvement in Venezuela. Analize actions and motivations.										
+maduro	42	*	1	Maduro		"legal,court,trial,arrest,indictment,charges,prosecution"	-2	Summarize legal actions involving Maduro. Analize actions and motivations.										
+cambodia	42	*	1	Cambodia			-2	Summarize current events in Cambodia. Analize actions and motivations.										
+thailand	42	*	1	Thailand			-2	Summarize current events in Thailand. Analize actions and motivations.										
+jihad	42	*	1	"Jihad,Islam,Muslim"		"Jihad,Jihadist"	-2	Summarize current events involving jihadist or jihad. Analize actions and motivations.										
+hk	42	*	1	Hong Kong			-2	Summarize current events in Hong Kong. Analize actions and motivations.										
+taiwan	42	*	1	Taiwan			-2	Summarize current events in Taiwan. Analize actions and motivations.										
+israel	42	*	1	Israel			-2	Summarize current events in Israel. Analize actions and motivations.										
+sudan	42	*	1	Sudan			-2	Summarize current events in Sudan. Analize actions and motivations.										
+milei	42	*	1	Milei			-2	Summarize actions taken by Javier Milei. Analize actions and motivations.										
+farage	42	*	1	Farage			-2	Summarize actions taken by Nigel Farage. Analize actions and motivations.										
+iran	42	*	1	Iran			-2	Summarize news about Iran. Analize actions and motivations.										
+arcticfrost	42	*	1	Arctic Frost			-2	Summarize news about Operation Arctic Frost. Analize actions and motivations.										
+crossfire	42	*	1	Crossfire Hurricane			-2	Summarize news about Crossfire Hurricane. Analize actions and motivations.										
+comey	42	*	1	Comey		"James Comey,trial,felony"	-2	Summarize news about James Comey. Analize actions and motivations.										
+argentina	42	*	1	Argentina			-2	Summarize news about Argentina. Analize actions and motivations.										
+antichrist	42	*	1	Christian		"hate,violence,riot,kill,terror,attack"	-2	Summarize events about christians being killed or otherwise discriminated against. Summarize the locations. Analize actions and motivations.										
+portland	42	*	1	Portland		ICE	-2	"Summarize actions in Portland Oregon involving ICE, the Mayor and ANTIFA. Analize actions and motivations."										
+cbdc	42	*	1	"CBDC,Central Bank Digital Currencies"			-2	"Summarize crypto currency, CBDC central bank digital currency, or digital asset legislation and implementation plans. Analize actions and motivations."										
+votefraud	42	*	1	Voter ID		voter fraud	-2	"Summarize stories having to do with voting fraud in the US, United States. List all details. Analize actions and motivations."										
+digid	42	*	1	"Digital ID,Face ID,Touch ID"			-2	Summarize stories about digital ID. List places and specific actions. Analize actions and motivations.										
+supreme	42	*	1	"US,U.S.,the United States"		Supreme Court	-2	Summarize current actions by the US Supreme Court. Analize actions and motivations.										
+chicago	42	*	1	Chicago		"Chicago,Mayor,Governor"	-2	Summarize actions in Chicago. Focus on the Mayor and Governor's actions. Analize actions and motivations.										
+japan	42	*	1	Japan			-2	Summarize events in Japan. Analize actions and motivations.										
+japanim	42	*	1	Japan		"Japan,immagrant,immigration"	-2	Summarize immigration events in Japan. Analize actions and motivations.										
+bolivia	42	*	1	Bolivia			-2	Summarize events in Bolivia and actions by Rodrigo Paz. Analize actions and motivations.										
+critmin	42	*	1	China		"rare earth,critical minerals"	-2	Summarize news about critical minerals and rare earths needed for high tech. Analize actions and motivations.										
+debank	42	*	1	debank		"debank,debanking"	-2	Summarize all actions to debank or deny people bank accounts. Analize actions and motivations.										
+ukraine	42	*	1	Ukraine			-2	Summarize actions in the war in Ukraine. Analize actions and motivations.										
+chinasea	42	*	1	South China Sea			-2	Summarize actions in the South China Sea. Analize actions and motivations.										
+earthquake	42	*	1	Earthquake			-2	"Summarize any earthquakes, their location and damage. Summarize and analize actions taken by authorities."										
+typhoon	42	*	1	Typhoon			-2	"Summarize any typhoons, their location and damage. Summarize and analize actions taken by authorities."										
+myanmar	42	*	1	Myanmar			-2	Summarize actions in Myanmar. Focus on any violent actions. Analize actions and motivations.										
+nigeriachrist	42	*	1	"Nigeria,Christian"			-2	Summarize events about christians being killed in Nigeria. Analize actions and motivations.										
+syriachrist	42	*	1	"Syria,Christian"			-2	Summarize events about christians being killed in Syria. Analize actions and motivations.										
+genz	42	*	1	"Gen Z,Gen Z 212"			-2	Summarize news about Gen-Z protests. List locations and groups involved. Analize actions and motivations.										
+sanae	42	*	1	Sanae Takaichi			-2	Summarize all actions by Sanae Takaichi.										
+layoff	42	*	1	layoffs			-2	Summarize news about corporations laying off workers. Analize actions and motivations.										
+antifa	42	*	1	"Antifa,ANTIFA"			-2	Summarize actions by ANTIFA and against them. Analize actions and motivations.										
+safarmer	42	*	1	South Africa			-2	Summarize actions in South Africa taken against White farmers. Analize actions and motivations.										
+russia	42	*	1	Russia			-2	Summarize news about Russia. Analize actions and motivations.										
+china	42	*	1	China			-2	Summarize news about China. Analize actions and motivations.										
+afghanistan	42	*	1	Afghanistan			-2	Summarize news about Afghanistan. Analize actions and motivations.										
+france	42	*	1	France			-2	Summarize news about France. Analize actions and motivations.										
+hungary	42	*	1	Hungary			-2	Summarize news about Hungary. Analize actions and motivations.										
+poland	42	*	1	Poland			-2	Summarize news about Poland. Analize actions and motivations.										
+uk	42	*	1	"UK,United Kingdom"			-2	Summarize news about The United Kingdom. Analize actions and motivations.										
+pakistan	42	*	1	Pakistan			-2	Summarize news about Pakistan. Analize actions and motivations.										
+skorea	42	*	1	South Korea			-2	Summarize news about South Korea. Analize actions and motivations.										
+nkorea	42	*	1	North Korea			-2	Summarize news about North Korea. Analize actions and motivations.										
+gaza	42	*	1	Gaza			-2	Summarize events in Gaza. Analize actions and motivations.										
+nepal	42	*	1	Nepal			-2	Summarize current events in Nepal. Analize actions and motivations.										
+madagascar	42	*	1	Madagascar			-2	Summarize current events in Madagascar. Analize actions and motivations.										
+morocco	42	*	1	Morocco			-2	Summarize current events in Morocco. Analize actions and motivations.										
+dei	42	*	1	"DEI,Equity and Inclusion"			-2	"Summarize all actions about DEI, diversity, equity and inclusion. Analize actions and motivations."										
+putin	42	*	1	Putin			-2	Summarize all actions by Putin. Analize actions and motivations.										
+jinping	42	*	1	"Xi,Jinping"			-2	Summarize all actions by Xi Jinping. Analize actions and motivations.										
+mamdani	42	*	1	Mamdani			-2	Summarize all actions by Zohran Mamdani. Analize actions and motivations.										
