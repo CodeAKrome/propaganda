@@ -38,6 +38,63 @@ mongo_client = pymongo.MongoClient(MONGO_URI)
 mongo_db = mongo_client[MONGO_DB]
 mongo_coll = mongo_db[MONGO_COLL]
 
+
+def get_mongo_session():
+    """Get a MongoDB session with no cursor timeout."""
+    session = mongo_client.start_session()
+    return session
+
+
+def batch_load_from_mongo(q: dict, projection: dict, batch_size: int = 1000, limit: Optional[int] = None, sort_field: str = "published", sort_order: int = -1):
+    """
+    Load documents from MongoDB in batches to avoid cursor timeout.
+    
+    Args:
+        q: MongoDB query filter
+        projection: Fields to return
+        batch_size: Number of docs per batch
+        limit: Optional limit on total documents
+        sort_field: Field to sort by
+        sort_order: -1 for descending, 1 for ascending
+    
+    Yields:
+        Batches of documents
+    """
+    session = get_mongo_session()
+    total_fetched = 0
+    
+    try:
+        while True:
+            # Calculate remaining limit
+            remaining = (limit - total_fetched) if limit else batch_size
+            fetch_size = min(batch_size, remaining)
+            
+            if fetch_size <= 0:
+                break
+            
+            # Use explicit session with no_cursor_timeout and high max_time_ms
+            cursor = mongo_coll.find(
+                q,
+                projection,
+                session=session,
+                no_cursor_timeout=True,
+                max_time_ms=3600000  # 1 hour in milliseconds
+            ).sort(sort_field, sort_order).skip(total_fetched).limit(fetch_size)
+            
+            batch = list(cursor)
+            
+            if not batch:
+                break
+            
+            yield batch
+            total_fetched += len(batch)
+            
+            if limit and total_fetched >= limit:
+                break
+                
+    finally:
+        session.end_session()
+
 # Lazy-loaded ChromaDB and encoder
 _chroma_client = None
 _collection = None
@@ -286,22 +343,21 @@ def load_into_chroma(
         q.update(entity_filter)
 
     print("Counting documents to load...")
-    with mongo_client.start_session() as session:
-        total_docs = mongo_coll.count_documents(q, session=session)
-        if limit:
-            total_docs = min(total_docs, limit)
+    total_docs = mongo_coll.count_documents(q)
+    if limit:
+        total_docs = min(total_docs, limit)
 
-        cursor = (
-            mongo_coll.find(q, {"_id": 1, "article": 1, "published": 1, "ner": 1}, no_cursor_timeout=True, session=session).sort("published", -1).limit(limit)
-            if limit
-            else mongo_coll.find(q, {"_id": 1, "article": 1, "published": 1, "ner": 1}, no_cursor_timeout=True, session=session).sort("published", -1)
-        )
+    # Use batch loading to prevent cursor timeout
+    projection = {"_id": 1, "article": 1, "published": 1, "ner": 1}
+    
+    docs, ids, metadatas = [], [], []
+    stored = 0
+    skipped = 0
 
-        docs, ids, metadatas = [], [], []
-        stored = 0
-        skipped = 0
-
-        for doc in tqdm(cursor, total=total_docs, desc="Loading articles"):
+    for batch in tqdm(batch_load_from_mongo(q, projection, batch_size=1000, limit=limit), 
+                      total=(total_docs + 999) // 1000, 
+                      desc="Loading articles (batches)"):
+        for doc in batch:
             _id = str(doc["_id"])
             text = doc.get("article", "").strip()
             if not text:
@@ -338,10 +394,10 @@ def load_into_chroma(
                 stored += len(ids)
                 docs, ids, metadatas = [], [], []
 
-        if docs:
-            embs = encoder.encode(docs, convert_to_tensor=True).cpu().numpy().tolist()
-            collection.add(documents=docs, embeddings=embs, ids=ids, metadatas=metadatas)
-            stored += len(ids)
+    if docs:
+        embs = encoder.encode(docs, convert_to_tensor=True).cpu().numpy().tolist()
+        collection.add(documents=docs, embeddings=embs, ids=ids, metadatas=metadatas)
+        stored += len(ids)
 
     if skipped > 0:
         print(f"Skipped {skipped} documents already in Chroma (use --force to reload)")
@@ -386,7 +442,8 @@ def query_chroma(
         mongo_date_filter["published"] = date_filter
         
         # Get IDs from MongoDB that match date range
-        date_filtered_ids = set(str(d["_id"]) for d in mongo_coll.find(mongo_date_filter, {"_id": 1}))
+        session = get_mongo_session()
+        date_filtered_ids = set(str(d["_id"]) for d in mongo_coll.find(mongo_date_filter, {"_id": 1}, session=session, no_cursor_timeout=True))
 
     # Step 2: Query ChromaDB
     if text.strip():
@@ -614,7 +671,7 @@ def export_titles(
         q["published"] = date_filter
 
     cursor = mongo_coll.find(
-        q, {"_id": 1, "title": 1, "published": 1, "source": 1}
+        q, {"_id": 1, "title": 1, "published": 1, "source": 1}, no_cursor_timeout=True
     ).sort("published", -1)
 
     for doc in cursor:
@@ -656,7 +713,7 @@ def dump_entities(
             date_filter["$lte"] = parse_date_arg(end_date)
         q["published"] = date_filter
 
-    cursor = mongo_coll.find(q, {"ner": 1}).sort("published", -1)
+    cursor = mongo_coll.find(q, {"ner": 1}, no_cursor_timeout=True).sort("published", -1)
 
     InnerDict = lambda: defaultdict(int)
     entity_counts: Dict[str, Dict[str, int]] = defaultdict(InnerDict)
@@ -729,6 +786,7 @@ def export_articles(
             "article": 1,
             "bias": 1,
         },
+        no_cursor_timeout=True
     ).sort("published", -1)
 
     if limit:

@@ -10,11 +10,13 @@ TIMESTAMP_OFFSET = 3
 	thingsthatgo fini ner fner fnervector entity fvector bias mkvec fbias \
 	querysmall mkvecsmall smallthingsthatgo cleanoutput fload oldthingsthatgo \
 	fquerymp3 fquery fmp3 black querysmallest cleanmp3 mp3small smallestthingsthatgo \
-	timestamp testrun dbscan vecdbscan mddbscan biast5 t5server categorize cleantext
+	timestamp testrun dbscan vecdbscan mddbscan biast5 t5server categorize cleantext \
+	runhybrid runreport cyphertograph test2
 
 # <=-- Main --=>
 
-testrun: timestamp load ner t5bias vector entity cleantext
+testrun: timestamp load ner t5bias vector entity cleantext cleanoutput runhybrid runreport cyphertograph dbscan vecdbscan mddbscan cleanmp3 mp3small fini
+test2: vecdbscan mddbscan cleanmp3 mp3small fini
 smallthingsthatgo: timestamp load ner vector entity mkvecsmall bias mkvecsmall querysmall cleanmp3 mp3small fini
 
 # Doesn't clean db/output or mp3/mp3
@@ -27,6 +29,19 @@ oldthingsthatgo: entity mkvecsmall bias mkvecsmall querysmall cleanmp3 mp3small 
 thingsthatgo: load ner vector entity mkvec bias query mp3 fini
 
 # new stuff, just query
+cyphertograph:
+	db/cypher_to_graph.py
+iran:
+	source $(DB_ENV)/bin/activate && cd db && ./hybrid.py --orentity Iran --start-date -2 --bm25-query "Summarize actions taken in the Iran war." --search Iran --substr -n 52 --showentity > output/iran.vec
+	source $(DB_ENV)/bin/activate && cd db && cat prompt/LottaTalker.md output/iran.vec | ollama run --hidethinking --verbose gpt-oss:120b-cloud > output/iran_gptoss120b.md
+
+runhybrid:
+	source $(DB_ENV)/bin/activate && cd db && ./runhybrid.py hybrid_batch.tsv
+
+runreport:
+	source $(DB_ENV)/bin/activate && cd db && ./runreport.py hybrid_batch.tsv
+
+
 fquerymp3: cleanoutput querysmall cleanmp3 mp3small fini
 
 fvector: load ner vector fini
@@ -48,8 +63,8 @@ cleantext:
 	db/clean_article_text.py
 
 dbscan:
-	(echo "article_id\ttitle" && cut -f3,4 db/output/titles.tsv) > db/output/titles_dbscan.tsv
-	dbscan/main.py --input db/output/titles_dbscan.tsv --output db/output/categories.json --similarity-threshold 0.70 --min-cluster-size 2
+	cd db && (echo "article_id\ttitle" && cut -f3,4 $(TITLEFILE)) > output/titles_dbscan.tsv
+	dbscan/main.py --input db/output/titles_dbscan.tsv --output db/output/categories.json --similarity-threshold 0.68 --min-cluster-size 2
 
 vecdbscan:
 	find db/cluster -name '*.vec' -exec rm {} \;
@@ -143,11 +158,13 @@ query:
 	source $(DB_ENV)/bin/activate && cd db && ./runentitybatch.sh
 
 cleanoutput:
-	find db/output -name "*.md" -delete
-	find db/output -name "*.txt" -delete
+	-rm -rf db/output/*
+#	find /db/output -type f -delete
+#	find db/output -name "*.md" -delete
+#	find db/output -name "*.txt" -delete
 #	find db/output -name "*.vec" -delete
-	find db/output -name "*.cypher" -delete
-	find db/output -name "*.reporter" -delete
+#	find db/output -name "*.cypher" -delete
+#	find db/output -name "*.reporter" -delete
 
 querysmall:
 	source $(DB_ENV)/bin/activate && cd db && ./batchquery.sh './report.py' $(NUMDAYS)

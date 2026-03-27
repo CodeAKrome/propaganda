@@ -21,6 +21,7 @@ import logging
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, field
+from datetime import datetime
 
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -30,8 +31,12 @@ from transformers import (
     TrainingArguments,
     Trainer,
     DataCollatorForSeq2Seq,
+    TrainerCallback,
 )
 from peft import LoraConfig, get_peft_model, TaskType, PeftModel
+
+# Import pymongo for telemetry
+import pymongo
 
 # Configure logging
 logging.basicConfig(
@@ -39,6 +44,82 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# ==============================================================================
+# TELEMETRY CONFIGURATION
+# ==============================================================================
+
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://root:example@localhost:27017")
+MONGO_DB = "rssnews"
+MONGO_TELEMETRY_COLL = "training_telemetry"
+
+
+def get_telemetry_collection():
+    """Get MongoDB collection for training telemetry."""
+    client = pymongo.MongoClient(MONGO_URI)
+    return client[MONGO_DB][MONGO_TELEMETRY_COLL]
+
+
+class MongoDBTelemetryCallback(TrainerCallback):
+    """Custom callback to log training metrics to MongoDB."""
+    
+    def __init__(self, run_id: str, coll):
+        self.run_id = run_id
+        self.coll = coll
+        self.start_time = datetime.utcnow()
+        print(f"[TELEMETRY] Initialized callback for run_id: {run_id}")
+    
+    def on_log(self, args, state, control, logs=None, **kwargs):
+        """Log metrics to MongoDB after each logging step."""
+        print(f"[TELEMETRY] on_log called: state.global_step={state.global_step}, logs={logs}")
+        if logs is None:
+            return
+        try:
+            metric_entry = {
+                "run_id": self.run_id,
+                "timestamp": datetime.utcnow(),
+                "step": state.global_step,
+                "epoch": state.epoch,
+                "metrics": dict(logs)  # Convert to dict in case it's a weird type
+            }
+            self.coll.insert_one(metric_entry)
+            print(f"[TELEMETRY] Inserted: step={state.global_step}")
+        except Exception as e:
+            print(f"[TELEMETRY] Failed to log: {e}")
+    
+    def on_step_end(self, args, state, control, **kwargs):
+        """Log metrics at end of each training step."""
+        # Only log every 100 steps to avoid too much I/O
+        if state.global_step % 100 != 0:
+            return
+        print(f"[TELEMETRY] on_step_end: step={state.global_step}")
+        try:
+            metric_entry = {
+                "run_id": self.run_id,
+                "timestamp": datetime.utcnow(),
+                "step": state.global_step,
+                "epoch": state.epoch,
+                "metrics": {"step": state.global_step}
+            }
+            self.coll.insert_one(metric_entry)
+            print(f"[TELEMETRY] Step end logged: {state.global_step}")
+        except Exception as e:
+            print(f"[TELEMETRY] Step end failed: {e}")
+    
+    def on_train_end(self, args, state, control, **kwargs):
+        """Log training completion."""
+        try:
+            end_entry = {
+                "run_id": self.run_id,
+                "timestamp": datetime.utcnow(),
+                "event": "training_complete",
+                "total_steps": state.global_step,
+                "duration_seconds": (datetime.utcnow() - self.start_time).total_seconds()
+            }
+            self.coll.insert_one(end_entry)
+            print(f"[TELEMETRY] Training complete logged: {state.global_step} steps")
+        except Exception as e:
+            print(f"[TELEMETRY] Failed to log training end: {e}")
 
 
 # ==============================================================================
@@ -352,7 +433,38 @@ def train(
         fp16=(device == "cuda"),
         report_to="none",
         remove_unused_columns=False,
+        do_train=True,
+        do_eval=True,
     )
+    
+    # Create telemetry collection and run ID
+    import uuid
+    run_id = str(uuid.uuid4())
+    try:
+        telemetry_coll = get_telemetry_collection()
+        # Log training start
+        telemetry_coll.insert_one({
+            "run_id": run_id,
+            "timestamp": datetime.utcnow(),
+            "event": "training_start",
+            "config": {
+                "model_name": model_name,
+                "lora_r": lora_r,
+                "lora_alpha": lora_alpha,
+                "lora_dropout": lora_dropout,
+                "epochs": epochs,
+                "batch_size": batch_size,
+                "learning_rate": learning_rate,
+                "train_samples": train_size,
+                "eval_samples": eval_size,
+                "device": device,
+                "output_dir": str(output_path)
+            }
+        })
+        logger.info(f"Telemetry enabled - run_id: {run_id}")
+    except Exception as e:
+        logger.warning(f"Could not connect to MongoDB for telemetry: {e}")
+        telemetry_coll = None
     
     # Create trainer
     trainer = Trainer(
@@ -362,6 +474,11 @@ def train(
         eval_dataset=eval_dataset,
         data_collator=data_collator,
     )
+    
+    # Add telemetry callback if MongoDB is available
+    if telemetry_coll is not None:
+        telemetry_callback = MongoDBTelemetryCallback(run_id, telemetry_coll)
+        trainer.add_callback(telemetry_callback)
     
     # Train
     logger.info("Starting training...")

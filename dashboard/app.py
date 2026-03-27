@@ -19,6 +19,7 @@ from bson import ObjectId
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://root:example@localhost:27017")
 MONGO_DB = "rssnews"
 MONGO_COLL = "articles"
+MONGO_TELEMETRY_COLL = "training_telemetry"
 
 
 @st.cache_resource
@@ -32,6 +33,13 @@ def get_collection():
     """Get MongoDB collection."""
     client = get_mongo_client()
     return client[MONGO_DB][MONGO_COLL]
+
+
+@st.cache_resource
+def get_telemetry_collection():
+    """Get MongoDB training telemetry collection."""
+    client = get_mongo_client()
+    return client[MONGO_DB][MONGO_TELEMETRY_COLL]
 
 
 @st.cache_data(ttl=300)
@@ -297,6 +305,93 @@ def get_sample_bias_records(limit=10):
             "reason": (bias.get("reason", "") or "")[:100]
         })
     return pd.DataFrame(records)
+
+
+@st.cache_data(ttl=1)
+def get_training_runs():
+    """Get all training runs from telemetry collection."""
+    try:
+        coll = get_telemetry_collection()
+        # Just get all documents
+        results = list(coll.find({}))
+        print(f"[DEBUG] Found {len(results)} telemetry documents")
+        
+        if not results:
+            return pd.DataFrame()
+        
+        # Group by run_id
+        runs = {}
+        for r in results:
+            run_id = r.get("run_id", "unknown")
+            if run_id not in runs:
+                runs[run_id] = {
+                    "run_id": run_id,
+                    "timestamp": r.get("timestamp"),
+                    "event": r.get("event"),
+                    "config": r.get("config", {}),
+                    "metrics": []
+                }
+            
+            # Handle metrics
+            metrics_data = r.get("metrics")
+            if metrics_data:
+                # metrics can be a dict or a string
+                if isinstance(metrics_data, dict):
+                    loss = metrics_data.get("loss")
+                    eval_loss = metrics_data.get("eval_loss")
+                    lr = metrics_data.get("learning_rate")
+                else:
+                    loss = None
+                    eval_loss = None
+                    lr = None
+                    
+                runs[run_id]["metrics"].append({
+                    "step": r.get("step"),
+                    "epoch": r.get("epoch"),
+                    "loss": loss,
+                    "eval_loss": eval_loss,
+                    "learning_rate": lr,
+                    "timestamp": r.get("timestamp")
+                })
+            
+            if r.get("event") == "training_complete":
+                runs[run_id]["total_steps"] = r.get("total_steps")
+                runs[run_id]["duration_seconds"] = r.get("duration_seconds")
+        
+        print(f"[DEBUG] Grouped into {len(runs)} runs")
+        return pd.DataFrame(list(runs.values()))
+    except Exception as e:
+        print(f"[DEBUG] Error fetching training runs: {e}")
+        import traceback
+        traceback.print_exc()
+        return pd.DataFrame()
+
+
+@st.cache_data(ttl=1)
+def get_training_metrics(run_id: str = None):
+    """Get training metrics for a specific run or latest run."""
+    try:
+        coll = get_telemetry_collection()
+        if run_id:
+            results = list(coll.find({"run_id": run_id, "metrics": {"$exists": True}}).sort("timestamp", 1))
+        else:
+            results = list(coll.find({"metrics": {"$exists": True}}).sort("timestamp", 1))
+        
+        records = []
+        for r in results:
+            metrics = r.get("metrics", {})
+            records.append({
+                "step": r.get("step"),
+                "epoch": r.get("epoch"),
+                "loss": metrics.get("loss") if isinstance(metrics, dict) else None,
+                "eval_loss": metrics.get("eval_loss") if isinstance(metrics, dict) else None,
+                "learning_rate": metrics.get("learning_rate") if isinstance(metrics, dict) else None,
+                "timestamp": r.get("timestamp")
+            })
+        return pd.DataFrame(records)
+    except Exception as e:
+        print(f"[DEBUG] Error fetching metrics: {e}")
+        return pd.DataFrame()
 
 
 def main():
@@ -749,6 +844,137 @@ def main():
             st.caption(f"Showing 4 of {len(all_sources)} sources. Check 'Show all sources' to display all.")
     else:
         st.info("No bias data available. Run bias analysis on articles first.")
+
+    # ============================================================
+    # TRAINING TELEMETRY SECTION
+    # ============================================================
+    st.markdown("---")
+    st.subheader("🚀 T5 Model Training Telemetry")
+    
+    # Add refresh button for telemetry
+    col_refresh, col_spacer = st.columns([1, 10])
+    with col_refresh:
+        if st.button("🔄 Refresh", key="refresh_telemetry"):
+            st.cache_data.clear()
+            st.rerun()
+    
+    # Debug: Show MongoDB connection info
+    with st.expander("🔧 Debug: Connection Info"):
+        st.caption(f"MongoDB URI: {MONGO_URI}")
+        st.caption(f"Database: {MONGO_DB}")
+        st.caption(f"Telemetry Collection: {MONGO_TELEMETRY_COLL}")
+        try:
+            test_coll = get_telemetry_collection()
+            count = test_coll.count_documents({})
+            st.caption(f"Total telemetry documents: {count}")
+        except Exception as e:
+            st.error(f"Connection error: {e}")
+    
+    try:
+        training_runs_df = get_training_runs()
+        print(f"[DEBUG] training_runs_df shape: {training_runs_df.shape}")
+        
+        if not training_runs_df.empty:
+            st.write("DEBUG - runs found:", training_runs_df["run_id"].tolist())
+        
+        if not training_runs_df.empty:
+            # Show training runs summary
+            st.markdown("**Training Runs**")
+            
+            # Display runs in expandable format
+            for idx, run in training_runs_df.iterrows():
+                run_id = run.get("run_id", "unknown")[:12]
+                timestamp = run.get("timestamp")
+                event = run.get("event", "unknown")
+                config = run.get("config", {})
+                
+                with st.expander(f"📊 Run: {run_id} | {event} | {timestamp.strftime('%Y-%m-%d %H:%M') if timestamp else 'N/A'}"):
+                    # Show config
+                    st.markdown("**Configuration**")
+                    config_cols = st.columns(4)
+                    config_cols[0].metric("Model", config.get("model_name", "N/A"))
+                    config_cols[1].metric("Epochs", config.get("epochs", "N/A"))
+                    config_cols[2].metric("Batch Size", config.get("batch_size", "N/A"))
+                    config_cols[3].metric("Learning Rate", f"{config.get('learning_rate', 'N/A')}")
+                    
+                    st.caption(f"LoRA R: {config.get('lora_r', 'N/A')} | Alpha: {config.get('lora_alpha', 'N/A')} | Dropout: {config.get('lora_dropout', 'N/A')}")
+                    st.caption(f"Train Samples: {config.get('train_samples', 'N/A')} | Eval Samples: {config.get('eval_samples', 'N/A')}")
+                    st.caption(f"Device: {config.get('device', 'N/A')}")
+                    
+                    # Show metrics for this run
+                    metrics_df = get_training_metrics(run.get("run_id"))
+                    
+                    if not metrics_df.empty:
+                        st.markdown("**Training Metrics**")
+                        
+                        # Loss chart
+                        loss_data = metrics_df[metrics_df["loss"].notna()].copy()
+                        if not loss_data.empty:
+                            loss_chart = alt.Chart(loss_data).mark_line(color="#f59e0b").encode(
+                                alt.X("step:Q", title="Step"),
+                                alt.Y("loss:Q", title="Training Loss"),
+                                tooltip=[alt.Tooltip("step:Q"), alt.Tooltip("loss:Q", format=".4f")]
+                            ).properties(
+                                width=500,
+                                height=200,
+                                title="Training Loss over Steps"
+                            )
+                            st.altair_chart(loss_chart, use_container_width=True)
+                        
+                        # Eval loss chart
+                        eval_loss_data = metrics_df[metrics_df["eval_loss"].notna()].copy()
+                        if not eval_loss_data.empty:
+                            eval_loss_chart = alt.Chart(eval_loss_data).mark_line(color="#8b5cf6").encode(
+                                alt.X("step:Q", title="Step"),
+                                alt.Y("eval_loss:Q", title="Eval Loss"),
+                                tooltip=[alt.Tooltip("step:Q"), alt.Tooltip("eval_loss:Q", format=".4f")]
+                            ).properties(
+                                width=500,
+                                height=200,
+                                title="Evaluation Loss over Steps"
+                            )
+                            st.altair_chart(eval_loss_chart, use_container_width=True)
+                        
+                        # Learning rate chart
+                        lr_data = metrics_df[metrics_df["learning_rate"].notna()].copy()
+                        if not lr_data.empty:
+                            lr_chart = alt.Chart(lr_data).mark_line(color="#10b981").encode(
+                                alt.X("step:Q", title="Step"),
+                                alt.Y("learning_rate:Q", title="Learning Rate"),
+                                tooltip=[alt.Tooltip("step:Q"), alt.Tooltip("learning_rate:Q", format=".2e")]
+                            ).properties(
+                                width=500,
+                                height=150,
+                                title="Learning Rate over Steps"
+                            )
+                            st.altair_chart(lr_chart, use_container_width=True)
+                        
+                        # Raw metrics table
+                        with st.expander("View Raw Metrics"):
+                            st.dataframe(
+                                metrics_df,
+                                column_config={
+                                    "step": st.column_config.NumberColumn("Step"),
+                                    "epoch": st.column_config.NumberColumn("Epoch", format="%.1f"),
+                                    "loss": st.column_config.NumberColumn("Train Loss", format="%.4f"),
+                                    "eval_loss": st.column_config.NumberColumn("Eval Loss", format="%.4f"),
+                                    "learning_rate": st.column_config.NumberColumn("LR", format="%.2e")
+                                },
+                                hide_index=True,
+                                use_container_width=True
+                            )
+                    
+                    # Show completion info
+                    if event == "training_complete":
+                        st.success(f"✅ Training completed! Total steps: {run.get('total_steps', 'N/A')}")
+                        duration = run.get("duration_seconds")
+                        if duration:
+                            st.caption(f"Duration: {duration/60:.1f} minutes")
+        else:
+            st.info("No training runs recorded yet. Run training with telemetry enabled.")
+            st.caption("Use: python train_bias_detector.py --data train.json --output-dir bias-detector-output")
+    except Exception as e:
+        st.warning(f"Could not load training telemetry: {e}")
 
 
 if __name__ == "__main__":

@@ -1,7 +1,8 @@
 label	n	showentity	substr	orentity	search	orsearch	start_date	query	vector	text	andentity	end_date	fulltext	bm25	ids	flair_pooled	bge_large	embedding
+pv	42	*	1	Vallarta			-2	Summarize events in Puerto Vallarta.										
 mexico	42	*	1	"Mexico,Puerto Vallarta,Jalisco"			-2	Summarize current events in Mexico and Puerto Vallarta.										
 mencho	42	*	1	"Jalisco New Generation Cartel,CJNG,Nemesio Oseguera,El Mencho"		"El Mencho,Nemesio Oseguera"	-2	"Summarize events surrounding Nemesio Oseguera, El Mencho and the repurcussions of his death. Analize factions and their motivations."										
-ai	42	*	1	"Artificial Intelligence,AI"			-2	"Summarize current events involving Artificial Intelligence. Analize actions, economic impacts and motivations."										
+ai	42	*	0	"Artificial Intelligence,AI"			-2	"Summarize current events involving Artificial Intelligence. Analize actions, economic impacts and motivations."										
 venezuela	42	*	1	Venezuela			-2	Summarize US involvement in Venezuela. Analize actions and motivations.										
 maduro	42	*	1	Maduro		"legal,court,trial,arrest,indictment,charges,prosecution"	-2	Summarize legal actions involving Maduro. Analize actions and motivations.										
 cambodia	42	*	1	Cambodia			-2	Summarize current events in Cambodia. Analize actions and motivations.										

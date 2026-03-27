@@ -90,13 +90,22 @@ def add_articles_to_chroma(
             for _, row in articles.iterrows()
         ]
         
-        # Batch insert
-        collection.add(
-            ids=ids,
-            embeddings=embeddings.tolist(),
-            documents=documents,
-            metadatas=metadatas
-        )
+        # ChromaDB has a max batch size limit (typically around 5461)
+        # Process in batches to avoid "Batch size exceeds max" errors
+        batch_size = 5000  # Conservative batch size
+        total = len(articles)
+        
+        for start_idx in range(0, total, batch_size):
+            end_idx = min(start_idx + batch_size, total)
+            logger.info(f"Adding articles {start_idx} to {end_idx} (batch size: {end_idx - start_idx})")
+            
+            # Batch insert
+            collection.add(
+                ids=ids[start_idx:end_idx],
+                embeddings=embeddings[start_idx:end_idx].tolist(),
+                documents=documents[start_idx:end_idx],
+                metadatas=metadatas[start_idx:end_idx]
+            )
         
         logger.info(f"Added {len(articles)} articles to ChromaDB")
         
