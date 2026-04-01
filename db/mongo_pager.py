@@ -7,6 +7,7 @@ Requires: pip install textual pymongo
 import os
 import json
 import textwrap
+import shutil
 from textual.app import App, ComposeResult
 from textual.widgets import DataTable, Static, Footer, Header, Button, Input
 from textual.containers import Horizontal, Vertical, Container, ScrollableContainer
@@ -21,7 +22,7 @@ from datetime import datetime
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://root:example@localhost:27017")
 MONGO_DB = "rssnews"
 MONGO_COLL = "articles"
-PAGE_SIZE = 10
+PAGE_SIZE = 25  # Increased default page size
 
 
 class DocumentView(Static):
@@ -32,8 +33,8 @@ class DocumentView(Static):
         layer: overlay;
         width: 100%;
         height: 100%;
-        background: $surface 95%;
-        padding: 1 2;
+        background: $surface 98%;
+        padding: 0 1;
         visibility: hidden;
     }
     
@@ -42,7 +43,7 @@ class DocumentView(Static):
     }
     
     #doc-scroll {
-        height: 88%;
+        height: 1fr;
         border: solid $primary;
         background: $surface-darken-1;
         padding: 0 1;
@@ -55,14 +56,15 @@ class DocumentView(Static):
     
     #doc-controls {
         height: auto;
-        margin-top: 1;
+        padding: 1;
         content-align: center middle;
     }
     
     .doc-label {
         text-style: bold;
         color: $primary;
-        margin-bottom: 1;
+        height: auto;
+        padding: 1;
         text-align: center;
     }
     """
@@ -82,6 +84,7 @@ class DocumentView(Static):
         self.current_doc_index = 0
         self.docs_list = []
         self.app_ref = None
+        self.term_width = 80
     
     def compose(self) -> ComposeResult:
         yield Static("📄 ↑↓:Scroll | PgUp/PgDn:Page | P/N:Prev/Next | Esc:Close", classes="doc-label")
@@ -97,22 +100,36 @@ class DocumentView(Static):
         self.docs_list = docs
         self.app_ref = app_ref
     
+    def update_terminal_size(self):
+        """Update terminal size for wrapping calculations"""
+        try:
+            self.term_width = shutil.get_terminal_size().columns - 4  # Account for padding/borders
+        except:
+            self.term_width = 100
+    
     def show(self, index: int) -> None:
-        """Display document at index with word wrapping"""
+        """Display document at index with dynamic word wrapping"""
         if not self.docs_list or index < 0 or index >= len(self.docs_list):
             return
         
+        self.update_terminal_size()
         self.current_doc_index = index
         doc = self.docs_list[index]
         
-        # Format document with wrapping
+        # Format document with dynamic wrapping based on terminal width
         json_str = json_util.dumps(doc, indent=2, default=str)
-        # Wrap lines to container width (subtract padding/borders)
         wrapped_lines = []
+        
         for line in json_str.split('\n'):
-            if len(line) > 100:
-                # Use textwrap for long lines
-                wrapped = textwrap.wrap(line, width=100, subsequent_indent="  ")
+            if len(line) > self.term_width - 2:
+                # Wrap long lines dynamically
+                wrapped = textwrap.wrap(
+                    line, 
+                    width=self.term_width - 2, 
+                    subsequent_indent="  ",
+                    break_long_words=False,
+                    replace_whitespace=False
+                )
                 wrapped_lines.extend(wrapped)
             else:
                 wrapped_lines.append(line)
@@ -125,14 +142,12 @@ class DocumentView(Static):
         
         # Focus scroll container for navigation
         scroll = self.query_one("#doc-scroll", ScrollableContainer)
-        scroll.scroll_home()  # Scroll to top
+        scroll.scroll_home()
         scroll.focus()
     
     def _update_button_states(self):
         """Update navigation button states based on current position"""
-        # Check if we can go to previous document/page
         can_go_prev = self.current_doc_index > 0 or (self.app_ref and self.app_ref.page > 0)
-        # Check if we can go to next document/page
         can_go_next = (self.current_doc_index < len(self.docs_list) - 1) or \
                       (self.app_ref and (self.app_ref.page + 1) * PAGE_SIZE < self.app_ref.total_docs)
         
@@ -144,7 +159,6 @@ class DocumentView(Static):
         self.remove_class("visible")
         if self.app_ref:
             table = self.app_ref.query_one("#article-table", DataTable)
-            # Update table cursor to match where we were in doc view
             if self.current_doc_index < len(self.docs_list):
                 table.move_cursor(row=self.current_doc_index)
             table.focus()
@@ -154,48 +168,38 @@ class DocumentView(Static):
         self.hide()
     
     def action_scroll_up(self) -> None:
-        """Scroll up one line"""
         scroll = self.query_one("#doc-scroll", ScrollableContainer)
         scroll.scroll_up()
     
     def action_scroll_down(self) -> None:
-        """Scroll down one line"""
         scroll = self.query_one("#doc-scroll", ScrollableContainer)
         scroll.scroll_down()
     
     def action_page_up(self) -> None:
-        """Scroll up one page"""
         scroll = self.query_one("#doc-scroll", ScrollableContainer)
         scroll.scroll_page_up()
     
     def action_page_down(self) -> None:
-        """Scroll down one page"""
         scroll = self.query_one("#doc-scroll", ScrollableContainer)
         scroll.scroll_page_down()
     
     def action_prev_doc_or_page(self) -> None:
         """Go to previous document, or previous page if at first document"""
         if self.current_doc_index > 0:
-            # Previous document on current page
             self.show(self.current_doc_index - 1)
         elif self.app_ref and self.app_ref.page > 0:
-            # Load previous page and show last document
             self.app_ref.page -= 1
             self.app_ref.load_data()
-            # After loading, show the last document of the new page
             if self.docs_list:
                 self.show(len(self.docs_list) - 1)
     
     def action_next_doc_or_page(self) -> None:
         """Go to next document, or next page if at last document"""
         if self.current_doc_index < len(self.docs_list) - 1:
-            # Next document on current page
             self.show(self.current_doc_index + 1)
         elif self.app_ref and (self.app_ref.page + 1) * PAGE_SIZE < self.app_ref.total_docs:
-            # Load next page and show first document
             self.app_ref.page += 1
             self.app_ref.load_data()
-            # After loading, show the first document
             if self.docs_list:
                 self.show(0)
     
@@ -208,7 +212,6 @@ class DocumentView(Static):
             self.action_next_doc_or_page()
     
     def on_key(self, event) -> None:
-        """Handle keys when document view is focused"""
         if event.key == "escape":
             self.hide()
             event.stop()
@@ -229,7 +232,7 @@ class MongoPager(App):
     #table-container { 
         height: 1fr; 
         width: 100%;
-        border: solid $primary;
+        min-height: 10;
     }
     
     #controls { 
@@ -237,7 +240,6 @@ class MongoPager(App):
         width: 100%;
         background: $surface-darken-1;
         padding: 1 2;
-        dock: bottom;
     }
     
     DataTable { 
@@ -247,16 +249,20 @@ class MongoPager(App):
     
     #page-info {
         content-align: center middle;
-        width: 30;
+        width: auto;
+        min-width: 15;
     }
     
     #filter-input {
-        width: 40;
+        width: 1fr;
+        min-width: 20;
+        max-width: 50;
     }
     
     .instruction {
         color: $text-muted;
         text-style: italic;
+        width: auto;
     }
     """
     
@@ -279,6 +285,7 @@ class MongoPager(App):
         self.db = None
         self.collection = None
         self.current_docs = []
+        self.term_height = 24
         
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
@@ -288,26 +295,39 @@ class MongoPager(App):
                 yield DataTable(id="article-table")
             
             with Horizontal(id="controls"):
-                yield Button("◀ Prev (p)", id="prev", variant="primary")
-                yield Button("Next (n) ▶", id="next", variant="primary")
+                yield Button("◀ Prev", id="prev", variant="primary")
+                yield Button("Next ▶", id="next", variant="primary")
                 yield Static(id="page-info")
-                yield Input(placeholder='Filter: {"source": "BBC"}', id="filter-input")
+                yield Input(placeholder='Filter: {"source": "BBC"}...', id="filter-input")
                 yield Button("Apply", id="filter-btn", variant="success")
-                yield Static("Enter: View | Esc: Back | N/P: Page | R: Refresh | Q: Quit", classes="instruction")
+                yield Static("Enter:View | P/N:Page | R:Refresh | Q:Quit", classes="instruction")
         
         yield DocumentView(id="doc-viewer")
         yield Footer()
     
     def on_mount(self) -> None:
         """Initialize connection and load first page"""
+        self.update_terminal_size()
         self.connect_db()
         self.setup_table()
         self.load_data()
-        # Pass docs reference to document view
         doc_view = self.query_one("#doc-viewer", DocumentView)
         doc_view.set_docs(self.current_docs, self)
         table = self.query_one("#article-table", DataTable)
         table.focus()
+    
+    def update_terminal_size(self):
+        """Update terminal dimensions for dynamic sizing"""
+        try:
+            size = shutil.get_terminal_size()
+            self.term_height = size.lines
+            global PAGE_SIZE
+            # Calculate optimal page size based on terminal height
+            # Reserve 8 lines for header, footer, controls, and margins
+            available_lines = max(10, size.lines - 8)
+            PAGE_SIZE = available_lines
+        except:
+            pass
     
     def connect_db(self):
         """Establish MongoDB connection"""
@@ -321,19 +341,42 @@ class MongoPager(App):
             self.notify(f"Connection failed: {e}", severity="error", timeout=10)
     
     def setup_table(self):
-        """Configure DataTable columns"""
+        """Configure DataTable with dynamic column widths"""
         table = self.query_one("#article-table", DataTable)
         table.add_columns("ID", "Title", "Source", "Published", "Added")
         table.cursor_type = "row"
         table.zebra_stripes = True
         table.show_cursor = True
     
+    def _update_column_widths(self):
+        """Update table column widths based on terminal size"""
+        try:
+            width = shutil.get_terminal_size().columns
+        except:
+            width = 80
+        
+        table = self.query_one("#article-table", DataTable)
+        
+        # Calculate proportional widths
+        if width < 80:
+            # Compact mode for small terminals
+            ratios = [8, width-35, 12, 10, 10]
+        else:
+            # Wide mode - give more space to title
+            ratios = [10, int(width*0.5), 15, 12, 12]
+        
+        # Apply widths if columns exist
+        if len(table.columns) == 5:
+            for i, ratio in enumerate(ratios):
+                table.columns[i].width = ratio
+    
     def load_data(self):
-        """Load current page from MongoDB"""
+        """Load current page from MongoDB with dynamic page size"""
         if self.collection is None:
             return
         
         try:
+            self.update_terminal_size()  # Recalculate page size on each load
             self.total_docs = self.collection.count_documents(self.filter_query)
             skip = self.page * PAGE_SIZE
             cursor = self.collection.find(self.filter_query)\
@@ -343,25 +386,37 @@ class MongoPager(App):
             
             self.current_docs = list(cursor)
             
-            # Update document view's reference
             doc_view = self.query_one("#doc-viewer", DocumentView)
             doc_view.set_docs(self.current_docs, self)
             
             self.update_table()
             self.update_pagination()
+            self._update_column_widths()
             
         except Exception as e:
             self.notify(f"Query error: {e}", severity="error")
     
     def update_table(self):
-        """Refresh table with current documents"""
+        """Refresh table with current documents - dynamically truncate fields"""
         table = self.query_one("#article-table", DataTable)
         table.clear()
         
+        # Get available width for dynamic truncation
+        try:
+            term_width = shutil.get_terminal_size().columns
+        except:
+            term_width = 80
+        
+        # Calculate title width based on terminal
+        title_width = max(20, term_width - 40)
+        
         for doc in self.current_docs:
             doc_id = str(doc.get('_id', 'N/A'))[:8]
-            title = str(doc.get('title', 'N/A'))[:45]
-            source = str(doc.get('source', 'N/A'))[:15]
+            title = str(doc.get('title', 'N/A'))
+            # Dynamic truncation based on available space
+            if len(title) > title_width:
+                title = title[:title_width-3] + "..."
+            source = str(doc.get('source', 'N/A'))[:12]
             pub_date = self.format_date(doc.get('published'))
             added_date = self.format_date(doc.get('added'))
             
@@ -375,15 +430,22 @@ class MongoPager(App):
         if date_val is None:
             return "N/A"
         if isinstance(date_val, datetime):
-            return date_val.strftime("%m/%d %H:%M")
+            # Compact format for small screens
+            try:
+                if shutil.get_terminal_size().columns < 100:
+                    return date_val.strftime("%m/%d %H:%M")
+                else:
+                    return date_val.strftime("%Y-%m-%d %H:%M")
+            except:
+                return date_val.strftime("%m/%d %H:%M")
         return str(date_val)[:16]
     
     def update_pagination(self):
-        """Update page counter and button states"""
+        """Update page counter"""
         total_pages = max(1, (self.total_docs + PAGE_SIZE - 1) // PAGE_SIZE)
         current = min(self.page + 1, total_pages)
         
-        info = f"{current}/{total_pages} ({self.total_docs})"
+        info = f"{current}/{total_pages}"
         self.query_one("#page-info", Static).update(info)
         
         self.query_one("#prev", Button).disabled = self.page == 0
