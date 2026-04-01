@@ -414,6 +414,33 @@ class MongoPager(App):
         if not self.check_view_visible():
             self.action_view_doc()
     
+    def on_key(self, event) -> None:
+        """Handle key events for auto-pagination"""
+        # Only handle when document view is not visible
+        if self.check_view_visible():
+            return
+        
+        table = self.query_one("#article-table", DataTable)
+        cursor_row = table.cursor_row
+        
+        # Check if we're at the boundaries and user wants to navigate further
+        if event.key == "down" or event.key == "j":  # j for vim-style navigation
+            if cursor_row == len(self.current_docs) - 1 and len(self.current_docs) > 0:
+                # At last row, try to go to next page
+                if (self.page + 1) * PAGE_SIZE < self.total_docs:
+                    self.page += 1
+                    self.load_data()
+                    event.stop()  # Prevent default cursor movement
+        
+        elif event.key == "up" or event.key == "k":  # k for vim-style navigation
+            if cursor_row == 0 and self.page > 0:
+                # At first row, try to go to previous page
+                self.page -= 1
+                self.load_data()
+                # Move cursor to last row of new page
+                table.move_cursor(row=len(self.current_docs) - 1)
+                event.stop()
+    
     def on_button_pressed(self, event: Button.Pressed) -> None:
         btn_id = event.button.id
         if btn_id == "next":
