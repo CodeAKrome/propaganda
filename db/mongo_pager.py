@@ -6,6 +6,7 @@ Requires: pip install textual pymongo
 
 import os
 import json
+import textwrap
 from textual.app import App, ComposeResult
 from textual.widgets import DataTable, Static, Footer, Header, Button, Input
 from textual.containers import Horizontal, Vertical, Container, ScrollableContainer
@@ -32,7 +33,7 @@ class DocumentView(Static):
         width: 100%;
         height: 100%;
         background: $surface 95%;
-        padding: 2 4;
+        padding: 1 2;
         visibility: hidden;
     }
     
@@ -41,14 +42,14 @@ class DocumentView(Static):
     }
     
     #doc-scroll {
-        height: 85%;
+        height: 88%;
         border: solid $primary;
         background: $surface-darken-1;
-        padding: 1 2;
+        padding: 0 1;
     }
     
     #doc-content {
-        width: auto;
+        width: 100%;
         height: auto;
     }
     
@@ -62,33 +63,121 @@ class DocumentView(Static):
         text-style: bold;
         color: $primary;
         margin-bottom: 1;
+        text-align: center;
     }
     """
     
-    def compose(self) -> ComposeResult:
-        yield Static("📄 Document Details (Press Escape to close)", classes="doc-label")
-        with ScrollableContainer(id="doc-scroll"):
-            yield Static(id="doc-content")
-        with Horizontal(id="doc-controls"):
-            yield Button("Close (Esc)", id="close-doc", variant="primary")
+    BINDINGS = [
+        Binding("escape", "close", "Close"),
+        Binding("up", "scroll_up", "Scroll Up", show=False),
+        Binding("down", "scroll_down", "Scroll Down", show=False),
+        Binding("pageup", "page_up", "Page Up", show=False),
+        Binding("pagedown", "page_down", "Page Down", show=False),
+        Binding("p", "prev_doc", "Prev Doc", show=False),
+        Binding("n", "next_doc", "Next Doc", show=False),
+    ]
     
-    def show(self, doc: dict) -> None:
-        """Display the full document with all fields"""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.current_doc_index = 0
+        self.docs_list = []
+        self.app_ref = None
+    
+    def compose(self) -> ComposeResult:
+        yield Static("📄 ↑↓:Scroll | PgUp/PgDn:Page | P/N:Prev/Next Doc | Esc:Close", classes="doc-label")
+        with ScrollableContainer(id="doc-scroll"):
+            yield Static(id="doc-content", expand=True)
+        with Horizontal(id="doc-controls"):
+            yield Button("◀ Prev (p)", id="prev-doc", variant="primary")
+            yield Button("Next (n) ▶", id="next-doc", variant="primary")
+            yield Button("Close (Esc)", id="close-doc", variant="error")
+    
+    def set_docs(self, docs: list, app_ref):
+        """Set the list of documents and app reference for navigation"""
+        self.docs_list = docs
+        self.app_ref = app_ref
+    
+    def show(self, index: int) -> None:
+        """Display document at index with word wrapping"""
+        if not self.docs_list or index < 0 or index >= len(self.docs_list):
+            return
+        
+        self.current_doc_index = index
+        doc = self.docs_list[index]
+        
+        # Format document with wrapping
         json_str = json_util.dumps(doc, indent=2, default=str)
+        # Wrap lines to container width (subtract padding/borders)
+        wrapped_lines = []
+        for line in json_str.split('\n'):
+            if len(line) > 100:
+                # Use textwrap for long lines
+                wrapped = textwrap.wrap(line, width=100, subsequent_indent="  ")
+                wrapped_lines.extend(wrapped)
+            else:
+                wrapped_lines.append(line)
+        
         content = self.query_one("#doc-content", Static)
-        content.update(f"```json\n{json_str}\n```")
+        content.update("\n".join(wrapped_lines))
+        
         self.add_class("visible")
-        self.query_one("#close-doc", Button).focus()
+        # Update button states
+        self.query_one("#prev-doc", Button).disabled = (self.current_doc_index == 0)
+        self.query_one("#next-doc", Button).disabled = (self.current_doc_index >= len(self.docs_list) - 1)
+        
+        # Focus scroll container for navigation
+        scroll = self.query_one("#doc-scroll", ScrollableContainer)
+        scroll.scroll_home()  # Scroll to top
+        scroll.focus()
     
     def hide(self) -> None:
         """Hide the document view"""
         self.remove_class("visible")
-        table = self.app.query_one("#article-table", DataTable)
-        table.focus()
+        if self.app_ref:
+            table = self.app_ref.query_one("#article-table", DataTable)
+            table.focus()
+    
+    def action_close(self) -> None:
+        """Close the document view"""
+        self.hide()
+    
+    def action_scroll_up(self) -> None:
+        """Scroll up one line"""
+        scroll = self.query_one("#doc-scroll", ScrollableContainer)
+        scroll.scroll_up()
+    
+    def action_scroll_down(self) -> None:
+        """Scroll down one line"""
+        scroll = self.query_one("#doc-scroll", ScrollableContainer)
+        scroll.scroll_down()
+    
+    def action_page_up(self) -> None:
+        """Scroll up one page"""
+        scroll = self.query_one("#doc-scroll", ScrollableContainer)
+        scroll.scroll_page_up()
+    
+    def action_page_down(self) -> None:
+        """Scroll down one page"""
+        scroll = self.query_one("#doc-scroll", ScrollableContainer)
+        scroll.scroll_page_down()
+    
+    def action_prev_doc(self) -> None:
+        """Go to previous document"""
+        if self.current_doc_index > 0:
+            self.show(self.current_doc_index - 1)
+    
+    def action_next_doc(self) -> None:
+        """Go to next document"""
+        if self.current_doc_index < len(self.docs_list) - 1:
+            self.show(self.current_doc_index + 1)
     
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "close-doc":
             self.hide()
+        elif event.button.id == "prev-doc":
+            self.action_prev_doc()
+        elif event.button.id == "next-doc":
+            self.action_next_doc()
     
     def on_key(self, event) -> None:
         """Handle keys when document view is focused"""
@@ -186,6 +275,9 @@ class MongoPager(App):
         self.connect_db()
         self.setup_table()
         self.load_data()
+        # Pass docs reference to document view
+        doc_view = self.query_one("#doc-viewer", DocumentView)
+        doc_view.set_docs(self.current_docs, self)
         table = self.query_one("#article-table", DataTable)
         table.focus()
     
@@ -222,6 +314,11 @@ class MongoPager(App):
                 .limit(PAGE_SIZE)
             
             self.current_docs = list(cursor)
+            
+            # Update document view's reference
+            doc_view = self.query_one("#doc-viewer", DocumentView)
+            doc_view.set_docs(self.current_docs, self)
+            
             self.update_table()
             self.update_pagination()
             
@@ -271,7 +368,7 @@ class MongoPager(App):
     
     def action_next_page(self):
         if self.check_view_visible():
-            return  # Don't change page while viewing document
+            return
         if (self.page + 1) * PAGE_SIZE < self.total_docs:
             self.page += 1
             self.load_data()
@@ -291,7 +388,6 @@ class MongoPager(App):
     
     def action_view_doc(self):
         """Show full document details when Enter is pressed"""
-        # Only open view if not already visible
         if self.check_view_visible():
             return
             
@@ -302,9 +398,8 @@ class MongoPager(App):
             self.notify("No record selected", severity="warning")
             return
         
-        doc = self.current_docs[cursor_row]
         doc_view = self.query_one("#doc-viewer", DocumentView)
-        doc_view.show(doc)
+        doc_view.show(cursor_row)
     
     def action_close_view(self):
         """Close document view if open"""
@@ -312,12 +407,10 @@ class MongoPager(App):
         if doc_view.has_class("visible"):
             doc_view.hide()
         else:
-            # Not in view, treat as back navigation
             self.action_prev_page()
     
     def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
-        """Handle row selection with Enter key - only opens, doesn't toggle"""
-        # Prevent opening if already viewing (let escape handle closing)
+        """Handle row selection with Enter key"""
         if not self.check_view_visible():
             self.action_view_doc()
     
@@ -330,8 +423,6 @@ class MongoPager(App):
         elif btn_id == "filter-btn":
             if not self.check_view_visible():
                 self.apply_filter()
-        elif btn_id == "close-doc":
-            self.action_close_view()
     
     def on_input_submitted(self, event: Input.Submitted) -> None:
         if event.input.id == "filter-input" and not self.check_view_visible():
