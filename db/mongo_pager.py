@@ -41,14 +41,13 @@ class DocumentView(Static):
     }
     
     #doc-scroll {
-        height: 90%;
+        height: 85%;
         border: solid $primary;
         background: $surface-darken-1;
         padding: 1 2;
     }
     
     #doc-content {
-        text-style: bold;
         width: auto;
         height: auto;
     }
@@ -65,17 +64,16 @@ class DocumentView(Static):
         margin-bottom: 1;
     }
     """
-
+    
     def compose(self) -> ComposeResult:
-        yield Static("📄 Document Details (Press Enter or Esc to close)", classes="doc-label")
+        yield Static("📄 Document Details (Press Escape to close)", classes="doc-label")
         with ScrollableContainer(id="doc-scroll"):
             yield Static(id="doc-content")
         with Horizontal(id="doc-controls"):
-            yield Button("Close (Esc/Enter)", id="close-doc", variant="primary")
+            yield Button("Close (Esc)", id="close-doc", variant="primary")
     
     def show(self, doc: dict) -> None:
         """Display the full document with all fields"""
-        # Pretty print JSON with indentation
         json_str = json_util.dumps(doc, indent=2, default=str)
         content = self.query_one("#doc-content", Static)
         content.update(f"```json\n{json_str}\n```")
@@ -85,7 +83,6 @@ class DocumentView(Static):
     def hide(self) -> None:
         """Hide the document view"""
         self.remove_class("visible")
-        # Return focus to table
         table = self.app.query_one("#article-table", DataTable)
         table.focus()
     
@@ -94,9 +91,10 @@ class DocumentView(Static):
             self.hide()
     
     def on_key(self, event) -> None:
-        """Close on Escape or Enter"""
-        if event.key in ("escape", "enter"):
+        """Handle keys when document view is focused"""
+        if event.key == "escape":
             self.hide()
+            event.stop()
 
 
 class MongoPager(App):
@@ -150,8 +148,8 @@ class MongoPager(App):
         Binding("r", "refresh", "Refresh"),
         Binding("n", "next_page", "Next Page"),
         Binding("p", "prev_page", "Prev Page"),
-        Binding("enter", "view_doc", "View Record", show=True),
-        Binding("escape", "close_view", "Close View", show=False),
+        Binding("enter", "view_doc", "View", show=True),
+        Binding("escape", "close_view", "Back", show=True),
     ]
     
     page = reactive(0)
@@ -164,7 +162,6 @@ class MongoPager(App):
         self.db = None
         self.collection = None
         self.current_docs = []
-        self.doc_view = None
         
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
@@ -174,17 +171,14 @@ class MongoPager(App):
                 yield DataTable(id="article-table")
             
             with Horizontal(id="controls"):
-                yield Button("◀ Prev", id="prev", variant="primary")
-                yield Button("Next ▶", id="next", variant="primary")
+                yield Button("◀ Prev (p)", id="prev", variant="primary")
+                yield Button("Next (n) ▶", id="next", variant="primary")
                 yield Static(id="page-info")
                 yield Input(placeholder='Filter: {"source": "BBC"}', id="filter-input")
-                yield Button("Apply", id="filter-btn")
-                yield Static("Enter: View | N/P: Page | R: Refresh | Q: Quit", classes="instruction")
+                yield Button("Apply", id="filter-btn", variant="success")
+                yield Static("Enter: View | Esc: Back | N/P: Page | R: Refresh | Q: Quit", classes="instruction")
         
-        # Document viewer overlay
-        self.doc_view = DocumentView(id="doc-viewer")
-        yield self.doc_view
-        
+        yield DocumentView(id="doc-viewer")
         yield Footer()
     
     def on_mount(self) -> None:
@@ -192,8 +186,8 @@ class MongoPager(App):
         self.connect_db()
         self.setup_table()
         self.load_data()
-        # Focus table on startup
-        self.query_one("#article-table", DataTable).focus()
+        table = self.query_one("#article-table", DataTable)
+        table.focus()
     
     def connect_db(self):
         """Establish MongoDB connection"""
@@ -248,7 +242,6 @@ class MongoPager(App):
             
             table.add_row(doc_id, title, source, pub_date, added_date)
         
-        # Restore cursor if docs exist
         if self.current_docs:
             table.move_cursor(row=0)
     
@@ -271,26 +264,35 @@ class MongoPager(App):
         self.query_one("#prev", Button).disabled = self.page == 0
         self.query_one("#next", Button).disabled = (self.page + 1) * PAGE_SIZE >= self.total_docs
     
-    # Actions
+    def check_view_visible(self) -> bool:
+        """Check if document view is currently visible"""
+        doc_view = self.query_one("#doc-viewer", DocumentView)
+        return doc_view.has_class("visible")
+    
     def action_next_page(self):
+        if self.check_view_visible():
+            return  # Don't change page while viewing document
         if (self.page + 1) * PAGE_SIZE < self.total_docs:
             self.page += 1
             self.load_data()
     
     def action_prev_page(self):
+        if self.check_view_visible():
+            return
         if self.page > 0:
             self.page -= 1
             self.load_data()
     
     def action_refresh(self):
+        if self.check_view_visible():
+            return
         self.load_data()
         self.notify("Refreshed", timeout=2)
     
     def action_view_doc(self):
         """Show full document details when Enter is pressed"""
-        # If doc view is open, close it (toggle behavior)
-        if self.doc_view and self.doc_view.has_class("visible"):
-            self.doc_view.hide()
+        # Only open view if not already visible
+        if self.check_view_visible():
             return
             
         table = self.query_one("#article-table", DataTable)
@@ -301,14 +303,24 @@ class MongoPager(App):
             return
         
         doc = self.current_docs[cursor_row]
-        self.doc_view.show(doc)
+        doc_view = self.query_one("#doc-viewer", DocumentView)
+        doc_view.show(doc)
     
     def action_close_view(self):
-        """Close document view"""
-        if self.doc_view and self.doc_view.has_class("visible"):
-            self.doc_view.hide()
+        """Close document view if open"""
+        doc_view = self.query_one("#doc-viewer", DocumentView)
+        if doc_view.has_class("visible"):
+            doc_view.hide()
+        else:
+            # Not in view, treat as back navigation
+            self.action_prev_page()
     
-    # Event handlers
+    def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
+        """Handle row selection with Enter key - only opens, doesn't toggle"""
+        # Prevent opening if already viewing (let escape handle closing)
+        if not self.check_view_visible():
+            self.action_view_doc()
+    
     def on_button_pressed(self, event: Button.Pressed) -> None:
         btn_id = event.button.id
         if btn_id == "next":
@@ -316,10 +328,13 @@ class MongoPager(App):
         elif btn_id == "prev":
             self.action_prev_page()
         elif btn_id == "filter-btn":
-            self.apply_filter()
+            if not self.check_view_visible():
+                self.apply_filter()
+        elif btn_id == "close-doc":
+            self.action_close_view()
     
     def on_input_submitted(self, event: Input.Submitted) -> None:
-        if event.input.id == "filter-input":
+        if event.input.id == "filter-input" and not self.check_view_visible():
             self.apply_filter()
     
     def apply_filter(self):
