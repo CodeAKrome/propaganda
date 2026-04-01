@@ -73,8 +73,8 @@ class DocumentView(Static):
         Binding("down", "scroll_down", "Scroll Down", show=False),
         Binding("pageup", "page_up", "Page Up", show=False),
         Binding("pagedown", "page_down", "Page Down", show=False),
-        Binding("p", "prev_doc", "Prev Doc", show=False),
-        Binding("n", "next_doc", "Next Doc", show=False),
+        Binding("p", "prev_doc_or_page", "Prev", show=False),
+        Binding("n", "next_doc_or_page", "Next", show=False),
     ]
     
     def __init__(self, *args, **kwargs):
@@ -84,7 +84,7 @@ class DocumentView(Static):
         self.app_ref = None
     
     def compose(self) -> ComposeResult:
-        yield Static("📄 ↑↓:Scroll | PgUp/PgDn:Page | P/N:Prev/Next Doc | Esc:Close", classes="doc-label")
+        yield Static("📄 ↑↓:Scroll | PgUp/PgDn:Page | P/N:Prev/Next | Esc:Close", classes="doc-label")
         with ScrollableContainer(id="doc-scroll"):
             yield Static(id="doc-content", expand=True)
         with Horizontal(id="doc-controls"):
@@ -121,20 +121,32 @@ class DocumentView(Static):
         content.update("\n".join(wrapped_lines))
         
         self.add_class("visible")
-        # Update button states
-        self.query_one("#prev-doc", Button).disabled = (self.current_doc_index == 0)
-        self.query_one("#next-doc", Button).disabled = (self.current_doc_index >= len(self.docs_list) - 1)
+        self._update_button_states()
         
         # Focus scroll container for navigation
         scroll = self.query_one("#doc-scroll", ScrollableContainer)
         scroll.scroll_home()  # Scroll to top
         scroll.focus()
     
+    def _update_button_states(self):
+        """Update navigation button states based on current position"""
+        # Check if we can go to previous document/page
+        can_go_prev = self.current_doc_index > 0 or (self.app_ref and self.app_ref.page > 0)
+        # Check if we can go to next document/page
+        can_go_next = (self.current_doc_index < len(self.docs_list) - 1) or \
+                      (self.app_ref and (self.app_ref.page + 1) * PAGE_SIZE < self.app_ref.total_docs)
+        
+        self.query_one("#prev-doc", Button).disabled = not can_go_prev
+        self.query_one("#next-doc", Button).disabled = not can_go_next
+    
     def hide(self) -> None:
         """Hide the document view"""
         self.remove_class("visible")
         if self.app_ref:
             table = self.app_ref.query_one("#article-table", DataTable)
+            # Update table cursor to match where we were in doc view
+            if self.current_doc_index < len(self.docs_list):
+                table.move_cursor(row=self.current_doc_index)
             table.focus()
     
     def action_close(self) -> None:
@@ -161,23 +173,39 @@ class DocumentView(Static):
         scroll = self.query_one("#doc-scroll", ScrollableContainer)
         scroll.scroll_page_down()
     
-    def action_prev_doc(self) -> None:
-        """Go to previous document"""
+    def action_prev_doc_or_page(self) -> None:
+        """Go to previous document, or previous page if at first document"""
         if self.current_doc_index > 0:
+            # Previous document on current page
             self.show(self.current_doc_index - 1)
+        elif self.app_ref and self.app_ref.page > 0:
+            # Load previous page and show last document
+            self.app_ref.page -= 1
+            self.app_ref.load_data()
+            # After loading, show the last document of the new page
+            if self.docs_list:
+                self.show(len(self.docs_list) - 1)
     
-    def action_next_doc(self) -> None:
-        """Go to next document"""
+    def action_next_doc_or_page(self) -> None:
+        """Go to next document, or next page if at last document"""
         if self.current_doc_index < len(self.docs_list) - 1:
+            # Next document on current page
             self.show(self.current_doc_index + 1)
+        elif self.app_ref and (self.app_ref.page + 1) * PAGE_SIZE < self.app_ref.total_docs:
+            # Load next page and show first document
+            self.app_ref.page += 1
+            self.app_ref.load_data()
+            # After loading, show the first document
+            if self.docs_list:
+                self.show(0)
     
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "close-doc":
             self.hide()
         elif event.button.id == "prev-doc":
-            self.action_prev_doc()
+            self.action_prev_doc_or_page()
         elif event.button.id == "next-doc":
-            self.action_next_doc()
+            self.action_next_doc_or_page()
     
     def on_key(self, event) -> None:
         """Handle keys when document view is focused"""
@@ -416,28 +444,23 @@ class MongoPager(App):
     
     def on_key(self, event) -> None:
         """Handle key events for auto-pagination"""
-        # Only handle when document view is not visible
         if self.check_view_visible():
             return
         
         table = self.query_one("#article-table", DataTable)
         cursor_row = table.cursor_row
         
-        # Check if we're at the boundaries and user wants to navigate further
-        if event.key == "down" or event.key == "j":  # j for vim-style navigation
+        if event.key == "down" or event.key == "j":
             if cursor_row == len(self.current_docs) - 1 and len(self.current_docs) > 0:
-                # At last row, try to go to next page
                 if (self.page + 1) * PAGE_SIZE < self.total_docs:
                     self.page += 1
                     self.load_data()
-                    event.stop()  # Prevent default cursor movement
+                    event.stop()
         
-        elif event.key == "up" or event.key == "k":  # k for vim-style navigation
+        elif event.key == "up" or event.key == "k":
             if cursor_row == 0 and self.page > 0:
-                # At first row, try to go to previous page
                 self.page -= 1
                 self.load_data()
-                # Move cursor to last row of new page
                 table.move_cursor(row=len(self.current_docs) - 1)
                 event.stop()
     
