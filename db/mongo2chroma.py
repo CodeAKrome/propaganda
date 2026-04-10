@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+
+"""
+Database utility module for managing and accessing data.
+"""
+
 """
 mongo2chroma.py
 Load cleaned articles from MongoDB into Chroma vector DB
@@ -29,7 +34,9 @@ CHROMA_COLL = "articles"
 BATCH_SIZE = 32
 
 # Embedding model defaults - can be overridden via CLI
-DEFAULT_EMBED_TYPE = "flair-pooled"  # Options: flair-pooled, bge-large, sentence-transformer
+DEFAULT_EMBED_TYPE = (
+    "flair-pooled"  # Options: flair-pooled, bge-large, sentence-transformer
+)
 EMBED_MODEL = "BAAI/bge-large-en-v1.5"
 FLAIR_MODEL = "news-forward"
 # ------------------------------------------------------------------
@@ -39,16 +46,17 @@ mongo_db = mongo_client[MONGO_DB]
 mongo_coll = mongo_db[MONGO_COLL]
 
 
-def get_mongo_session():
-    """Get a MongoDB session with no cursor timeout."""
-    session = mongo_client.start_session()
-    return session
-
-
-def batch_load_from_mongo(q: dict, projection: dict, batch_size: int = 1000, limit: Optional[int] = None, sort_field: str = "published", sort_order: int = -1):
+def batch_load_from_mongo(
+    q: dict,
+    projection: dict,
+    batch_size: int = 1000,
+    limit: Optional[int] = None,
+    sort_field: str = "published",
+    sort_order: int = -1,
+):
     """
-    Load documents from MongoDB in batches to avoid cursor timeout.
-    
+    Load documents from MongoDB in batches using cursor iteration.
+
     Args:
         q: MongoDB query filter
         projection: Fields to return
@@ -56,44 +64,26 @@ def batch_load_from_mongo(q: dict, projection: dict, batch_size: int = 1000, lim
         limit: Optional limit on total documents
         sort_field: Field to sort by
         sort_order: -1 for descending, 1 for ascending
-    
+
     Yields:
         Batches of documents
     """
-    session = get_mongo_session()
-    total_fetched = 0
-    
+    cursor = mongo_coll.find(q, projection).sort(sort_field, sort_order)
+    if limit:
+        cursor = cursor.limit(limit)
+
     try:
-        while True:
-            # Calculate remaining limit
-            remaining = (limit - total_fetched) if limit else batch_size
-            fetch_size = min(batch_size, remaining)
-            
-            if fetch_size <= 0:
-                break
-            
-            # Use explicit session with no_cursor_timeout and high max_time_ms
-            cursor = mongo_coll.find(
-                q,
-                projection,
-                session=session,
-                no_cursor_timeout=True,
-                max_time_ms=3600000  # 1 hour in milliseconds
-            ).sort(sort_field, sort_order).skip(total_fetched).limit(fetch_size)
-            
-            batch = list(cursor)
-            
-            if not batch:
-                break
-            
+        batch = []
+        for doc in cursor:
+            batch.append(doc)
+            if len(batch) >= batch_size:
+                yield batch
+                batch = []
+        if batch:
             yield batch
-            total_fetched += len(batch)
-            
-            if limit and total_fetched >= limit:
-                break
-                
     finally:
-        session.end_session()
+        cursor.close()
+
 
 # Lazy-loaded ChromaDB and encoder
 _chroma_client = None
@@ -121,54 +111,56 @@ def get_chroma_collection():
 def get_encoder(embed_type: str = "flair-pooled", embed_model: str = None):
     """
     Lazy-load encoder based on type.
-    
+
     Args:
         embed_type: Type of embedding - 'flair-pooled', 'bge-large', or 'sentence-transformer'
         embed_model: Model name/path (for sentence-transformer type)
-    
+
     Returns:
         Encoder object with .encode() method
     """
     global _encoder, _embed_type
-    
+
     # Determine if we need to (re)load the encoder
     if _encoder is None or _embed_type != embed_type:
         if embed_type == "flair-pooled":
             from flair.embeddings import PooledFlairEmbeddings
             from flair.data import Sentence
             import numpy as np
-            
+
             model_name = embed_model or FLAIR_MODEL
             _encoder = FlairPooledEncoder(PooledFlairEmbeddings(model_name))
         elif embed_type == "bge-large":
             from sentence_transformers import SentenceTransformer
+
             _encoder = SentenceTransformer("BAAI/bge-large-en-v1.5")
         else:  # sentence-transformer
             from sentence_transformers import SentenceTransformer
+
             model = embed_model or EMBED_MODEL
             _encoder = SentenceTransformer(model)
-        
+
         _embed_type = embed_type
-    
+
     return _encoder
 
 
 class FlairPooledEncoder:
     """Wrapper for Flair PooledFlairEmbeddings to match sentence-transformers API."""
-    
+
     def __init__(self, flair_embedding):
         self._flair = flair_embedding
-    
+
     def encode(self, texts, convert_to_tensor=True, **kwargs):
         """Encode texts to embeddings. Returns tensor-like object with .cpu().numpy() method."""
         from flair.data import Sentence
         import numpy as np
         import torch
-        
+
         single_input = isinstance(texts, str)
         if single_input:
             texts = [texts]
-        
+
         embeddings = []
         for text in texts:
             sent = Sentence(text)
@@ -180,24 +172,24 @@ class FlairPooledEncoder:
             else:
                 emb = np.zeros(self._flair.embedding_length)
             embeddings.append(emb)
-        
+
         result = np.array(embeddings)
-        
+
         # For single input, squeeze to 1D to match sentence-transformers behavior
         if single_input:
             result = result[0]
-        
+
         # Create a tensor-like wrapper that matches sentence-transformers output
         class TensorWrapper:
             def __init__(self, arr):
                 self._arr = arr
-            
+
             def cpu(self):
                 return self
-            
+
             def numpy(self):
                 return self._arr
-        
+
         return TensorWrapper(result)
 
 
@@ -349,14 +341,16 @@ def load_into_chroma(
 
     # Use batch loading to prevent cursor timeout
     projection = {"_id": 1, "article": 1, "published": 1, "ner": 1}
-    
+
     docs, ids, metadatas = [], [], []
     stored = 0
     skipped = 0
 
-    for batch in tqdm(batch_load_from_mongo(q, projection, batch_size=1000, limit=limit), 
-                      total=(total_docs + 999) // 1000, 
-                      desc="Loading articles (batches)"):
+    for batch in tqdm(
+        batch_load_from_mongo(q, projection, batch_size=1000, limit=limit),
+        total=(total_docs + 999) // 1000,
+        desc="Loading articles (batches)",
+    ):
         for doc in batch:
             _id = str(doc["_id"])
             text = doc.get("article", "").strip()
@@ -370,27 +364,33 @@ def load_into_chroma(
 
             # Build metadata
             metadata = {}
-            
+
             # Add publication date as ISO string for filtering
             published_dt = doc.get("published")
             if published_dt and isinstance(published_dt, datetime):
                 metadata["published"] = published_dt.isoformat()
-            
+
             # Add entities as JSON string for filtering
             ner = doc.get("ner")
             if ner and "entities" in ner:
                 # Store entity texts as a JSON string for filtering
-                entity_texts = [e.get("text", "") for e in ner["entities"] if e.get("text")]
+                entity_texts = [
+                    e.get("text", "") for e in ner["entities"] if e.get("text")
+                ]
                 if entity_texts:
                     metadata["entities"] = json.dumps(entity_texts)
-            
+
             docs.append(text)
             ids.append(_id)
             metadatas.append(metadata)
 
             if len(docs) >= BATCH_SIZE:
-                embs = encoder.encode(docs, convert_to_tensor=True).cpu().numpy().tolist()
-                collection.add(documents=docs, embeddings=embs, ids=ids, metadatas=metadatas)
+                embs = (
+                    encoder.encode(docs, convert_to_tensor=True).cpu().numpy().tolist()
+                )
+                collection.add(
+                    documents=docs, embeddings=embs, ids=ids, metadatas=metadatas
+                )
                 stored += len(ids)
                 docs, ids, metadatas = [], [], []
 
@@ -440,10 +440,11 @@ def query_chroma(
         if end_date:
             date_filter["$lte"] = parse_date_arg(end_date)
         mongo_date_filter["published"] = date_filter
-        
+
         # Get IDs from MongoDB that match date range
-        session = get_mongo_session()
-        date_filtered_ids = set(str(d["_id"]) for d in mongo_coll.find(mongo_date_filter, {"_id": 1}, session=session, no_cursor_timeout=True))
+        cursor = mongo_coll.find(mongo_date_filter, {"_id": 1})
+        date_filtered_ids = set(str(d["_id"]) for d in cursor)
+        cursor.close()
 
     # Step 2: Query ChromaDB
     if text.strip():
@@ -489,14 +490,14 @@ def query_chroma(
                 entities = json.loads(entities_str)
             except (json.JSONDecodeError, TypeError):
                 entities = []
-            
+
             # Check AND entities - all must be present
             and_match = True
             for label, text_val in and_entities:
                 if text_val not in entities:
                     and_match = False
                     break
-            
+
             # Check OR entities - at least one must be present
             or_match = True
             if or_entities:
@@ -505,10 +506,10 @@ def query_chroma(
                     if text_val in entities:
                         or_match = True
                         break
-            
+
             if and_match and or_match:
                 filtered_ids.append(_id)
-        
+
         candidate_ids = filtered_ids
 
     # Fetch additional data from MongoDB for display
@@ -610,26 +611,26 @@ def format_entities(entities_by_type: Dict[str, Set[str]]) -> str:
 def format_bias(bias: Dict | str | None) -> str:
     """
     Format bias for display. Handles both object and legacy string formats.
-    
+
     Args:
         bias: Bias data - either a dict with dir/deg/reason, or a JSON string
-        
+
     Returns:
         Formatted string for display wrapped in <bias> tags
     """
     if not bias:
         return "<bias>\n(none)\n</bias>"
-    
+
     # Handle legacy string format
     if isinstance(bias, str):
         try:
             bias = json.loads(bias)
         except (json.JSONDecodeError, ValueError):
             return f"<bias>\n{bias}\n</bias>"  # Return as-is if not valid JSON
-    
+
     if not isinstance(bias, dict):
         return f"<bias>\n{str(bias)}\n</bias>"
-    
+
     # Format as object
     lines = ["<bias>"]
     if "dir" in bias:
@@ -637,16 +638,16 @@ def format_bias(bias: Dict | str | None) -> str:
         if isinstance(dir_data, dict):
             dir_str = ", ".join(f"{k}: {v:.2f}" for k, v in sorted(dir_data.items()))
             lines.append(f"Direction: {dir_str}")
-    
+
     if "deg" in bias:
         deg_data = bias["deg"]
         if isinstance(deg_data, dict):
             deg_str = ", ".join(f"{k}: {v:.2f}" for k, v in sorted(deg_data.items()))
             lines.append(f"Degree: {deg_str}")
-    
+
     if "reason" in bias:
         lines.append(f"Reason: {bias['reason']}")
-    
+
     lines.append("</bias>")
     return "\n".join(lines)
 
@@ -671,24 +672,27 @@ def export_titles(
         q["published"] = date_filter
 
     cursor = mongo_coll.find(
-        q, {"_id": 1, "title": 1, "published": 1, "source": 1}, no_cursor_timeout=True
+        q, {"_id": 1, "title": 1, "published": 1, "source": 1}
     ).sort("published", -1)
 
-    for doc in cursor:
-        _id = str(doc["_id"])
-        title = doc.get("title", "")
-        source = doc.get("source", "")
-        published = doc.get("published")
+    try:
+        for doc in cursor:
+            _id = str(doc["_id"])
+            title = doc.get("title", "")
+            source = doc.get("source", "")
+            published = doc.get("published")
 
-        if published and isinstance(published, datetime):
-            published_str = published.strftime("%Y-%m-%d")
-        else:
-            published_str = ""
+            if published and isinstance(published, datetime):
+                published_str = published.strftime("%Y-%m-%d")
+            else:
+                published_str = ""
 
-        title = title.replace("\t", " ").replace("\n", " ").replace("\r", " ")
-        source = source.replace("\t", " ").replace("\n", " ").replace("\r", " ")
+            title = title.replace("\t", " ").replace("\n", " ").replace("\r", " ")
+            source = source.replace("\t", " ").replace("\n", " ").replace("\r", " ")
 
-        print(f"{published_str}\t{source}\t{_id}\t{title}")
+            print(f"{published_str}\t{source}\t{_id}\t{title}")
+    finally:
+        cursor.close()
 
 
 def dump_entities(
@@ -713,19 +717,22 @@ def dump_entities(
             date_filter["$lte"] = parse_date_arg(end_date)
         q["published"] = date_filter
 
-    cursor = mongo_coll.find(q, {"ner": 1}, no_cursor_timeout=True).sort("published", -1)
+    cursor = mongo_coll.find(q, {"ner": 1}).sort("published", -1)
 
     InnerDict = lambda: defaultdict(int)
     entity_counts: Dict[str, Dict[str, int]] = defaultdict(InnerDict)
 
-    for doc in cursor:
-        entities_in_doc = extract_entities_from_doc(
-            doc, show_entities if show_entities is not None else []
-        )
+    try:
+        for doc in cursor:
+            entities_in_doc = extract_entities_from_doc(
+                doc, show_entities if show_entities is not None else []
+            )
 
-        for entity_type, entity_texts in entities_in_doc.items():
-            for entity_text in entity_texts:
-                entity_counts[entity_type][entity_text] += 1
+            for entity_type, entity_texts in entities_in_doc.items():
+                for entity_text in entity_texts:
+                    entity_counts[entity_type][entity_text] += 1
+    finally:
+        cursor.close()
 
     sorted_entities = []
     for entity_type in entity_counts.keys():
@@ -786,37 +793,41 @@ def export_articles(
             "article": 1,
             "bias": 1,
         },
-        no_cursor_timeout=True
     ).sort("published", -1)
 
     if limit:
         cursor = cursor.limit(limit)
 
-    for doc in cursor:
-        _id = str(doc["_id"])
-        title = doc.get("title", "")
-        source = doc.get("source", "")
-        article_text = doc.get("article", "")
+    try:
+        for doc in cursor:
+            _id = str(doc["_id"])
+            title = doc.get("title", "")
+            source = doc.get("source", "")
+            article_text = doc.get("article", "")
 
-        published_iso = ""
-        published_dt = doc.get("published")
-        if published_dt and isinstance(published_dt, datetime):
-            published_iso = published_dt.isoformat()
+            published_iso = ""
+            published_dt = doc.get("published")
+            if published_dt and isinstance(published_dt, datetime):
+                published_iso = published_dt.isoformat()
 
-        bias = doc.get("bias", "")
+            bias = doc.get("bias", "")
 
-        print("---")
-        print(f"ID: {_id}")
-        print(f"Title: {title}")
-        print(f"Published: {published_iso}")
-        print(f"Source: {source}")
-        print(f"Bias: {format_bias(bias)}")
+            print("---")
+            print(f"ID: {_id}")
+            print(f"Title: {title}")
+            print(f"Published: {published_iso}")
+            print(f"Source: {source}")
+            print(f"Bias: {format_bias(bias)}")
 
-        if show_entities is not None:
-            entities = format_entities(extract_entities_from_doc(doc, show_entities))
-            print(entities)
+            if show_entities is not None:
+                entities = format_entities(
+                    extract_entities_from_doc(doc, show_entities)
+                )
+                print(entities)
 
-        print(f"Text: {article_text}")
+            print(f"Text: {article_text}")
+    finally:
+        cursor.close()
 
 
 # ------------------------------------------------------------------
@@ -985,9 +996,9 @@ def main(argv=None):
     # Helper to determine embed_type and embed_model from args
     def get_embed_args(args):
         """Determine embedding type and model from CLI args."""
-        if hasattr(args, 'embedding') and args.embedding:
+        if hasattr(args, "embedding") and args.embedding:
             return "sentence-transformer", args.embedding
-        elif hasattr(args, 'bge_large') and args.bge_large:
+        elif hasattr(args, "bge_large") and args.bge_large:
             return "bge-large", None
         else:
             # Default to flair-pooled
