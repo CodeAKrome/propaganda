@@ -11,7 +11,8 @@ TIMESTAMP_OFFSET = 3
 	querysmall mkvecsmall smallthingsthatgo cleanoutput fload oldthingsthatgo \
 	fquerymp3 fquery fmp3 black querysmallest cleanmp3 mp3small smallestthingsthatgo \
 	timestamp testrun dbscan vecdbscan mddbscan biast5 t5server categorize cleantext \
-	runhybrid runreport cyphertograph test2
+	runhybrid runreport cyphertograph test2 \
+	lora-extract lora-train lora-test lora-serve lora-stop lora-merge lora-validate
 
 # <=-- Main --=>
 
@@ -197,3 +198,91 @@ mgconsole:
 testload:
 	./propaganda config/test.tsv config/kill.tsv
 #	go run main.go config/test.tsv config/kill.tsv
+
+# ==============================================================================
+# LoRA Training & Serving
+# ==============================================================================
+
+LORA_ENV = t5/.venv
+LORA_MODEL ?= meta-llama/Llama-3.2-1B
+LORA_OUTPUT = ./lora-output
+LORA_DATA = lora_train.json
+LORA_TEST_DATA = lora_test.json
+LORA_TOTAL_SAMPLES ?= 10000
+LORA_MIN_SAMPLES ?= 100
+LORA_EPOCHS ?= 3
+LORA_BATCH_SIZE ?= 4
+LORA_PORT ?= 1337
+LORA_HOST ?= 0.0.0.0
+
+# Extract balanced training data from MongoDB
+lora-extract:
+	@source $(LORA_ENV)/bin/activate && \
+	python LoRA-train/mongo2lora.py \
+		--output $(LORA_DATA) \
+		--target-samples $(LORA_TOTAL_SAMPLES) \
+		--min-samples $(LORA_MIN_SAMPLES) \
+		--start-date -60 \
+		--model-type llama \
+		--shuffle
+
+# Extract test data (different date range)
+lora-extract-test:
+	@source $(LORA_ENV)/bin/activate && \
+	python LoRA-train/mongo2lora.py \
+		--output $(LORA_TEST_DATA) \
+		--target-samples $(shell python3 -c "print(int($(LORA_TOTAL_SAMPLES) * 0.2))") \
+		--min-samples 20 \
+		--start-date -90 --end-date -60 \
+		--model-type llama \
+		--shuffle
+
+# Train LoRA model
+lora-train:
+	@source $(LORA_ENV)/bin/activate && \
+	python LoRA-train/train_lora.py \
+		--data $(LORA_DATA) \
+		--model $(LORA_MODEL) \
+		--output $(LORA_OUTPUT) \
+		--model-type llama \
+		--epochs $(LORA_EPOCHS) \
+		--batch-size $(LORA_BATCH_SIZE) \
+		--learning-rate 3e-4 \
+		--lora-r 16 \
+		--lora-alpha 32
+
+# Test trained model
+lora-test:
+	@source $(LORA_ENV)/bin/activate && \
+	python LoRA-train/test_lora.py \
+		--model-path $(LORA_OUTPUT) \
+		--test-data $(LORA_TEST_DATA) \
+		--output lora_test_results.json
+
+# Validate training data quality
+lora-validate:
+	@source $(LORA_ENV)/bin/activate && \
+	python LoRA-train/mongo2lora.py \
+		--output /tmp/lora_validate.json \
+		--target-samples 1000 \
+		--min-samples 50 \
+		--start-date -30 && \
+	python3 -c "import json; d=json.load(open('/tmp/lora_validate.json')); print(f'Total: {len(d)}'); bins={}; [bins.update({i.get('instruction','unknown'):1}) or None for i in d]; print(f'Unique tasks: {len(bins)}')"
+
+# Start LoRA server
+lora-serve:
+	@source $(LORA_ENV)/bin/activate && \
+	python LoRA-server/server.py \
+		--model-path $(LORA_OUTPUT) \
+		--host $(LORA_HOST) \
+		--port $(LORA_PORT)
+
+# Stop LoRA server
+lora-stop:
+	@lsof -ti :$(LORA_PORT) | xargs kill 2>/dev/null || echo "No server on port $(LORA_PORT)"
+
+# Full pipeline: extract → train → test
+lora-full: lora-extract lora-extract-test lora-train lora-test
+
+# Quick test with smaller data
+lora-quick: lora-extract lora-train lora-test
