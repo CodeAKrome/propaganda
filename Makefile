@@ -12,7 +12,7 @@ TIMESTAMP_OFFSET = 3
 	fquerymp3 fquery fmp3 black querysmallest cleanmp3 mp3small smallestthingsthatgo \
 	timestamp testrun dbscan vecdbscan mddbscan biast5 t5server categorize cleantext \
 	runhybrid runreport cyphertograph test2 \
-	lora-extract lora-train lora-test lora-serve lora-stop lora-merge lora-validate
+	lora-extract lora-train lora-test lora-serve lora-stop lora-merge lora-validate dashboard
 
 # <=-- Main --=>
 
@@ -113,6 +113,9 @@ back:
 # start web interface
 front:
 	front/RUNME.sh
+# start dashboard
+dashboard:
+	cd dashboard && source .venv/bin/activate && streamlit run app.py
 # read data from mongodb and create vectors in chroma
 vector:
 	@source $(DB_ENV)/bin/activate && cd db && ./mongo2chroma.py load --start-date $(NUMDAYS) --force
