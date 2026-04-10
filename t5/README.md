@@ -104,7 +104,7 @@ print(result)
 from bias_detector import BiasProcessor
 
 # Process articles from MongoDB
-processor = BiasProcessor(api_url="http://localhost:8000")
+processor = BiasProcessor(api_url="http://localhost:1337")
 processor.process_articles(batch_size=100)
 processor.close()
 ```
@@ -155,7 +155,7 @@ docker run --rm -e MONGO_USER=$MONGO_USER -e MONGO_PASS=$MONGO_PASS yourname/bia
 cd t5/
 pip install -r requirements.txt
 python server_mps.py
-# Server runs at http://localhost:8000
+# Server runs at http://localhost:1337
 ```
 
 ## CLI Usage
@@ -181,7 +181,7 @@ from bias_detector import BiasProcessor, BiasValidator
 
 # Process articles
 processor = BiasProcessor(
-    api_url="http://localhost:8000",
+    api_url="http://localhost:1337",
     output_file="processed.json"
 )
 processor.process_articles(

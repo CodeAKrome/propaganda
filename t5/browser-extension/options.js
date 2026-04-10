@@ -43,7 +43,7 @@ function populateForm() {
   if (!config) return;
   
   // API settings
-  document.getElementById('apiEndpoint').value = config.apiEndpoint || 'http://localhost:8000';
+  document.getElementById('apiEndpoint').value = config.apiEndpoint || 'http://localhost:1337';
   document.getElementById('apiType').value = config.apiType || 'http';
   
   // Analysis settings

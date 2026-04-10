@@ -3,6 +3,7 @@
 """
 Module for cli.py.
 """
+
 """
 Simple bias detection CLI - analyze text directly.
 
@@ -19,14 +20,14 @@ import requests
 from typing import Optional
 
 
-def detect_bias(text: str, api_url: str = "http://localhost:8000") -> Optional[dict]:
+def detect_bias(text: str, api_url: str = "http://localhost:1337") -> Optional[dict]:
     """
     Detect political bias in text.
-    
+
     Args:
         text: Text to analyze
         api_url: URL of T5 bias detection server
-        
+
     Returns:
         Bias classification dict or None on error
     """
@@ -53,29 +54,18 @@ Examples:
   echo "Article text" | %(prog)s
   %(prog)s --file article.txt
   %(prog)s "text" --json
-        """
+        """,
     )
-    parser.add_argument(
-        "text",
-        nargs="?",
-        help="Text to analyze (or read from stdin)"
-    )
-    parser.add_argument(
-        "--file", "-f",
-        help="Read text from file"
-    )
+    parser.add_argument("text", nargs="?", help="Text to analyze (or read from stdin)")
+    parser.add_argument("--file", "-f", help="Read text from file")
     parser.add_argument(
         "--api-url",
-        default="http://localhost:8000",
-        help="T5 server URL (default: http://localhost:8000)"
+        default="http://localhost:1337",
+        help="T5 server URL (default: http://localhost:1337)",
     )
-    parser.add_argument(
-        "--json",
-        action="store_true",
-        help="Output as JSON"
-    )
+    parser.add_argument("--json", action="store_true", help="Output as JSON")
     args = parser.parse_args()
-    
+
     # Get text
     if args.file:
         with open(args.file, "r") as f:
@@ -87,17 +77,17 @@ Examples:
     else:
         parser.print_help()
         sys.exit(1)
-    
+
     if not text.strip():
         print("Error: No text provided", file=sys.stderr)
         sys.exit(1)
-    
+
     # Detect bias
     result = detect_bias(text, args.api_url)
-    
+
     if result is None:
         sys.exit(1)
-    
+
     # Output
     if args.json:
         print(json.dumps(result, indent=2))
@@ -106,10 +96,10 @@ Examples:
         if "dir" in result and "deg" in result:
             dir_labels = {"L": "Left", "C": "Center", "R": "Right"}
             deg_labels = {"L": "Low", "M": "Medium", "H": "High"}
-            
+
             dir_max = max(result["dir"].items(), key=lambda x: x[1])
             deg_max = max(result["deg"].items(), key=lambda x: x[1])
-            
+
             print(f"\nPolitical Bias Analysis")
             print("=" * 40)
             print(f"Direction: {dir_labels.get(dir_max[0], dir_max[0])} ({dir_max[1]:.0%})")

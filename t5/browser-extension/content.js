@@ -40,7 +40,7 @@
       minTextLength: 100,
       analysisIntervalMs: 5000,
       captionCheckIntervalMs: 500,
-      apiEndpoint: 'http://localhost:8000'
+      apiEndpoint: 'http://localhost:1337'
     }
   };
 

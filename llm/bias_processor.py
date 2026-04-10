@@ -3,6 +3,7 @@
 """
 Large Language Model integration and processing module.
 """
+
 """
 Process articles from MongoDB and detect political bias using T5 server.
 
@@ -53,7 +54,9 @@ def parse_id_file(filepath: str) -> list[str]:
 class BiasProcessor:
     """Process articles for bias detection using T5 server."""
 
-    def __init__(self, api_url: str = "http://localhost:8000", output_file: str | None = None):
+    def __init__(
+        self, api_url: str = "http://localhost:1337", output_file: str | None = None
+    ):
         """
         Initialize MongoDB connection and API endpoint.
 
@@ -64,32 +67,32 @@ class BiasProcessor:
         mongo_user = os.getenv("MONGO_USER")
         mongo_pass = os.getenv("MONGO_PASS")
 
-
         mongo_uri = os.getenv("MONGO_URI")
-        
+
         # if not mongo_user or not mongo_pass:
         #     raise ValueError(
         #         "MONGO_USER and MONGO_PASS environment variables must be set"
         #     )
 
         if not mongo_uri:
-            raise ValueError(
-                "MONGO_URI environment variables must be set"
-            )
+            raise ValueError("MONGO_URI environment variables must be set")
 
         uri = f"mongodb://{mongo_user}:{mongo_pass}@localhost:27017"
-#        uri = f"mongodb://{mongo_uri}"
+        #        uri = f"mongodb://{mongo_uri}"
 
         self.client = MongoClient(uri)
         self.db = self.client["rssnews"]
         self.collection = self.db["articles"]
         self.api_url = api_url.rstrip("/")
-        
+
         # Track processed articles
         self.processed_ids: list[dict] = []
-        self.output_file = output_file or f"processed_articles_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        self.output_file = (
+            output_file
+            or f"processed_articles_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        )
         self.shutdown_requested = False
-        
+
         # Setup signal handlers
         signal.signal(signal.SIGINT, self._signal_handler)
         signal.signal(signal.SIGTERM, self._signal_handler)
@@ -104,11 +107,13 @@ class BiasProcessor:
         if not self.processed_ids:
             print("No articles were processed.")
             return
-        
+
         try:
             with open(self.output_file, "w") as f:
                 json.dump(self.processed_ids, f, indent=2)
-            print(f"Saved {len(self.processed_ids)} processed article IDs to: {self.output_file}")
+            print(
+                f"Saved {len(self.processed_ids)} processed article IDs to: {self.output_file}"
+            )
         except Exception as e:
             print(f"Error saving processed IDs: {e}")
 
@@ -202,107 +207,108 @@ class BiasProcessor:
     def repair_json_string(self, raw: str, pbar=None) -> dict | None:
         """
         Attempt to repair malformed JSON from LLM output.
-        
+
         Handles common issues:
         - Missing outer braces: "dir":... → {"dir":...}
         - Missing nested braces: "dir":"L":0.2 → "dir":{"L":0.2}
         - Missing quotes on keys: dir": → "dir":
         - Unterminated strings: "reason":"text → "reason":"text"}
         - Extra quotes around JSON
-        
+
         Args:
             raw: Raw string from model
             pbar: Progress bar for output
-            
+
         Returns:
             Parsed dict or None if unrepairable
         """
+
         def output(msg: str):
             if pbar:
                 pbar.write(msg)
             else:
                 print(msg)
-        
+
         if not raw:
             return None
-        
+
         s = raw.strip()
-        
+
         # Remove outer quotes if present
         if s.startswith('"') and s.endswith('"'):
             try:
                 s = json.loads(s)
             except json.JSONDecodeError:
                 s = s[1:-1]
-        
+
         # Fix missing opening quote on "dir" at start
         if s.startswith('dir":'):
             s = '"' + s
-        
+
         # Fix missing quotes on known keys (dir, deg, reason)
         s = re.sub(r'(?<!")\b(dir|deg|reason)\b(?!"):', r'"\1":', s)
-        
+
         # Add outer braces if missing
-        if not s.startswith('{'):
-            s = '{' + s
-        if not s.endswith('}'):
-            s = s + '}'
-        
+        if not s.startswith("{"):
+            s = "{" + s
+        if not s.endswith("}"):
+            s = s + "}"
+
         # Fix missing braces after "dir": and "deg":
         # Pattern: "dir":"L":0.2 → "dir":{"L":0.2}
-        
+
         # Fix "dir":"L":value patterns
         s = re.sub(r'"dir"\s*:\s*"([LRC])"\s*:', r'"dir":{"\1":', s)
-        
+
         # Fix "deg":"L":value patterns
         s = re.sub(r'"deg"\s*:\s*"([LMH])"\s*:', r'"deg":{"\1":', s)
-        
+
         # Find positions of dir and deg objects
         dir_match = re.search(r'"dir"\s*:\s*\{', s)
         deg_match = re.search(r'"deg"\s*:\s*\{', s)
         reason_match = re.search(r'"reason"\s*:', s)
-        
+
         if dir_match and deg_match:
             # Find where "deg" starts to close "dir" before it
             deg_start = deg_match.start()
             dir_section = s[:deg_start]
-            
+
             # Check if dir section needs closing brace
-            open_braces = dir_section.count('{') - dir_section.count('}')
+            open_braces = dir_section.count("{") - dir_section.count("}")
             if open_braces > 0:
                 # Insert closing brace before "deg"
-                s = s[:deg_start] + '}' * (open_braces - 1) + ',' + s[deg_start:]
-        
+                s = s[:deg_start] + "}" * (open_braces - 1) + "," + s[deg_start:]
+
         # Re-find positions after potential modification
         deg_match = re.search(r'"deg"\s*:\s*\{', s)
         reason_match = re.search(r'"reason"\s*:', s)
-        
+
         if deg_match and reason_match:
             # Close deg object before reason
             reason_start = reason_match.start()
             deg_section = s[:reason_start]
-            
-            open_braces = deg_section.count('{') - deg_section.count('}')
+
+            open_braces = deg_section.count("{") - deg_section.count("}")
             if open_braces > 0:
-                s = s[:reason_start] + '}' * (open_braces - 1) + ',' + s[reason_start:]
-        
+                s = s[:reason_start] + "}" * (open_braces - 1) + "," + s[reason_start:]
+
         # Fix unterminated string at end (reason value missing closing quote)
         # Count quotes - if odd number, add closing quote before final }
-        if s.endswith('}'):
+        if s.endswith("}"):
             # Find the last "reason":" value
             reason_val_match = re.search(r'"reason"\s*:\s*"([^"]*)$', s)
             if reason_val_match:
                 # Add closing quote before the }
                 s = s[:-1] + '"}'
-        
+
         # Ensure proper closing at the end
-        open_braces = s.count('{') - s.count('}')
+        open_braces = s.count("{") - s.count("}")
         if open_braces > 0:
-            s = s.rstrip('}') + '}' * (open_braces + 1)
-        
+            s = s.rstrip("}") + "}" * (open_braces + 1)
+
         # Fix trailing commas before } (invalid JSON) - MUST BE LAST
-        s = re.sub(r',\s*}', '}', s)
-        
+        s = re.sub(r",\s*}", "}", s)
+
         # Try to parse
         try:
             result = json.loads(s)
@@ -316,29 +322,30 @@ class BiasProcessor:
     def normalize_bias_result(self, result: dict, pbar=None) -> dict | None:
         """
         Normalize and correct common LLM output issues.
-        
+
         Handles:
         - Key name variations (left→L, center→C, right→R, low→L, medium→M, high→H)
         - Case variations (LEFT→L, Center→C, etc.)
         - Missing fields if we can infer them
         - Raw output that needs JSON repair
-        
+
         Args:
             result: Raw bias result from API
             pbar: Progress bar for output (optional)
-            
+
         Returns:
             Normalized result, or None if unfixable
         """
+
         def output(msg: str):
             if pbar:
                 pbar.write(msg)
             else:
                 print(msg)
-        
+
         if not result:
             return None
-        
+
         # Handle raw_output - attempt to repair the JSON
         if "raw_output" in result:
             raw = result["raw_output"]
@@ -348,23 +355,44 @@ class BiasProcessor:
                 result = repaired
             else:
                 return None
-        
+
         normalized = dict(result)
         corrections = []
-        
+
         # Key mappings for normalization
         dir_key_map = {
-            "left": "L", "l": "L", "LEFT": "L", "Left": "L",
-            "center": "C", "c": "C", "CENTER": "C", "Center": "C", "centre": "C",
-            "right": "R", "r": "R", "RIGHT": "R", "Right": "R",
+            "left": "L",
+            "l": "L",
+            "LEFT": "L",
+            "Left": "L",
+            "center": "C",
+            "c": "C",
+            "CENTER": "C",
+            "Center": "C",
+            "centre": "C",
+            "right": "R",
+            "r": "R",
+            "RIGHT": "R",
+            "Right": "R",
         }
-        
+
         deg_key_map = {
-            "low": "L", "l": "L", "LOW": "L", "Low": "L",
-            "medium": "M", "m": "M", "MEDIUM": "M", "Medium": "M", "moderate": "M",
-            "high": "H", "h": "H", "HIGH": "H", "High": "H", "heavy": "H",
+            "low": "L",
+            "l": "L",
+            "LOW": "L",
+            "Low": "L",
+            "medium": "M",
+            "m": "M",
+            "MEDIUM": "M",
+            "Medium": "M",
+            "moderate": "M",
+            "high": "H",
+            "h": "H",
+            "HIGH": "H",
+            "High": "H",
+            "heavy": "H",
         }
-        
+
         # Normalize "dir" field
         if "dir" in normalized and isinstance(normalized["dir"], dict):
             original_dir = normalized["dir"]
@@ -375,7 +403,7 @@ class BiasProcessor:
                     corrections.append(f"dir: '{key}' → '{new_key}'")
                 new_dir[new_key] = value
             normalized["dir"] = new_dir
-        
+
         # Normalize "deg" field
         if "deg" in normalized and isinstance(normalized["deg"], dict):
             original_deg = normalized["deg"]
@@ -386,7 +414,7 @@ class BiasProcessor:
                     corrections.append(f"deg: '{key}' → '{new_key}'")
                 new_deg[new_key] = value
             normalized["deg"] = new_deg
-        
+
         # Handle alternative field names for "dir"
         if "dir" not in normalized:
             for alt in ["direction", "bias_dir", "political_dir", "orientation"]:
@@ -394,7 +422,7 @@ class BiasProcessor:
                     normalized["dir"] = normalized.pop(alt)
                     corrections.append(f"field: '{alt}' → 'dir'")
                     break
-        
+
         # Handle alternative field names for "deg"
         if "deg" not in normalized:
             for alt in ["degree", "bias_deg", "intensity", "strength"]:
@@ -402,7 +430,7 @@ class BiasProcessor:
                     normalized["deg"] = normalized.pop(alt)
                     corrections.append(f"field: '{alt}' → 'deg'")
                     break
-        
+
         # Handle alternative field names for "reason"
         if "reason" not in normalized:
             for alt in ["explanation", "rationale", "analysis", "why", "justification"]:
@@ -410,43 +438,44 @@ class BiasProcessor:
                     normalized["reason"] = normalized.pop(alt)
                     corrections.append(f"field: '{alt}' → 'reason'")
                     break
-        
+
         # Print corrections if any were made
         if corrections:
             output(f"  Corrections applied:")
             for correction in corrections:
                 output(f"    {correction}")
-        
+
         return normalized
 
     def validate_bias_result(self, result: dict, pbar=None) -> dict | None:
         """
         Validate and clean bias result to ensure proper format.
-        
+
         Expected format: {"dir": {...}, "deg": {...}, "reason": "..."}
-        
+
         Args:
             result: Raw bias result from API
             pbar: Progress bar for output (optional)
-            
+
         Returns:
             Validated/cleaned result, or None if invalid
         """
+
         def output(msg: str):
             if pbar:
                 pbar.write(msg)
             else:
                 print(msg)
-        
+
         if not result:
             output("  Warning: Empty result from model")
             return None
-        
+
         # First normalize the result
         normalized = self.normalize_bias_result(result, pbar)
         if not normalized:
             return None
-        
+
         # Check for required fields
         required_fields = ["dir", "deg", "reason"]
         missing = [f for f in required_fields if f not in normalized]
@@ -454,46 +483,46 @@ class BiasProcessor:
             output(f"  Warning: Missing required fields: {missing}")
             output(f"  Model output: {json.dumps(normalized, indent=2)}")
             return None
-        
+
         # Validate dir structure
         if not isinstance(normalized["dir"], dict):
             output(f"  Warning: 'dir' is not a dict")
             output(f"  Model output: {json.dumps(normalized, indent=2)}")
             return None
-        
+
         dir_keys = set(normalized["dir"].keys())
         if not dir_keys.issuperset({"L", "C", "R"}):
             output(f"  Warning: 'dir' missing L/C/R keys, got: {list(dir_keys)}")
             output(f"  Model output: {json.dumps(normalized, indent=2)}")
             return None
-        
+
         # Validate deg structure
         if not isinstance(normalized["deg"], dict):
             output(f"  Warning: 'deg' is not a dict")
             output(f"  Model output: {json.dumps(normalized, indent=2)}")
             return None
-        
+
         deg_keys = set(normalized["deg"].keys())
         if not deg_keys.issuperset({"L", "M", "H"}):
             output(f"  Warning: 'deg' missing L/M/H keys, got: {list(deg_keys)}")
             output(f"  Model output: {json.dumps(normalized, indent=2)}")
             return None
-        
+
         # Build clean result with proper key order
         clean_result = {
             "dir": {
                 "L": normalized["dir"]["L"],
                 "C": normalized["dir"]["C"],
-                "R": normalized["dir"]["R"]
+                "R": normalized["dir"]["R"],
             },
             "deg": {
                 "L": normalized["deg"]["L"],
                 "M": normalized["deg"]["M"],
-                "H": normalized["deg"]["H"]
+                "H": normalized["deg"]["H"],
             },
-            "reason": normalized["reason"]
+            "reason": normalized["reason"],
         }
-        
+
         return clean_result
 
     def detect_bias(self, text: str, pbar=None) -> dict | None:
@@ -516,10 +545,10 @@ class BiasProcessor:
             response.raise_for_status()
             data = response.json()
             raw_result = data.get("result", {})
-            
+
             # Validate and clean the result
             return self.validate_bias_result(raw_result, pbar)
-            
+
         except requests.exceptions.RequestException as e:
             if pbar:
                 pbar.write(f"  API Error: {e}")
@@ -540,8 +569,7 @@ class BiasProcessor:
         """
         try:
             result = self.collection.update_one(
-                {"_id": article_id},
-                {"$set": {"bias": bias_result}}
+                {"_id": article_id}, {"$set": {"bias": bias_result}}
             )
             return result.modified_count > 0
         except Exception as e:
@@ -569,7 +597,7 @@ class BiasProcessor:
             id_list: Optional list of specific MongoDB IDs to process
         """
         total_count = self.count_articles_without_bias(start_date, end_date, id_list)
-        
+
         if total_count == 0:
             print("No articles found without bias field.")
             return
@@ -579,16 +607,20 @@ class BiasProcessor:
             print(f"Processing up to {total_count} articles (batch limit)...")
         else:
             print(f"Found {total_count} articles to process.")
-        
+
         print(f"Max failures before shutdown: {max_failures}")
 
-        cursor = self.get_articles_without_bias(batch_size, start_date, end_date, id_list)
+        cursor = self.get_articles_without_bias(
+            batch_size, start_date, end_date, id_list
+        )
 
         processed = 0
         failed = 0
         consecutive_failures = 0
 
-        with tqdm(total=total_count, desc="Processing articles", unit="article") as pbar:
+        with tqdm(
+            total=total_count, desc="Processing articles", unit="article"
+        ) as pbar:
             for article in cursor:
                 # Check for shutdown request
                 if self.shutdown_requested:
@@ -611,13 +643,17 @@ class BiasProcessor:
                 if bias_result is None:
                     failed += 1
                     consecutive_failures += 1
-                    pbar.write(f"  FAILED - API/validation error (consecutive: {consecutive_failures}/{max_failures})")
+                    pbar.write(
+                        f"  FAILED - API/validation error (consecutive: {consecutive_failures}/{max_failures})"
+                    )
                     pbar.set_postfix(failed=failed)
                     pbar.update(1)
-                    
+
                     # Check if we've hit max failures
                     if consecutive_failures >= max_failures:
-                        pbar.write(f"\nMax failures ({max_failures}) reached. Initiating graceful shutdown...")
+                        pbar.write(
+                            f"\nMax failures ({max_failures}) reached. Initiating graceful shutdown..."
+                        )
                         self.shutdown_requested = True
                     continue
 
@@ -634,12 +670,16 @@ class BiasProcessor:
                     if not success:
                         failed += 1
                         consecutive_failures += 1
-                        pbar.write(f"  FAILED - MongoDB write error (consecutive: {consecutive_failures}/{max_failures})")
+                        pbar.write(
+                            f"  FAILED - MongoDB write error (consecutive: {consecutive_failures}/{max_failures})"
+                        )
                         pbar.set_postfix(failed=failed)
-                        
+
                         # Check if we've hit max failures
                         if consecutive_failures >= max_failures:
-                            pbar.write(f"\nMax failures ({max_failures}) reached. Initiating graceful shutdown...")
+                            pbar.write(
+                                f"\nMax failures ({max_failures}) reached. Initiating graceful shutdown..."
+                            )
                             self.shutdown_requested = True
                     else:
                         pbar.write(f"  SUCCESS - Updated bias field")
@@ -648,19 +688,21 @@ class BiasProcessor:
                     success = True
 
                 # Track processed article
-                self.processed_ids.append({
-                    "id": str(article_id),
-                    "title": title[:100],
-                    "timestamp": datetime.now().isoformat(),
-                    "success": success,
-                    "bias_result": bias_result
-                })
+                self.processed_ids.append(
+                    {
+                        "id": str(article_id),
+                        "title": title[:100],
+                        "timestamp": datetime.now().isoformat(),
+                        "success": success,
+                        "bias_result": bias_result,
+                    }
+                )
 
                 processed += 1
                 pbar.update(1)
 
         print(f"\nCompleted: {processed} processed, {failed} failed")
-        
+
         # Save processed IDs on completion
         self.save_processed_ids()
 
@@ -671,9 +713,7 @@ class BiasProcessor:
 
 def main():
     """Main entry point."""
-    parser = argparse.ArgumentParser(
-        description="Process articles for bias detection"
-    )
+    parser = argparse.ArgumentParser(description="Process articles for bias detection")
     parser.add_argument(
         "--batch-size",
         type=int,
@@ -683,8 +723,8 @@ def main():
     parser.add_argument(
         "--api-url",
         type=str,
-        default="http://localhost:8000",
-        help="URL of T5 bias detection server (default: http://localhost:8000)",
+        default="http://localhost:1337",
+        help="URL of T5 bias detection server (default: http://localhost:1337)",
     )
     parser.add_argument(
         "--output-file",
@@ -744,7 +784,7 @@ def main():
     try:
         processor = BiasProcessor(api_url=args.api_url, output_file=args.output_file)
         processor.process_articles(
-            batch_size=args.batch_size, 
+            batch_size=args.batch_size,
             dry_run=args.dry_run,
             max_failures=args.max_failures,
             start_date=args.start_date,

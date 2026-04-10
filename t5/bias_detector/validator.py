@@ -3,6 +3,7 @@
 """
 Module for validator.py.
 """
+
 """
 Validate bias detection results by comparing stored MongoDB values
 with fresh predictions from the T5 server.
@@ -23,7 +24,7 @@ from bson.objectid import ObjectId
 class BiasValidator:
     """Validate stored bias results against fresh predictions."""
 
-    def __init__(self, api_url: str = "http://localhost:8000"):
+    def __init__(self, api_url: str = "http://localhost:1337"):
         """
         Initialize MongoDB connection and API endpoint.
 
@@ -34,9 +35,7 @@ class BiasValidator:
         mongo_pass = os.getenv("MONGO_PASS")
 
         if not mongo_user or not mongo_pass:
-            raise ValueError(
-                "MONGO_USER and MONGO_PASS environment variables must be set"
-            )
+            raise ValueError("MONGO_USER and MONGO_PASS environment variables must be set")
 
         uri = f"mongodb://{mongo_user}:{mongo_pass}@localhost:27017"
         self.client = MongoClient(uri)
@@ -60,10 +59,7 @@ class BiasValidator:
         }
 
         # Get random sample using $sample aggregation
-        pipeline = [
-            {"$match": query},
-            {"$sample": {"size": sample_size}}
-        ]
+        pipeline = [{"$match": query}, {"$sample": {"size": sample_size}}]
 
         return list(self.collection.aggregate(pipeline))
 
@@ -152,7 +148,7 @@ class BiasValidator:
                 result["dir_diff"][key] = {
                     "stored": stored_val,
                     "predicted": pred_val,
-                    "diff": round(diff, 3)
+                    "diff": round(diff, 3),
                 }
 
         # Compare deg values
@@ -166,14 +162,20 @@ class BiasValidator:
                 result["deg_diff"][key] = {
                     "stored": stored_val,
                     "predicted": pred_val,
-                    "diff": round(diff, 3)
+                    "diff": round(diff, 3),
                 }
 
         # Compare reason (just check if both exist)
         if "reason" in stored and "reason" in predicted:
             result["reason_match"] = True
-            result["stored_reason_preview"] = stored["reason"][:100] + "..." if len(stored["reason"]) > 100 else stored["reason"]
-            result["predicted_reason_preview"] = predicted["reason"][:100] + "..." if len(predicted["reason"]) > 100 else predicted["reason"]
+            result["stored_reason_preview"] = (
+                stored["reason"][:100] + "..." if len(stored["reason"]) > 100 else stored["reason"]
+            )
+            result["predicted_reason_preview"] = (
+                predicted["reason"][:100] + "..."
+                if len(predicted["reason"]) > 100
+                else predicted["reason"]
+            )
 
         return result
 
@@ -229,7 +231,7 @@ class BiasValidator:
                 "match": comparison["match"],
                 "stored": stored_bias,
                 "predicted": predicted_bias,
-                "comparison": comparison
+                "comparison": comparison,
             }
             results.append(result)
 
@@ -243,28 +245,36 @@ class BiasValidator:
                 tqdm.write(f"  Deg diff: {comparison['deg_diff']}")
 
         # Summary
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"Validation Summary")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
         print(f"Total sampled: {len(articles)}")
         print(f"Matches: {matches}")
         print(f"Mismatches: {mismatches}")
         print(f"Errors: {errors}")
-        print(f"Match rate: {matches/(matches+mismatches)*100:.1f}%" if (matches+mismatches) > 0 else "N/A")
+        print(
+            f"Match rate: {matches / (matches + mismatches) * 100:.1f}%"
+            if (matches + mismatches) > 0
+            else "N/A"
+        )
 
         # Save results if output file specified
         if output_file:
             with open(output_file, "w") as f:
-                json.dump({
-                    "timestamp": datetime.now().isoformat(),
-                    "summary": {
-                        "total": len(articles),
-                        "matches": matches,
-                        "mismatches": mismatches,
-                        "errors": errors
+                json.dump(
+                    {
+                        "timestamp": datetime.now().isoformat(),
+                        "summary": {
+                            "total": len(articles),
+                            "matches": matches,
+                            "mismatches": mismatches,
+                            "errors": errors,
+                        },
+                        "results": results,
                     },
-                    "results": results
-                }, f, indent=2)
+                    f,
+                    indent=2,
+                )
             print(f"\nResults saved to: {output_file}")
 
     def close(self):
@@ -286,8 +296,8 @@ def main():
     parser.add_argument(
         "--api-url",
         type=str,
-        default="http://localhost:8000",
-        help="URL of T5 bias detection server (default: http://localhost:8000)",
+        default="http://localhost:1337",
+        help="URL of T5 bias detection server (default: http://localhost:1337)",
     )
     parser.add_argument(
         "--output",

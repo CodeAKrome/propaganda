@@ -3,6 +3,7 @@
 """
 Large Language Model integration and processing module.
 """
+
 """
 Compare local bias inference (stored in MongoDB) against commercial LLM services.
 
@@ -37,7 +38,9 @@ except ImportError:
 try:
     import google.generativeai as genai
 except ImportError:
-    print("Warning: google-generativeai not installed. Gemini service will not be available.")
+    print(
+        "Warning: google-generativeai not installed. Gemini service will not be available."
+    )
     genai = None
 
 try:
@@ -90,9 +93,7 @@ class CommercialBiasComparator:
     """Compare local MongoDB bias inference against commercial LLM services."""
 
     def __init__(
-        self,
-        model: Optional[str] = None,
-        api_url: str = "http://localhost:8000"
+        self, model: Optional[str] = None, api_url: str = "http://localhost:1337"
     ):
         """
         Initialize the comparator with automatic failover.
@@ -103,21 +104,21 @@ class CommercialBiasComparator:
         """
         self.api_url = api_url
         self.used_models = []  # Track which models were attempted
-        
+
         # Initialize MongoDB
         mongo_user = os.getenv("MONGO_USER")
         mongo_pass = os.getenv("MONGO_PASS")
-        
+
         if not mongo_user or not mongo_pass:
             raise ValueError(
                 "MONGO_USER and MONGO_PASS environment variables must be set"
             )
-        
+
         uri = f"mongodb://{mongo_user}:{mongo_pass}@localhost:27017"
         self.client = MongoClient(uri)
         self.db = self.client["rssnews"]
         self.collection = self.db["articles"]
-        
+
         # Initialize commercial LLM clients
         self.gemini_model = None
         self.groq_client = None
@@ -134,7 +135,7 @@ class CommercialBiasComparator:
                     genai.configure(api_key=gemini_key)
                 except Exception as e:
                     print(f"Warning: Could not configure Gemini: {e}")
-        
+
         # Initialize Groq if available
         if Groq:
             groq_key = os.getenv("GROQ_API_KEY")
@@ -143,7 +144,7 @@ class CommercialBiasComparator:
                     self.groq_client = Groq(api_key=groq_key)
                 except Exception as e:
                     print(f"Warning: Could not initialize Groq: {e}")
-        
+
         # Set specific model if provided
         if specific_model:
             self.current_model = specific_model
@@ -152,7 +153,7 @@ class CommercialBiasComparator:
     def _setup_model(self, model_name: str) -> bool:
         """Setup a specific model. Returns True if successful."""
         self.current_model = model_name
-        
+
         # Check if it's a Gemini model
         if model_name.startswith("gemini-") or model_name.startswith("models/"):
             if not genai:
@@ -163,11 +164,11 @@ class CommercialBiasComparator:
             except Exception as e:
                 print(f"Warning: Could not setup Gemini model {model_name}: {e}")
                 return False
-        
+
         # Check if it's a Groq model
         if not self.groq_client:
             return False
-        
+
         # Groq uses the client directly with model name in the call
         return True
 
@@ -178,21 +179,21 @@ class CommercialBiasComparator:
         """
         service, model_name = model_pair
         self.used_models.append(model_name)
-        
+
         if service == "gemini" and self.gemini_model:
             try:
                 return {"service": service, "model": model_name}
             except Exception as e:
                 print(f"Gemini {model_name} failed: {e}")
                 return None
-        
+
         elif service == "groq" and self.groq_client:
             try:
                 return {"service": service, "model": model_name}
             except Exception as e:
                 print(f"Groq {model_name} failed: {e}")
                 return None
-        
+
         return None
 
     def get_articles_with_bias(self, sample_size: int = 10) -> list:
@@ -210,10 +211,7 @@ class CommercialBiasComparator:
             "article": {"$exists": True, "$ne": None, "$ne": ""},
         }
 
-        pipeline = [
-            {"$match": query},
-            {"$sample": {"size": sample_size}}
-        ]
+        pipeline = [{"$match": query}, {"$sample": {"size": sample_size}}]
 
         return list(self.collection.aggregate(pipeline))
 
@@ -269,30 +267,34 @@ class CommercialBiasComparator:
                     # Try to setup Gemini model
                     if not self._setup_model(model_name):
                         continue
-                    
+
                     response = self.gemini_model.generate_content(prompt)
                     response_text = str(response.text) if response.text else ""
-                    
+
                 elif service == "groq" and self.groq_client:
                     response = self.groq_client.chat.completions.create(
                         model=model_name,
                         messages=[{"role": "user", "content": prompt}],
                         temperature=0.1,
                     )
-                    response_text = str(response.choices[0].message.content) if response.choices[0].message.content else ""
+                    response_text = (
+                        str(response.choices[0].message.content)
+                        if response.choices[0].message.content
+                        else ""
+                    )
                 else:
                     continue
 
                 # Track what we used
                 self.current_model = f"{service}:{model_name}"
-                
+
                 # Parse JSON from response
                 result = self._parse_bias_response(response_text)
                 if result:
                     result["_service"] = service
                     result["_model"] = model_name
                     return result
-                    
+
             except Exception as e:
                 print(f"  Error with {service}:{model_name}: {e}")
                 continue
@@ -318,24 +320,26 @@ class CommercialBiasComparator:
             Parsed bias dict or None
         """
         # Extract JSON from response (handle potential markdown code blocks)
-        json_match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', response_text, re.DOTALL)
-        
+        json_match = re.search(
+            r"\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}", response_text, re.DOTALL
+        )
+
         if not json_match:
             # Try to find any JSON-like structure
-            lines = response_text.strip().split('\n')
+            lines = response_text.strip().split("\n")
             for line in lines:
-                if line.strip().startswith('{'):
-                    json_match = re.search(r'\{.*\}', line, re.DOTALL)
+                if line.strip().startswith("{"):
+                    json_match = re.search(r"\{.*\}", line, re.DOTALL)
                     if json_match:
                         break
-        
+
         if not json_match:
             print(f"Could not extract JSON from response: {response_text[:200]}")
             return None
 
         try:
             bias_data = json.loads(json_match.group())
-            
+
             # Validate and normalize the structure
             result = {
                 "dir": {
@@ -348,20 +352,20 @@ class CommercialBiasComparator:
                     "M": float(bias_data.get("deg", {}).get("M", 0.33)),
                     "H": float(bias_data.get("deg", {}).get("H", 0.34)),
                 },
-                "reason": str(bias_data.get("reason", ""))
+                "reason": str(bias_data.get("reason", "")),
             }
-            
+
             # Normalize to sum to 1.0
             total_dir = sum(result["dir"].values())
             if total_dir > 0:
-                result["dir"] = {k: v/total_dir for k, v in result["dir"].items()}
-            
+                result["dir"] = {k: v / total_dir for k, v in result["dir"].items()}
+
             total_deg = sum(result["deg"].values())
             if total_deg > 0:
-                result["deg"] = {k: v/total_deg for k, v in result["deg"].items()}
-            
+                result["deg"] = {k: v / total_deg for k, v in result["deg"].items()}
+
             return result
-            
+
         except (json.JSONDecodeError, KeyError, TypeError) as e:
             print(f"Error parsing bias response: {e}")
             return None
@@ -400,7 +404,7 @@ class CommercialBiasComparator:
                 result["dir_diff"][key] = {
                     "local": round(local_val, 3),
                     "commercial": round(comm_val, 3),
-                    "diff": round(diff, 3)
+                    "diff": round(diff, 3),
                 }
             result["dir_mae"] = sum(dir_diffs) / len(dir_diffs)
 
@@ -417,7 +421,7 @@ class CommercialBiasComparator:
                 result["deg_diff"][key] = {
                     "local": round(local_val, 3),
                     "commercial": round(comm_val, 3),
-                    "diff": round(diff, 3)
+                    "diff": round(diff, 3),
                 }
             result["deg_mae"] = sum(deg_diffs) / len(deg_diffs)
 
@@ -464,7 +468,9 @@ class CommercialBiasComparator:
         # Track model usage
         model_success_count = {}
 
-        for article in tqdm(articles, desc="Comparing with commercial LLMs", unit="article"):
+        for article in tqdm(
+            articles, desc="Comparing with commercial LLMs", unit="article"
+        ):
             article_id = article["_id"]
             title = article.get("title", "Unknown")[:80]
             article_text = article.get("article", "")
@@ -479,7 +485,7 @@ class CommercialBiasComparator:
 
             # Reset used models for this article
             self.used_models = []
-            
+
             # Get commercial LLM bias with failover
             commercial_bias = self.detect_bias_commercial(article_text)
             if not commercial_bias:
@@ -490,7 +496,7 @@ class CommercialBiasComparator:
             # Track which model succeeded
             model_key = f"{commercial_bias.get('_service', 'unknown')}:{commercial_bias.get('_model', 'unknown')}"
             model_success_count[model_key] = model_success_count.get(model_key, 0) + 1
-            
+
             # Remove internal tracking keys before storing
             service_used = commercial_bias.pop("_service", None)
             model_used = commercial_bias.pop("_model", None)
@@ -503,13 +509,15 @@ class CommercialBiasComparator:
                 "title": title,
                 "local_dominant": self.get_dominant_bias(local_bias),
                 "commercial_dominant": self.get_dominant_bias(commercial_bias),
-                "model_used": f"{service_used}:{model_used}" if service_used and model_used else "unknown",
+                "model_used": f"{service_used}:{model_used}"
+                if service_used and model_used
+                else "unknown",
                 "match": comparison["match"],
                 "direction_match": comparison["direction_match"],
                 "degree_match": comparison["degree_match"],
                 "local": local_bias,
                 "commercial": commercial_bias,
-                "comparison": comparison
+                "comparison": comparison,
             }
             results.append(result)
 
@@ -533,9 +541,9 @@ class CommercialBiasComparator:
             avg_deg_mae = 0.0
 
         # Print summary
-        print(f"\n{'='*70}")
+        print(f"\n{'=' * 70}")
         print(f"COMPARISON SUMMARY: Local (MongoDB) vs Commercial LLM with Failover")
-        print(f"{'='*70}")
+        print(f"{'=' * 70}")
         print(f"Total sampled: {len(articles)}")
         print(f"Valid comparisons: {valid_count}")
         print(f"Errors: {errors}")
@@ -543,13 +551,25 @@ class CommercialBiasComparator:
         for model, count in sorted(model_success_count.items(), key=lambda x: -x[1]):
             print(f"  - {model}: {count} articles")
         print(f"\nAccuracy Metrics:")
-        print(f"  - Overall Match Rate: {matches}/{valid_count} ({matches/valid_count*100:.1f}%)" if valid_count > 0 else "  - Overall Match Rate: N/A")
-        print(f"  - Direction Match Rate: {direction_matches}/{valid_count} ({direction_matches/valid_count*100:.1f}%)" if valid_count > 0 else "  - Direction Match Rate: N/A")
-        print(f"  - Degree Match Rate: {degree_matches}/{valid_count} ({degree_matches/valid_count*100:.1f}%)" if valid_count > 0 else "  - Degree Match Rate: N/A")
+        print(
+            f"  - Overall Match Rate: {matches}/{valid_count} ({matches / valid_count * 100:.1f}%)"
+            if valid_count > 0
+            else "  - Overall Match Rate: N/A"
+        )
+        print(
+            f"  - Direction Match Rate: {direction_matches}/{valid_count} ({direction_matches / valid_count * 100:.1f}%)"
+            if valid_count > 0
+            else "  - Direction Match Rate: N/A"
+        )
+        print(
+            f"  - Degree Match Rate: {degree_matches}/{valid_count} ({degree_matches / valid_count * 100:.1f}%)"
+            if valid_count > 0
+            else "  - Degree Match Rate: N/A"
+        )
         print(f"\nMean Absolute Error:")
         print(f"  - Direction MAE: {avg_dir_mae:.3f}")
         print(f"  - Degree MAE: {avg_deg_mae:.3f}")
-        print(f"  - Combined MAE: {(avg_dir_mae + avg_deg_mae)/2:.3f}")
+        print(f"  - Combined MAE: {(avg_dir_mae + avg_deg_mae) / 2:.3f}")
 
         # Direction distribution comparison
         local_directions = {}
@@ -561,8 +581,12 @@ class CommercialBiasComparator:
             commercial_directions[cd] = commercial_directions.get(cd, 0) + 1
 
         print(f"\nBias Direction Distribution:")
-        print(f"  Local:       L={local_directions.get('L', 0)}, C={local_directions.get('C', 0)}, R={local_directions.get('R', 0)}")
-        print(f"  Commercial:  L={commercial_directions.get('L', 0)}, C={commercial_directions.get('C', 0)}, R={commercial_directions.get('R', 0)}")
+        print(
+            f"  Local:       L={local_directions.get('L', 0)}, C={local_directions.get('C', 0)}, R={local_directions.get('R', 0)}"
+        )
+        print(
+            f"  Commercial:  L={commercial_directions.get('L', 0)}, C={commercial_directions.get('C', 0)}, R={commercial_directions.get('R', 0)}"
+        )
 
         # Save results if output file specified
         if output_file:
@@ -575,21 +599,25 @@ class CommercialBiasComparator:
                     "valid_comparisons": valid_count,
                     "errors": errors,
                     "matches": matches,
-                    "match_rate": matches/valid_count if valid_count > 0 else 0,
+                    "match_rate": matches / valid_count if valid_count > 0 else 0,
                     "direction_matches": direction_matches,
-                    "direction_match_rate": direction_matches/valid_count if valid_count > 0 else 0,
+                    "direction_match_rate": direction_matches / valid_count
+                    if valid_count > 0
+                    else 0,
                     "degree_matches": degree_matches,
-                    "degree_match_rate": degree_matches/valid_count if valid_count > 0 else 0,
+                    "degree_match_rate": degree_matches / valid_count
+                    if valid_count > 0
+                    else 0,
                     "avg_dir_mae": round(avg_dir_mae, 3),
                     "avg_deg_mae": round(avg_deg_mae, 3),
-                    "combined_mae": round((avg_dir_mae + avg_deg_mae)/2, 3),
+                    "combined_mae": round((avg_dir_mae + avg_deg_mae) / 2, 3),
                     "local_direction_distribution": local_directions,
                     "commercial_direction_distribution": commercial_directions,
                     "model_usage": model_success_count,
                 },
-                "results": results
+                "results": results,
             }
-            
+
             with open(output_file, "w") as f:
                 json.dump(report, f, indent=2)
             print(f"\nDetailed report saved to: {output_file}")
@@ -626,10 +654,7 @@ def main():
 
     try:
         comparator = CommercialBiasComparator(model=args.model)
-        comparator.run_comparison(
-            sample_size=args.sample,
-            output_file=args.output
-        )
+        comparator.run_comparison(sample_size=args.sample, output_file=args.output)
         comparator.close()
     except ValueError as e:
         print(f"Error: {e}")

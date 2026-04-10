@@ -76,10 +76,9 @@ mddbscan:
 	cd db && ./clustervec2md.sh
 
 t5bias:
-	source $$(conda info --base)/etc/profile.d/conda.sh && \
-	conda activate mlx2 && \
+	source $(DB_ENV)/bin/activate && \
 	cd llm && \
-	./bias_processor.py --start-date $(NUMDAYS)
+	python bias_processor.py --start-date $(NUMDAYS)
 
 t5server:
 	source t5/.venv/bin/activate && cd t5 && ./server_mps.py

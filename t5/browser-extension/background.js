@@ -7,7 +7,7 @@
 
 // Configuration defaults
 const DEFAULT_CONFIG = {
-  apiEndpoint: 'http://localhost:8000',
+  apiEndpoint: 'http://localhost:1337',
   apiType: 'http', // 'http' or 'mcp'
   autoAnalyze: false,
   cacheEnabled: true,
