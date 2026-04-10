@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Large Language Model integration and processing module.
+"""
+"""
+Module: clod.py
+Purpose: Module for clod.py functionality.
+Usage: python ./llm/cluster/bertopic_claudeop/clod.py [arguments]
+"""
 #!/usr/bin/env python
 """
 BERTopic News Article Title Clustering

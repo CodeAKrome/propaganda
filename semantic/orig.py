@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Module for orig.py.
+"""
+"""
+Module: orig.py
+Purpose: Module for orig.py functionality.
+Usage: python ./semantic/orig.py [arguments]
+"""
 from transformers import AutoModel
 
 model = AutoModel.from_pretrained(

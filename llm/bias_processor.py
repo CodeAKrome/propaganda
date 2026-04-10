@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Large Language Model integration and processing module.
+"""
 """
 Process articles from MongoDB and detect political bias using T5 server.
 
@@ -73,8 +77,8 @@ class BiasProcessor:
                 "MONGO_URI environment variables must be set"
             )
 
-#        uri = f"mongodb://{mongo_user}:{mongo_pass}@localhost:27017"
-        uri = f"mongodb://{mongo_uri}"
+        uri = f"mongodb://{mongo_user}:{mongo_pass}@localhost:27017"
+#        uri = f"mongodb://{mongo_uri}"
 
         self.client = MongoClient(uri)
         self.db = self.client["rssnews"]

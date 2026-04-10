@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Module for server.py.
+"""
 """
 MCP Bias Server - Model Context Protocol server for political bias analysis.
 

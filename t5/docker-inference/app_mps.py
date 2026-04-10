@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Module for app_mps.py.
+"""
+"""
+Module: app_mps.py
+Purpose: Module for app_mps.py functionality.
+Usage: python ./t5/docker-inference/app_mps.py [arguments]
+"""
 #!/usr/bin/env python
 """
 FastAPI wrapper for BiasDetectorInference (MPS version)

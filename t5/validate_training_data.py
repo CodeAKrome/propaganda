@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Module for validate_training_data.py.
+"""
+"""
+Module: validate_training_data.py
+Purpose: Module for validate_training_data.py functionality.
+Usage: python ./t5/validate_training_data.py [arguments]
+"""
 #!/usr/bin/env python
 """
 Quick validation script to verify train.json compatibility with the MPS-optimized bias detector

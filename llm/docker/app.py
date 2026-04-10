@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Module for parsing and extracting information from text/files.
+"""
+"""
+Module: app.py
+Purpose: Module for app.py functionality.
+Usage: python ./llm/docker/app.py [arguments]
+"""
 import argparse
 import sys
 from fastapi import FastAPI, HTTPException

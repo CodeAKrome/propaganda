@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Module for validator.py.
+"""
 """
 Validate bias detection results by comparing stored MongoDB values
 with fresh predictions from the T5 server.

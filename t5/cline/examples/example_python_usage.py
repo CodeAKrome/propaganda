@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Module for example_python_usage.py.
+"""
 """
 Example: Using bias-mcp-server as a Python package.
 

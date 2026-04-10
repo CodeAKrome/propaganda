@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Database utility module for managing and accessing data.
+"""
 """
 hybrid.py
 Hybrid search using ChromaDB with metadata filtering.

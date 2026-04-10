@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Module for bias_detector_mps_optimized.py.
+"""
+"""
+Module: bias_detector_mps_optimized.py
+Purpose: Module for bias_detector_mps_optimized.py functionality.
+Usage: python ./t5/bias_detector_mps_optimized.py [arguments]
+"""
 #!/usr/bin/env python
 """
 Political Bias Detector using T5 with LoRA - OPTIMIZED FOR MAC SILICON (MPS)

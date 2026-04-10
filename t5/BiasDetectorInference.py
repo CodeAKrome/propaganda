@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Module for BiasDetectorInference.py.
+"""
+"""
+Module: BiasDetectorInference.py
+Purpose: Module for BiasDetectorInference.py functionality.
+Usage: python ./t5/BiasDetectorInference.py [arguments]
+"""
 #!/usr/bin/env python
 """
 Detect political bias

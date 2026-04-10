@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Database utility module for managing and accessing data.
+"""
+"""
+Module: dedupe.py
+Purpose: Module for dedupe.py functionality.
+Usage: python ./db/dedupe.py [arguments]
+"""
 #!/usr/bin/env python
 import os
 import re

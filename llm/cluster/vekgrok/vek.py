@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Large Language Model integration and processing module.
+"""
 """
 News Article Semantic Clustering using ChromaDB Vector Search
 

@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Module for processor.py.
+"""
 """
 Process articles from MongoDB and detect political bias using T5 server.
 

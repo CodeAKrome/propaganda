@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Database utility module for managing and accessing data.
+"""
 import sys
 from datetime import datetime, timedelta, timezone
 

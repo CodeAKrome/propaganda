@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Database utility module for managing and accessing data.
+"""
 """
 LM Studio API Client for Text Inference
 Connects to LM Studio's local API server for text generation.

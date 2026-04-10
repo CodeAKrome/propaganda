@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Module for analyze_article.py.
+"""
 """Analyze the right.txt article for bias."""
 
 import os

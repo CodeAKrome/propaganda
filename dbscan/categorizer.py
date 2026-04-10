@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Database utility module for managing and accessing data.
+"""
+"""
+Module: categorizer.py
+Purpose: Module for categorizer.py functionality.
+Usage: python ./dbscan/categorizer.py [arguments]
+"""
 import logging
 import numpy as np
 import pandas as pd

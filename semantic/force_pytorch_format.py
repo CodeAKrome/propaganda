@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Module for force_pytorch_format.py.
+"""
 """
 Force download of PyTorch format (not safetensors)
 """

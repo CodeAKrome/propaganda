@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Large Language Model integration and processing module.
+"""
 """
 MongoDB field reader/writer tool using Fire library.
 

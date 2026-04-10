@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Database utility module for managing and accessing data.
+"""
 """
 MongoDB Pager TUI - Browse RSS News articles with keyboard navigation
 Requires: pip install textual pymongo

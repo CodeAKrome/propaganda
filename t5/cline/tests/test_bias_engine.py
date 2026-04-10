@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Module for test_bias_engine.py.
+"""
 """
 Tests for the BiasEngine class.
 

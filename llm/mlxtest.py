@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Large Language Model integration and processing module.
+"""
+"""
+Module: mlxtest.py
+Purpose: Module for mlxtest.py functionality.
+Usage: python ./llm/mlxtest.py [arguments]
+"""
 #!/usr/bin/env python
 
 # Copyright © 2024 Apple Inc.

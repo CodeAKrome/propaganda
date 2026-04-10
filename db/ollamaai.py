@@ -1,17 +1,17 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+"""
+Ollama AI client with support for text and vision models.
+"""
+
 import ollama
-from json import loads
 import sys
 import base64
 from PIL import Image
 from io import BytesIO
 import requests
-
-# Example:
-# python lib/ollamaai.py 'llama3.1:8b' 3000 prompt="Capital of Spain"
+import os
 
 
-# add print method to show llm data like model etc
 class OllamaAI:
     def __init__(
         self, system_prompt=None, model=None, max_tokens=3000, temperature=0.1
@@ -45,16 +45,11 @@ class OllamaAI:
         message = {"role": "user", "content": prompt}
 
         if image_path_or_url:
-            # Load and encode the image
             image = self.load_image(image_path_or_url)
             buffered = BytesIO()
             image.save(buffered, format="PNG")
             img_str = base64.b64encode(buffered.getvalue()).decode()
-            # Add image to the message
             message["images"] = [img_str]
-        # bug
-        # sys.stderr.write(f"\n===\nSYS:\n{self.system}\nPROM:\n{prompt}\n---\n")
-        # sys.stderr.write(f"model: {self.model}\nmessages:\n{message}\nsystem: {self.system}\n")
 
         try:
             response = ollama.chat(
@@ -74,70 +69,94 @@ class OllamaAI:
 
 
 def load_from_file(file_path):
+    """Load content from a file."""
     with open(file_path, "r") as file:
         return file.read().strip()
 
 
+def get_prompt(prompt_input):
+    """
+    Get prompt from various sources:
+    - If "-", read from stdin
+    - If it's a file that exists, read from file
+    - Otherwise, treat as the prompt string itself
+    """
+    if prompt_input == "-":
+        return sys.stdin.read().strip()
+    elif os.path.isfile(prompt_input):
+        return load_from_file(prompt_input)
+    else:
+        return prompt_input
+
+
+def get_system_prompt(system_input):
+    """
+    Get system prompt from various sources:
+    - If it's a file that exists, read from file
+    - Otherwise, treat as the system prompt string itself
+    """
+    if system_input and os.path.isfile(system_input):
+        return load_from_file(system_input)
+    else:
+        return system_input
+
+
 def main(
-    model,
-    token,
-    prompt=None,
-    prompt_file=None,
-    image=None,
+    prompt_input=None,
+    model="qwen3:14b",
     system_prompt=None,
+    tokens=128000,
+    temperature=0.3,
+    image=None,
+    prompt_file=None,
     system_prompt_file=None,
 ):
     """
     Interact with OllamaAI.
 
     Args:
-        model (str, required): model to use
-        tokens (int, required): max_tokens
-        prompt (str, optional): The main prompt for the AI.
-        prompt_file (str, optional): Path to a file containing the main prompt.
-        image (str, optional): Path or URL to an image.
-        system_prompt (str, optional): System prompt for the AI.
-        system_prompt_file (str, optional): Path to a file containing the system prompt.
+        prompt_input (str, optional): Prompt string, filename, or "-" for stdin
+        model (str, optional): Model to use. Default: qwen3:14b
+        system_prompt (str, optional): System prompt string or filename
+        tokens (int, optional): Max tokens to generate. Default: 128000
+        temperature (float, optional): Temperature setting. Default: 0.3
+        image (str, optional): Path or URL to an image
+        prompt_file (str, optional): Path to file containing prompt
+        system_prompt_file (str, optional): Path to file containing system prompt
     """
-    if not model:
-        raise ValueError("'model' must be provided.")
-
-    if not token:
-        raise ValueError("'tokens' must be provided.")
+    prompt = None
 
     if prompt_file:
-        sys.stderr.write("PROMPT FILE")
         prompt = load_from_file(prompt_file)
-    elif not prompt:
-        raise ValueError("Either 'prompt' or 'prompt_file' must be provided.")
+    elif prompt_input:
+        prompt = get_prompt(prompt_input)
 
-    if prompt:
-        sys.stderr.write("PROMPT")
-        # print(prompt)
+    if not prompt:
+        raise ValueError("Prompt cannot be empty (use prompt, prompt_file, or stdin)")
 
+    system = system_prompt
     if system_prompt_file:
-        system_prompt = load_from_file(system_prompt_file)
+        system = get_system_prompt(system_prompt_file)
+    elif system_prompt and os.path.isfile(system_prompt):
+        system = get_system_prompt(system_prompt)
 
-    #    print(f"model {model}")
-
-    ollama_ai = OllamaAI(system_prompt=system_prompt, model=model, max_tokens=token)
+    ollama_ai = OllamaAI(
+        system_prompt=system, model=model, max_tokens=tokens, temperature=temperature
+    )
 
     if image:
         response = ollama_ai.says(prompt, image)
     else:
         response = ollama_ai.says(prompt)
 
-    print(response)
+    if response:
+        print(response)
+    else:
+        sys.stderr.write("No response generated\n")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
     import fire
 
     fire.Fire(main)
-
-#    main('deepseek-r1:70b', 128000, prompt_file='../tmp/0601_titles_prompt.txt')
-
-#    main('llama4:latest', 10000000, prompt='Sort these news titles into categories', image='../tmp/0601_titles.tsv')
-#    main('qwen3:32b', 40000, prompt_file='../tmp/0601_titles_prompt.txt')
-#    main('llama3.1:8b', 128000, prompt_file='../tmp/0601_titles_prompt.txt')
-#    main('llama4:latest', 256000, prompt_file='../tmp/0601_titles_prompt.txt')

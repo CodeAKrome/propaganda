@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Module for cli.py.
+"""
 """
 CLI tool for bias detection - instant out-of-the-box experience.
 

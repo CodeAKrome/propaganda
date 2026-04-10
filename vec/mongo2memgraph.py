@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Module for mongo2memgraph.py.
+"""
 """
 mongo2memgraph.py  --mode {load|query}
 Load:  Mongo → vectors → Memgraph  (uses the "article" field)

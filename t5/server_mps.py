@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Module for server_mps.py.
+"""
+"""
+Module: server_mps.py
+Purpose: Module for server_mps.py functionality.
+Usage: python ./t5/server_mps.py [arguments]
+"""
 #!/usr/bin/env python
 """
 FastAPI server for BiasDetectorInference (Native MPS version)

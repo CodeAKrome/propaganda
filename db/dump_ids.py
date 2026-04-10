@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Database utility module for managing and accessing data.
+"""
 """
 dump_ids.py
 Output MongoDB IDs of records with empty/missing fields.

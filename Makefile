@@ -16,7 +16,7 @@ TIMESTAMP_OFFSET = 3
 # <=-- Main --=>
 
 testrun: timestamp load ner t5bias vector entity cleantext cleanoutput runhybrid runreport cyphertograph dbscan vecdbscan mddbscan cleanmp3 mp3small fini
-test2: vecdbscan mddbscan cleanmp3 mp3small fini
+test2: entity dbscan vecdbscan mddbscan cleanmp3 mp3small fini
 smallthingsthatgo: timestamp load ner vector entity mkvecsmall bias mkvecsmall querysmall cleanmp3 mp3small fini
 
 # Doesn't clean db/output or mp3/mp3

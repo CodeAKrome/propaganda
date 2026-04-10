@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+
+"""
+Database utility module for managing and accessing data.
+"""
 """
 Configuration constants for the news categorization system.
 """

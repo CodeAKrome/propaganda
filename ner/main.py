@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Module for main.py.
+"""
 """
 FastAPI micro-service that wraps
   - Flair NER (ontonotes-large)

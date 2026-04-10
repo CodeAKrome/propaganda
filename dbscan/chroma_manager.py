@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+
+"""
+Database utility module for managing and accessing data.
+"""
 """
 ChromaDB operations for storing and querying article embeddings.
 """

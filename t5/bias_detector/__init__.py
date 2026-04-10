@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+
+"""
+Module for __init__.py.
+"""
 """
 Bias Detector - Political bias detection for news articles.
 

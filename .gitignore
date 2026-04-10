@@ -137,6 +137,9 @@ node_modules/
 *.out
 go.sum
 
+# Audio files
+*.mp3
+
 # Database files
 *.db
 *.sqlite

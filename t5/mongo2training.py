@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Module for mongo2training.py.
+"""
+"""
+Module: mongo2training.py
+Purpose: Module for mongo2training.py functionality.
+Usage: python ./t5/mongo2training.py [arguments]
+"""
 #!/usr/bin/env python
 """
 MongoDB to Bias Training Data Exporter

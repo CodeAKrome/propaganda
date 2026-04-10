@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Database utility module for managing and accessing data.
+"""
 """
 chroma_browser.py
 Browse ChromaDB collections and MongoDB articles using ncurses

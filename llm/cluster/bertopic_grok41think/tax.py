@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Large Language Model integration and processing module.
+"""
+"""
+Module: tax.py
+Purpose: Module for tax.py functionality.
+Usage: python ./llm/cluster/bertopic_grok41think/tax.py [arguments]
+"""
 #!/usr/bin/env python
 
 """

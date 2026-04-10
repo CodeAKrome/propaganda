@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Module for diagnose_model.py.
+"""
+"""
+Module: diagnose_model.py
+Purpose: Module for diagnose_model.py functionality.
+Usage: python ./t5/diagnose_model.py [arguments]
+"""
 #!/usr/bin/env python
 """
 Diagnostic tool for bias detector model issues

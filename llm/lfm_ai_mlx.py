@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Large Language Model integration and processing module.
+"""
+"""
+Module: lfm_ai_mlx.py
+Purpose: Module for lfm_ai_mlx.py functionality.
+Usage: python ./llm/lfm_ai_mlx.py [arguments]
+"""
 #!/usr/bin/env python
 from mlx_lm import load, generate
 from mlx_lm.sample_utils import make_sampler, make_logits_processors

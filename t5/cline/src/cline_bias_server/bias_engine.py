@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Module for bias_engine.py.
+"""
 """
 Bias Engine - Advanced T5 model wrapper for political bias detection.
 

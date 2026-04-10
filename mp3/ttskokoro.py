@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Module for ttskokoro.py.
+"""
+"""
+Module: ttskokoro.py
+Purpose: Module for ttskokoro.py functionality.
+Usage: python ./mp3/ttskokoro.py [arguments]
+"""
 #!/usr/bin/env python
 import sys
 import re

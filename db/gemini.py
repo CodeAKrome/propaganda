@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Database utility module for managing and accessing data.
+"""
+"""
+Module: gemini.py
+Purpose: Module for gemini.py functionality.
+Usage: python ./db/gemini.py [arguments]
+"""
 #!/usr/bin/env python
 import google.generativeai as genai
 import sys

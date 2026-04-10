@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Module for test_bias_server.py.
+"""
 """
 Bias MCP Server - Standalone Test Script
 

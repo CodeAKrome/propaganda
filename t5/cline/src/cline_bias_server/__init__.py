@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+
+"""
+Module for __init__.py.
+"""
 """
 Cline Bias Server - MCP server for political bias detection.
 

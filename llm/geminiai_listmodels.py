@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Large Language Model integration and processing module.
+"""
+"""
+Module: geminiai_listmodels.py
+Purpose: Module for geminiai_listmodels.py functionality.
+Usage: python ./llm/geminiai_listmodels.py [arguments]
+"""
 #!/usr/bin/env python
 
 import os

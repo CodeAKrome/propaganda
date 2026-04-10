@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Module for generating news videos using AI-driven backgrounds and TTS.
+"""
+"""
+Module: mgm.py
+Purpose: Module for mgm.py functionality.
+Usage: python ./mgm/mgm.py [arguments]
+"""
 #!/usr/bin/env python
 """
 Enhanced News Article to Video Generator – 100 % local, free, GPU-accelerated.

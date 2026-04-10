@@ -16,7 +16,7 @@ import sys
 import json
 import argparse
 from typing import List, Dict, Set, Tuple, Optional
-from datetime import datetime, timedelta
+from datetime import datetime
 from collections import defaultdict
 
 import pymongo
@@ -193,39 +193,7 @@ class FlairPooledEncoder:
         return TensorWrapper(result)
 
 
-# ------------------------------------------------------------------
-# Helper functions
-# ------------------------------------------------------------------
-def parse_date_arg(date_str: str) -> datetime:
-    """
-    Parse date argument. Supports:
-    - Negative integers (e.g., '-1' = 1 day ago, '-7' = 7 days ago)
-    - ISO-8601 date strings (e.g., '2025-09-06T08:00:58+00:00')
-    """
-    if date_str.startswith("-") and date_str[1:].isdigit():
-        days_ago = int(date_str)
-        return datetime.now() + timedelta(days=days_ago)
-    else:
-        return datetime.fromisoformat(date_str)
-
-
-def parse_entity_spec(entity_spec: str) -> Tuple[str | None, str]:
-    """
-    Parse entity specification. Returns (label, text) tuple.
-    If no slash, label is None and text is the full spec.
-    """
-    if "/" in entity_spec:
-        label, text = entity_spec.split("/", 1)
-        return (label, text)
-    else:
-        return (None, entity_spec)
-
-
-def parse_entity_list(entity_str: str) -> List[Tuple[str | None, str]]:
-    """Parse comma-separated entity list into list of (label, text) tuples."""
-    if not entity_str:
-        return []
-    return [parse_entity_spec(e.strip()) for e in entity_str.split(",")]
+from lib.utils import parse_date_arg, parse_entity_spec, parse_entity_list
 
 
 def parse_id_file(filepath: str) -> List[str]:

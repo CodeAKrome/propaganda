@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Module for semantic.py.
+"""
+"""
+Module: semantic.py
+Purpose: Module for semantic.py functionality.
+Usage: python ./semantic/semantic.py [arguments]
+"""
 #!/usr/bin/env python
 """
 Output only semantically relevant text - FIXED with class-level monkey patch

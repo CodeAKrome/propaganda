@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+
+"""
+Module for __init__.py.
+"""
 """Tests for the MCP Bias Server."""
 
 import os

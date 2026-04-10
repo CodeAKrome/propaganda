@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-"""
-clean_article_text.py
 
+"""
+Database utility module for managing and accessing data.
+"""
+"""
 Cleans article text in MongoDB by:
 1. Removing lines that contain only a single word
 2. Removing double newlines (replacing with single newlines)
@@ -9,6 +11,11 @@ Cleans article text in MongoDB by:
 Provides a detailed report of changes made.
 """
 
+import os
+import re
+import sys
+from datetime import datetime
+...
 import os
 import re
 import sys
@@ -29,7 +36,14 @@ BATCH_SIZE = 100
 
 
 def connect_to_mongo():
-    """Connect to MongoDB and return the collection."""
+    """Connect to MongoDB and return the collection.
+
+    Returns:
+        pymongo.collection.Collection: The MongoDB collection to work with.
+
+    Raises:
+        SystemExit: If the connection to MongoDB fails.
+    """
     try:
         client = pymongo.MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
         client.admin.command("ping")
@@ -41,7 +55,14 @@ def connect_to_mongo():
 
 
 def is_single_word_line(line: str) -> bool:
-    """Check if a line contains only a single word (after stripping whitespace)."""
+    """Check if a line contains only a single word (after stripping whitespace).
+
+    Args:
+        line: The line string to check.
+
+    Returns:
+        True if the line contains only one word, False otherwise.
+    """
     stripped = line.strip()
     if not stripped:
         return False  # Empty lines are not single word lines
@@ -52,14 +73,18 @@ def is_single_word_line(line: str) -> bool:
 
 def clean_article_text(article: str) -> tuple[str, dict]:
     """
-    Clean article text by:
-    1. Removing lines that are only one word
-    2. Removing double newlines
-    
-    Returns the cleaned article and a report of changes.
+    Clean article text by removing single-word lines and double newlines.
+
+    Args:
+        article: The original article text.
+
+    Returns:
+        A tuple containing:
+            - The cleaned article text (str).
+            - A dictionary (dict) containing statistics about the changes made.
     """
     if not article:
-        return article, {"unchanged": True, "reason": "empty article"}
+        return article, {"unchanged": True, "args": "empty article"}
     
     lines = article.split('\n')
     original_line_count = len(lines)
@@ -116,15 +141,15 @@ def clean_article_text(article: str) -> tuple[str, dict]:
 def process_articles(coll, limit: int | None = None, dry_run: bool = False, batch_size: int = BATCH_SIZE):
     """
     Process all articles in the collection and clean them.
-    
+
     Args:
-        coll: MongoDB collection
-        limit: Optional limit on number of documents to process
-        dry_run: If True, don't actually update the database
-        batch_size: Number of documents to process in each batch
-    
+        coll: MongoDB collection to process.
+        limit: Optional limit on the number of documents to process.
+        dry_run: If True, do not update the database; only report potential changes.
+        batch_size: Number of documents to process in each batch.
+
     Returns:
-        Summary report dictionary
+        dict: A summary report of the cleaning operation.
     """
     # Find all documents with an article field
     query = {"article": {"$exists": True, "$ne": None}}
@@ -196,7 +221,16 @@ def process_articles(coll, limit: int | None = None, dry_run: bool = False, batc
 
 
 def process_batch(batch, coll, dry_run, report, max_sample_changes=5):
-    """Process a batch of documents."""
+    """
+    Process a batch of documents.
+
+    Args:
+        batch: A list of MongoDB documents to process.
+        coll: The MongoDB collection to update.
+        dry_run: If True, do not perform the update in the database.
+        report: A dictionary to store the processing statistics.
+        max_sample_changes: The maximum number of sample changes to store in the report.
+    """
     for doc in batch:
         doc_id = doc["_id"]
         article = doc.get("article", "")
@@ -243,7 +277,12 @@ def process_batch(batch, coll, dry_run, report, max_sample_changes=5):
 
 
 def print_report(report: dict):
-    """Print a formatted report of the cleaning operation."""
+    """
+    Print a formatted report of the cleaning operation.
+
+    Args:
+        report: A dictionary containing the statistics from the cleaning operation.
+    """
     print("\n" + "=" * 60)
     print("ARTICLE CLEANING REPORT")
     print("=" * 60)
@@ -315,9 +354,13 @@ def print_report(report: dict):
 
 
 def main():
+    """
+    Main entry point for the article text cleaner script.
+
+    Parses command-line arguments, connects to MongoDB, and initiates
+    the article processing pipeline.
+    """
     import argparse
-    
-    parser = argparse.ArgumentParser(
         description="Clean article text in MongoDB by removing single-word lines and double newlines"
     )
     parser.add_argument(

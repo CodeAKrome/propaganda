@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Module for cli.py.
+"""
 """
 Simple bias detection CLI - analyze text directly.
 

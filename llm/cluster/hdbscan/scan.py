@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Database utility module for managing and accessing data.
+"""
 """
 Cluster news articles or documents by title using sentence embeddings.
 Reads tab-delimited id<TAB>title from stdin, outputs id, title, and cluster label.

@@ -1,0 +1,36 @@
+wing: propaganda
+rooms:
+- name: mgm
+  description: Files from mgm/
+- name: llm
+  description: Files from llm/
+- name: rating
+  description: Files from rating/
+- name: redist
+  description: Files from redist/
+- name: back
+  description: Files from back/
+- name: ner
+  description: Files from ner/
+- name: configuration
+  description: Files from config/
+- name: dashboard
+  description: Files from dashboard/
+- name: vec
+  description: Files from vec/
+- name: mp3
+  description: Files from mp3/
+- name: dbscan
+  description: Files from dbscan/
+- name: semantic
+  description: Files from semantic/
+- name: backend
+  description: Files from db/
+- name: chroma_db
+  description: Files from chroma_db/
+- name: front
+  description: Files from front/
+- name: testing
+  description: Files from tests/
+- name: general
+  description: Files that don't fit other rooms

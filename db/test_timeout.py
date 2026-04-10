@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Database utility module for managing and accessing data.
+"""
+"""
+Module: test_timeout.py
+Purpose: Module for test_timeout.py functionality.
+Usage: python ./db/test_timeout.py [arguments]
+"""
 #!/usr/bin/env python
 import subprocess
 import sys

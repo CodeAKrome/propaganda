@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Database utility module for managing and accessing data.
+"""
 """
 Read file paths from stdin and print *all* MongoDB IDs
 found in each file (every line that starts with "ID: ").

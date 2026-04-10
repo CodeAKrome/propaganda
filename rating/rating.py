@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Module for rating.py.
+"""
+"""
+Module: rating.py
+Purpose: Module for rating.py functionality.
+Usage: python ./rating/rating.py [arguments]
+"""
 #!/usr/bin/env python
 import os
 from pymongo import MongoClient

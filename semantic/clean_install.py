@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Module for clean_install.py.
+"""
 """
 Completely clear cache and re-download with safetensors support
 """

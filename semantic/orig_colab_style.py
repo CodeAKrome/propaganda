@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Module for orig_colab_style.py.
+"""
+"""
+Module: orig_colab_style.py
+Purpose: Module for orig_colab_style.py functionality.
+Usage: python ./semantic/orig_colab_style.py [arguments]
+"""
 import os
 import nltk
 

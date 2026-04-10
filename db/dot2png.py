@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Database utility module for managing and accessing data.
+"""
+"""
+Module: dot2png.py
+Purpose: Module for dot2png.py functionality.
+Usage: python ./db/dot2png.py [arguments]
+"""
 #!/usr/bin/env python
 import graphviz
 import sys

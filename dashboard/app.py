@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Module for app.py.
+"""
 """
 Dashboard for MongoDB RSS News Data
 Run with: streamlit run dashboard/app.py

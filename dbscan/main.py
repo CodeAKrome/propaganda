@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Database utility module for managing and accessing data.
+"""
+"""
+Module: main.py
+Purpose: Module for main.py functionality.
+Usage: python ./dbscan/main.py [arguments]
+"""
 #!/usr/bin/env python
 
 """

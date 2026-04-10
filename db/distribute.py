@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Database utility module for managing and accessing data.
+"""
+"""
+Module: distribute.py
+Purpose: Module for distribute.py functionality.
+Usage: python ./db/distribute.py [arguments]
+"""
 #!/usr/bin/env python
 
 """

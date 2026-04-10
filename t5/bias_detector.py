@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Module for bias_detector.py.
+"""
+"""
+Module: bias_detector.py
+Purpose: Module for bias_detector.py functionality.
+Usage: python ./t5/bias_detector.py [arguments]
+"""
 #!/usr/bin/env python
 
 """

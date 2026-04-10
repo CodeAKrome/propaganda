@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Module for parsing and extracting information from text/files.
+"""
+"""
+Module: slave.py
+Purpose: Module for slave.py functionality.
+Usage: python ./llm/slave.py [arguments]
+"""
 import argparse
 import sys
 from fastapi import FastAPI, HTTPException

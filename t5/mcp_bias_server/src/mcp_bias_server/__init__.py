@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+
+"""
+Module for __init__.py.
+"""
 """
 Bias MCP Server - Political bias detection using fine-tuned T5 model.
 

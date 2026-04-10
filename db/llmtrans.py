@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Database utility module for managing and accessing data.
+"""
+"""
+Module: llmtrans.py
+Purpose: Module for llmtrans.py functionality.
+Usage: python ./db/llmtrans.py [arguments]
+"""
 #!/usr/bin/env python
 # Load model directly
 from transformers import AutoTokenizer, AutoModelForCausalLM

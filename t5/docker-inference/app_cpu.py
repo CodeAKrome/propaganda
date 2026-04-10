@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Module for app_cpu.py.
+"""
+"""
+Module: app_cpu.py
+Purpose: Module for app_cpu.py functionality.
+Usage: python ./t5/docker-inference/app_cpu.py [arguments]
+"""
 #!/usr/bin/env python
 """
 FastAPI wrapper for BiasDetectorInference (CPU/CUDA version)

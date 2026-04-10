@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Module for demo_ollama_bias.py.
+"""
 """
 demo_ollama_bias.py - Install and use bias detection with Ollama for inference.
 

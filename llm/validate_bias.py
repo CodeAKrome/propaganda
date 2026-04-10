@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Large Language Model integration and processing module.
+"""
 """
 Validate bias detection results by comparing stored MongoDB values
 with fresh predictions from the T5 server.

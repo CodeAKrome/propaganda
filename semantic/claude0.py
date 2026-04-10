@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Module for claude0.py.
+"""
+"""
+Module: claude0.py
+Purpose: Module for claude0.py functionality.
+Usage: python ./semantic/claude0.py [arguments]
+"""
 from transformers import AutoModel, AutoTokenizer
 import warnings
 

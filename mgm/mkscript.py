@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Module for mkscript.py.
+"""
 """
 Read a news script from stdin, break it into sentences with Flair,
 detect named entities with OntoNotes-large-fast, and emit:

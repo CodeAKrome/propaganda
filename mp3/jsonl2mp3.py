@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Module for jsonl2mp3.py.
+"""
+"""
+Module: jsonl2mp3.py
+Purpose: Module for jsonl2mp3.py functionality.
+Usage: python ./mp3/jsonl2mp3.py [arguments]
+"""
 #!/usr/bin/env python
 
 import sys

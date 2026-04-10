@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Module for diagnosse_model.py.
+"""
 """
 Diagnose the model download issue
 """

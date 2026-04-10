@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Module for parsing and extracting information from text/files.
+"""
+"""
+Module: mlxllm.py
+Purpose: Module for mlxllm.py functionality.
+Usage: python ./db/mlxllm.py [arguments]
+"""
 #!/usr/bin/env python
 import sys
 import argparse

@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Module for demo_mcp_client.py.
+"""
 """
 demo_mcp_client.py - Install and use the bias-mcp-server MCP server from Python.
 

@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Database utility module for managing and accessing data.
+"""
 """
 Convert cluster_titles.json to .vec format by fetching article data from MongoDB.
 

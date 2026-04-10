@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Large Language Model integration and processing module.
+"""
+"""
+Module: groqtest.py
+Purpose: Module for groqtest.py functionality.
+Usage: python ./llm/groqtest.py [arguments]
+"""
 #!/usr/bin/env python
 import os
 

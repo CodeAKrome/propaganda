@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+
+"""
+Module for test_processor.py.
+"""
 """Tests for BiasProcessor class."""
 
 import json

@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Module for clear_model_cache.py.
+"""
 """
 Clear HuggingFace cache and re-download the model
 """

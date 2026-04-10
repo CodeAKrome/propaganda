@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Module for working_loader.py.
+"""
 """
 Working solution: Load model by bypassing broken from_pretrained
 """

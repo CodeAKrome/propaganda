@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Database utility module for managing and accessing data.
+"""
 """
 mongo_gemini_rag.py
 Process MongoDB articles through Google Gemini with RAG input.

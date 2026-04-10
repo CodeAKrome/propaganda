@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Module for train_bias_detector.py.
+"""
 """
 T5 LoRA Training Script for Political Bias Detection
 =====================================================

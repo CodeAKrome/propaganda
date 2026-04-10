@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Module for BiasDetectorInference_MPS.py.
+"""
+"""
+Module: BiasDetectorInference_MPS.py
+Purpose: Module for BiasDetectorInference_MPS.py functionality.
+Usage: python ./t5/BiasDetectorInference_MPS.py [arguments]
+"""
 #!/usr/bin/env python
 """
 Detect political bias

@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Module for bias_stdin.py.
+"""
 """
 Bias Analyzer - stdin/stdout version.
 

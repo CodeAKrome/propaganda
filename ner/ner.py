@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Module for ner.py.
+"""
+"""
+Module: ner.py
+Purpose: Module for ner.py functionality.
+Usage: python ./ner/ner.py [arguments]
+"""
 #!/usr/bin/env python
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, validator

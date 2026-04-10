@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Module for parsing and extracting information from text/files.
+"""
 import sys
 import argparse
 

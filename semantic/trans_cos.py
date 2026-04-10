@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Module for parsing and extracting information from text/files.
+"""
+"""
+Module: trans_cos.py
+Purpose: Module for trans_cos.py functionality.
+Usage: python ./semantic/trans_cos.py [arguments]
+"""
 #!/usr/bin/env python
 """
 Semantic search, pass things that match query.

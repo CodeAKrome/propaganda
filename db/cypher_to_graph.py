@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Database utility module for managing and accessing data.
+"""
 """
 Cypher to GraphViz DOT and Interactive HTML Converter
 

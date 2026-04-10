@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+"""
+Large Language Model integration and processing module.
+"""
 """
 demo_local_llm_bias.py - Install and use bias detection with local LLMs.
 

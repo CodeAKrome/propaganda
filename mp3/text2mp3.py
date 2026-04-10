@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+
+"""
+Module for text2mp3.py.
+"""
+"""
+Module: text2mp3.py
+Purpose: Module for text2mp3.py functionality.
+Usage: python ./mp3/text2mp3.py [arguments]
+"""
 #!/usr/bin/env python
 
 import sys
