@@ -1,3 +1,5 @@
+<img width="1728" height="960" alt="Image" src="https://github.com/user-attachments/assets/e13fccab-e70c-4b80-b4ca-395e5737ccf0" />
+
 # Propaganda — News Analysis Pipeline
 
 A complete local-first news aggregation, analysis, and reporting pipeline.
