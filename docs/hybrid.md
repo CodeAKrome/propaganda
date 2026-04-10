@@ -167,7 +167,16 @@ GPE: Ukraine, Russia
 ## Environment Variables
 
 ```bash
+# MongoDB
 MONGO_URI=mongodb://user:pass@host:27017
-MONGO_DB=rssnews
+MONGO_USER=root
+MONGO_PASS=your_password_here
+
+# ChromaDB
 CHROMA_PATH=./chroma_db
+
+# NER Service
+NER_URL=http://localhost:8100/extract
 ```
+
+For full list of environment variables, see `.env.example`.

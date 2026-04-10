@@ -101,13 +101,26 @@ make smallthingsthatgo  # Quick test
 
 ## Environment Variables
 
+Copy `.env.example` to `.env` and fill in your values:
+
 ```bash
+# MongoDB
 MONGO_URI=mongodb://user:pass@host:27017
 MONGO_USER=root
-MONGO_PASS=example
-GEMINI_API_KEY=your_key
+MONGO_PASS=your_password_here
+
+# LLM APIs
+GEMINI_API_KEY=your_gemini_api_key
+GROQ_API_KEY=your_groq_api_key
 OLLAMA_HOST=localhost:11434
+
+# Services
+NER_URL=http://localhost:8100/extract
+T5_PORT=1337
+CHROMA_PATH=./chroma_db
 ```
+
+See `.env.example` for the complete list.
 
 ## Directory Structure
 

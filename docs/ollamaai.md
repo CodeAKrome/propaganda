@@ -158,7 +158,10 @@ Supports three image input formats:
 
 ```bash
 OLLAMA_HOST=localhost:11434  # Default Ollama host
+OLLAMA_MODEL=llama3.2        # Default model
 ```
+
+For full list of environment variables, see `.env.example`.
 
 ## Available Models
 

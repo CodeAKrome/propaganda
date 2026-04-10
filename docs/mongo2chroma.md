@@ -165,11 +165,20 @@ Examples: `PERSON/Trump`, `ORG/UN`, `GPE/Iran`, `Israel`
 ## Environment Variables
 
 ```bash
+# MongoDB Configuration
 MONGO_URI=mongodb://user:pass@host:27017
+MONGO_USER=root
+MONGO_PASS=your_password_here
+MONGO_HOST=localhost
+MONGO_PORT=27017
 MONGO_DB=rssnews          # default
 MONGO_COLL=articles       # default
+
+# ChromaDB
 CHROMA_PATH=./chroma_db   # default
 ```
+
+For full list of environment variables, see `.env.example`.
 
 ## Architecture
 

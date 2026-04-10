@@ -160,11 +160,20 @@ Return JSON: {"sentiment": "...", "confidence": 0.0-1.0}
 ## Environment Variables
 
 ```bash
+# MongoDB
 MONGO_URI=mongodb://user:pass@host:27017
-MONGO_DB=rssnews
-GEMINI_API_KEY=your_api_key   # for Gemini backend
-OLLAMA_HOST=localhost:11434    # for Ollama backend
+MONGO_USER=root
+MONGO_PASS=your_password_here
+
+# LLM Backends
+GEMINI_API_KEY=your_gemini_api_key
+OLLAMA_HOST=localhost:11434
+
+# Optional
+GROQ_API_KEY=your_groq_api_key  # for Groq backend
 ```
+
+For full list of environment variables, see `.env.example`.
 
 ## Output
 

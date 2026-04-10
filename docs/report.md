@@ -95,10 +95,20 @@ Built-in prompt that instructs the LLM to:
 ## Environment Variables
 
 ```bash
+# MongoDB
 MONGO_URI=mongodb://user:pass@host:27017
-GEMINI_API_KEY=your_key
+MONGO_USER=root
+MONGO_PASS=your_password_here
+
+# LLM Backends
+GEMINI_API_KEY=your_gemini_api_key
 OLLAMA_HOST=localhost:11434
+
+# Optional
+GROQ_API_KEY=your_groq_api_key
 ```
+
+For full list of environment variables, see `.env_example`.
 
 ## Failover Chain
 
