@@ -99,6 +99,7 @@ make smallthingsthatgo  # Quick test
 - [ollamaai.md](docs/ollamaai.md) — Ollama CLI client for text/vision
 - [main_go.md](docs/main_go.md) — RSS feed aggregator (Go)
 - [mgm.md](docs/mgm.md) — Video generation with SD Turbo + Kokoro TTS
+- [dashboard.md](docs/dashboard.md) — Streamlit data visualization dashboard
 
 ### Pipeline Reference
 
@@ -129,6 +130,7 @@ make smallthingsthatgo  # Quick test
 | Train custom model | `make lora-full` → [LoRA-train/README.md](LoRA-train/README.md) |
 | Serve model | `make lora-serve` → [LoRA-server/server.py](LoRA-server/server.py) |
 | Browser extension | [browser-extension/README.md](t5/browser-extension/README.md) |
+| Dashboard | `make dashboard` → [dashboard.md](docs/dashboard.md) |
 | Full pipeline | `make testrun` → [makefile.md](docs/makefile.md) |
 
 ## Environment Variables
