@@ -289,3 +289,16 @@ lora-full: lora-extract lora-extract-test lora-train lora-test
 
 # Quick test with smaller data
 lora-quick: lora-extract lora-train lora-test
+
+# Quick test run (uses existing trained model, minimal data)
+lora-test-only:
+	@source $(LORA_ENV)/bin/activate && \
+	python LoRA-train/mongo2lora.py \
+		--output /tmp/lora_quick_test.json \
+		--target-samples 10 \
+		--min-samples 2 \
+		--start-date -60 --end-date -30 \
+		--model-type llama && \
+	python LoRA-train/test_lora.py \
+		--model-path $(LORA_OUTPUT)/checkpoint-25 \
+		--test-data /tmp/lora_quick_test.json
