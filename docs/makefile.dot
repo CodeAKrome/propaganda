@@ -1,0 +1,121 @@
+digraph Makefile {
+    rankdir=TB;
+    node [shape=box, style=rounded, fontname="Helvetica"];
+    edge [color="#666666"];
+    
+    // Node styles
+    subgraph cluster_main {
+        label="Main Pipelines";
+        style=filled;
+        color="#e3f2fd";
+        
+        testrun [label="testrun\nFull Pipeline", color="#1976d2", fontcolor="white"];
+        small [label="smallthingsthatgo\nQuick Test", color="#1976d2", fontcolor="white"];
+        smallest [label="smallestthingsthatgo\nMinimal Test", color="#1976d2", fontcolor="white"];
+    }
+    
+    subgraph cluster_ingest {
+        label="Data Ingestion";
+        style=filled;
+        color="#e8f5e9";
+        
+        timestamp [label="timestamp\nGenerate Date"];
+        load [label="load\nRSS→MongoDB"];
+        testload [label="testload\nTest Data"];
+    }
+    
+    subgraph cluster_ai {
+        label="AI Processing";
+        style=filled;
+        color="#fff3e0";
+        
+        ner [label="ner\nNamed Entities"];
+        t5bias [label="t5bias\nBias Detection"];
+        t5server [label="t5server\nStart T5 Server"];
+    }
+    
+    subgraph cluster_search {
+        label="Vector Search";
+        style=filled;
+        color="#fce4ec";
+        
+        vector [label="vector\nMongoDB→Chroma"];
+        entity [label="entity\nExtract Entities"];
+    }
+    
+    subgraph cluster_report {
+        label="Reports";
+        style=filled;
+        color="#f3e5f5";
+        
+        mkvec [label="mkvec\nCreate Vectors"];
+        mkvecsmall [label="mkvecsmall\nSmall Vectors"];
+        bias [label="bias\nBias Analysis"];
+        query [label="query\nGenerate Reports"];
+        querysmall [label="querysmall\nSmall Reports"];
+        runhybrid [label="runhybrid\nHybrid Search"];
+        runreport [label="runreport\nNews Reports"];
+        cyphertograph [label="cyphertograph\nGraph Export"];
+    }
+    
+    subgraph cluster_cat {
+        label="Categorization";
+        style=filled;
+        color="#e0f7fa";
+        
+        categorize [label="categorize\nAll Clusters"];
+        dbscan [label="dbscan\nTitle Clustering"];
+        vecdbscan [label="vecdbscan\nVector Clustering"];
+        mddbscan [label="mddbscan\nMarkdown Clusters"];
+    }
+    
+    subgraph cluster_video {
+        label="Video/Audio";
+        style=filled;
+        color="#fbe9e7";
+        
+        mp3 [label="mp3\nGenerate MP3"];
+        mp3small [label="mp3small\nSmall MP3"];
+        cleanmp3 [label="cleanmp3\nRemove MP3"];
+    }
+    
+    subgraph cluster_util {
+        label="Utilities";
+        style=filled;
+        color="#eeeeee";
+        
+        cleantext [label="cleantext\nClean Text"];
+        cleanoutput [label="cleanoutput\nRemove Output"];
+        build [label="build\nGo Binary"];
+        black [label="black\nFormat Code"];
+        fini [label="fini\nDone Sound"];
+    }
+    
+    // Edges - main pipelines
+    testrun -> timestamp -> load -> ner -> t5bias -> vector -> entity;
+    testrun -> cleantext -> cleanoutput -> runhybrid -> runreport;
+    testrun -> cyphertograph -> dbscan -> vecdbscan -> mddbscan;
+    testrun -> cleanmp3 -> mp3small -> fini;
+    
+    small -> timestamp -> load -> ner -> vector -> entity;
+    small -> mkvecsmall -> bias -> mkvecsmall -> querysmall;
+    small -> cleanmp3 -> mp3small -> fini;
+    
+    // Dependencies
+    ner -> t5server [style=dashed, color="#999"];
+    t5bias -> t5server [style=dashed, color="#999"];
+    vector -> entity;
+    mkvec -> bias;
+    bias -> query;
+    querysmall -> runhybrid;
+    runhybrid -> runreport;
+    
+    // Categorization flow
+    entity -> dbscan;
+    dbscan -> vecdbscan;
+    vecdbscan -> mddbscan;
+    categorize -> dbscan -> vecdbscan -> mddbscan;
+    
+    // Legacy
+    test2 -> entity -> dbscan -> vecdbscan -> mddbscan -> cleanmp3 -> mp3small -> fini;
+}
