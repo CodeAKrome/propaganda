@@ -90,13 +90,39 @@ make smallthingsthatgo  # Quick test
 
 ## Documentation
 
-- [mongo2chroma.md](docs/mongo2chroma.md) — Vector loading & search
-- [hybrid.md](docs/hybrid.md) — Hybrid search with BM25
-- [geminize.md](docs/geminize.md) — LLM article processing
-- [report.md](docs/report.md) — News report generation
-- [ollamaai.md](docs/ollamaai.md) — Ollama CLI client
-- [main_go.md](docs/main_go.md) — RSS feed aggregator
-- [mgm.md](docs/mgm.md) — Video generator
+### API Reference
+
+- [mongo2chroma.md](docs/mongo2chroma.md) — Vector loading & semantic search
+- [hybrid.md](docs/hybrid.md) — Hybrid search with BM25 reranking
+- [geminize.md](docs/geminize.md) — LLM article processing pipeline
+- [report.md](docs/report.md) — News report generation with LLM failover
+- [ollamaai.md](docs/ollamaai.md) — Ollama CLI client for text/vision
+- [main_go.md](docs/main_go.md) — RSS feed aggregator (Go)
+- [mgm.md](docs/mgm.md) — Video generation with SD Turbo + Kokoro TTS
+
+### Pipeline Reference
+
+- [makefile.md](docs/makefile.md) — All Makefile targets with pipeline graph
+
+### Environment & Setup
+
+- [.env.example](.env.example) — All environment variables
+- [docs/makefile_graph.png](docs/makefile_graph.png) — Visual pipeline diagram
+
+---
+
+## Quick Reference Index
+
+| Need... | Use |
+|---------|-----|
+| Load RSS feeds | `make load` → [main_go.md](docs/main_go.md) |
+| Extract entities | `make ner` → [ner/main.py](ner/main.py) |
+| Search articles | [hybrid.md](docs/hybrid.md) → `python db/hybrid.py` |
+| Generate vectors | `make vector` → [mongo2chroma.md](docs/mongo2chroma.md) |
+| Detect bias | `make t5bias` → [llm/bias_processor.py](llm/bias_processor.py) |
+| Create reports | `make runreport` → [report.md](docs/report.md) |
+| Text-to-speech | `make mp3small` → [mgm.md](docs/mgm.md) |
+| Full pipeline | `make testrun` → [makefile.md](docs/makefile.md) |
 
 ## Environment Variables
 
