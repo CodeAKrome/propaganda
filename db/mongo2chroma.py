@@ -21,6 +21,10 @@ from collections import defaultdict
 
 import pymongo
 from bson import ObjectId
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from lib.utils import parse_date_arg, parse_entity_spec, parse_entity_list
 
 # ------------------------------------------------------------------
 # Config — change if necessary
