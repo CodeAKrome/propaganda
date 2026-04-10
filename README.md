@@ -104,6 +104,10 @@ make smallthingsthatgo  # Quick test
 
 - [makefile.md](docs/makefile.md) — All Makefile targets with pipeline graph
 
+### Browser Extension
+
+- [browser-extension/README.md](t5/browser-extension/README.md) — Chrome/Firefox extension for real-time bias detection
+
 ### Environment & Setup
 
 - [.env.example](.env.example) — All environment variables
@@ -122,6 +126,9 @@ make smallthingsthatgo  # Quick test
 | Detect bias | `make t5bias` → [llm/bias_processor.py](llm/bias_processor.py) |
 | Create reports | `make runreport` → [report.md](docs/report.md) |
 | Text-to-speech | `make mp3small` → [mgm.md](docs/mgm.md) |
+| Train custom model | `make lora-full` → [LoRA-train/README.md](LoRA-train/README.md) |
+| Serve model | `make lora-serve` → [LoRA-server/server.py](LoRA-server/server.py) |
+| Browser extension | [browser-extension/README.md](t5/browser-extension/README.md) |
 | Full pipeline | `make testrun` → [makefile.md](docs/makefile.md) |
 
 ## Environment Variables

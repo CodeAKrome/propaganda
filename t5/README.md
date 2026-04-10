@@ -192,7 +192,7 @@ processor.process_articles(
 processor.close()
 
 # Validate results
-validator = BiasValidator(api_url="http://localhost:8000")
+validator = BiasValidator(api_url="http://localhost:1337")
 validator.validate(sample_size=10, output_file="validation.json")
 validator.close()
 ```

@@ -20,11 +20,11 @@ A Chrome/Firefox browser extension that detects political bias in news articles 
    # Option 1: MCP Server (recommended)
    pip install bias-mcp-server
    bias-mcp-server
-   # Runs on http://localhost:8000
+   # Runs on http://localhost:1337
 
    # Option 2: HTTP Server
-   python server_mps.py
-   # Runs on http://localhost:8000
+   cd t5 && python server_mps.py
+   # Runs on http://localhost:1337
    ```
 
 ### Load Extension (Development)
@@ -80,7 +80,7 @@ Access settings by clicking the gear icon in the popup or right-clicking the ext
 
 | Setting | Description | Default |
 |---------|-------------|---------|
-| API Endpoint | URL of bias detection server | `http://localhost:8000` |
+| API Endpoint | URL of bias detection server | `http://localhost:1337` |
 | API Type | Protocol (HTTP or MCP) | `HTTP` |
 | Minimum Text Length | Characters required for analysis | `100` |
 | Auto-analyze | Automatically analyze news pages | `Off` |
@@ -113,7 +113,7 @@ Content Script (content.js)
 Background Service Worker (background.js)
     | API call + caching
     v
-Bias Detection Server (localhost:8000)
+Bias Detection Server (localhost:1337)
     | T5 model inference
     v
 Response with bias scores
