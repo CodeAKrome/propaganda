@@ -62,8 +62,7 @@ make smallthingsthatgo  # Quick test
 
 | File | Description |
 |------|-------------|
-| [main.go](docs/main_go.md) | RSS feed aggregator with user-agent rotation |
-| [Makefile](Makefile) | Pipeline orchestration |
+| [Makefile](docs/makefile.md) | Pipeline orchestration (full reference) |
 
 ### Database & Search
 
