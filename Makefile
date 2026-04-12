@@ -17,7 +17,7 @@ TIMESTAMP_OFFSET = 3
 # <=-- Main --=>
 
 testrun: timestamp load ner t5bias vector entity cleantext cleanoutput runhybrid runreport cyphertograph dbscan vecdbscan mddbscan cleanmp3 mp3small fini
-test2: entity dbscan vecdbscan mddbscan cleanmp3 mp3small fini
+test2: entity cleantext cleanoutput runhybrid runreport cyphertograph dbscan vecdbscan mddbscan cleanmp3 mp3small fini
 smallthingsthatgo: timestamp load ner vector entity mkvecsmall bias mkvecsmall querysmall cleanmp3 mp3small fini
 
 # Doesn't clean db/output or mp3/mp3
@@ -61,7 +61,7 @@ categorize: entity dbscan vecdbscan mddbscan
 
 # Remove one word lines and double newlines.
 cleantext:
-	db/clean_article_text.py
+	source $(DB_ENV)/bin/activate && cd db && ./clean_article_text.py
 
 dbscan:
 	cd db && (echo "article_id\ttitle" && cut -f3,4 $(TITLEFILE)) > output/titles_dbscan.tsv
@@ -229,6 +229,17 @@ lora-extract:
 		--model-type llama \
 		--shuffle
 
+# Extract LEFT/RIGHT balanced training data (equal samples per side)
+lora-extract-balanced:
+	@source $(LORA_ENV)/bin/activate && \
+	python LoRA-train/mongo2lora.py \
+		--output $(LORA_DATA) \
+		--min-samples 50 \
+		--start-date -60 \
+		--model-type llama \
+		--shuffle \
+		--balanced
+
 # Extract test data (different date range)
 lora-extract-test:
 	@source $(LORA_ENV)/bin/activate && \
@@ -240,7 +251,7 @@ lora-extract-test:
 		--model-type llama \
 		--shuffle
 
-# Train LoRA model
+# Train LoRA model (Llama default)
 lora-train:
 	@source $(LORA_ENV)/bin/activate && \
 	python LoRA-train/train_lora.py \
@@ -249,7 +260,22 @@ lora-train:
 		--output $(LORA_OUTPUT) \
 		--model-type llama \
 		--epochs $(LORA_EPOCHS) \
-		--batch-size $(LORA_BATCH_SIZE) \
+		--batch-size $(LORA_BATCH_SIZE)
+
+# Train LoRA with Gemma 4:26b
+lora-train-gemma:
+	@source $(LORA_ENV)/bin/activate && \
+	python LoRA-train/train_lora.py \
+		--data $(LORA_DATA) \
+		--model "google/gemma-2-27b-it" \
+		--output $(LORA_OUTPUT)-gemma \
+		--model-type glm \
+		--epochs $(LORA_EPOCHS) \
+		--batch-size 1 \
+		--learning-rate 1e-4 \
+		--lora-r 8 \
+		--lora-alpha 16 \
+		--max-length 1024 \
 		--learning-rate 3e-4 \
 		--lora-r 16 \
 		--lora-alpha 32
@@ -261,6 +287,14 @@ lora-test:
 		--model-path $(LORA_OUTPUT) \
 		--test-data $(LORA_TEST_DATA) \
 		--output lora_test_results.json
+
+# Test Gemma trained model
+lora-test-gemma:
+	@source $(LORA_ENV)/bin/activate && \
+	python LoRA-train/test_lora.py \
+		--model-path $(LORA_OUTPUT)-gemma \
+		--test-data $(LORA_TEST_DATA) \
+		--output lora_gemma_test_results.json
 
 # Validate training data quality
 lora-validate:
@@ -286,6 +320,36 @@ lora-stop:
 
 # Full pipeline: extract → train → test
 lora-full: lora-extract lora-extract-test lora-train lora-test
+
+# Balanced left/right pipeline with Gemma
+lora-gemma: lora-extract-balanced lora-train-gemma lora-test-gemma
+
+# MLX LoRA training on Apple Silicon with Qwen3.5-35B
+lora-mlx: lora-extract-balanced
+	python LoRA-train/prepare_mlx_data.py \
+		--input lora_train.json \
+		--output data/mlx_train && \
+	mlx_lm lora \
+		--model mlx-community/Qwen3.5-35B-A3B-4bit \
+		--data data/mlx_train \
+		--train \
+		--fine-tune-type lora \
+		--optimizer adamw \
+		--batch-size 1 \
+		--iters 500 \
+		--learning-rate 5e-5 \
+		--num-layers -1 \
+		--max-seq-length 1024 \
+		--adapter-path lora_mlx_35b \
+		--save-every 100
+
+# Test MLX trained model
+lora-test-mlx:
+	python LoRA-train/test_lora_mlx.py \
+		--test-data lora_test_diverse.json \
+		--adapter-path lora_mlx_35b_v2 \
+		--max-samples 18 \
+		--output lora_eval_mlx.json
 
 # Quick test with smaller data
 lora-quick: lora-extract lora-train lora-test

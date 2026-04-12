@@ -59,34 +59,36 @@ def batch_load_from_mongo(
     sort_order: int = -1,
 ):
     """
-    Load documents from MongoDB in batches using cursor iteration.
-
-    Args:
-        q: MongoDB query filter
-        projection: Fields to return
-        batch_size: Number of docs per batch
-        limit: Optional limit on total documents
-        sort_field: Field to sort by
-        sort_order: -1 for descending, 1 for ascending
-
-    Yields:
-        Batches of documents
+    Load documents from MongoDB in batches using pagination.
+    Uses skip/limit pagination instead of cursor to avoid cursor timeout.
     """
-    cursor = mongo_coll.find(q, projection).sort(sort_field, sort_order)
-    if limit:
-        cursor = cursor.limit(limit)
+    skip = 0
 
-    try:
-        batch = []
-        for doc in cursor:
-            batch.append(doc)
-            if len(batch) >= batch_size:
-                yield batch
-                batch = []
-        if batch:
-            yield batch
-    finally:
-        cursor.close()
+    while True:
+        # Calculate how many to fetch in this batch
+        fetch_size = batch_size
+        if limit:
+            remaining = limit - skip
+            if remaining <= 0:
+                break
+            fetch_size = min(batch_size, remaining)
+
+        batch = list(
+            mongo_coll.find(q, projection)
+            .sort(sort_field, sort_order)
+            .skip(skip)
+            .limit(fetch_size)
+        )
+
+        if not batch:
+            break
+
+        yield batch
+
+        skip += len(batch)
+
+        if limit and skip >= limit:
+            break
 
 
 # Lazy-loaded ChromaDB and encoder
@@ -311,63 +313,61 @@ def load_into_chroma(
     if limit:
         total_docs = min(total_docs, limit)
 
-    # Use batch loading to prevent cursor timeout
     projection = {"_id": 1, "article": 1, "published": 1, "ner": 1}
 
     docs, ids, metadatas = [], [], []
     stored = 0
     skipped = 0
 
-    for batch in tqdm(
-        batch_load_from_mongo(q, projection, batch_size=1000, limit=limit),
-        total=(total_docs + 999) // 1000,
-        desc="Loading articles (batches)",
-    ):
-        for doc in batch:
-            _id = str(doc["_id"])
-            text = doc.get("article", "").strip()
-            if not text:
-                continue
+    with tqdm(total=total_docs, desc="Vectorizing") as pbar:
+        for batch in batch_load_from_mongo(q, projection, batch_size=1000, limit=limit):
+            for doc in batch:
+                _id = str(doc["_id"])
+                text = doc.get("article", "").strip()
+                if not text:
+                    pbar.update(1)
+                    continue
 
-            # Skip if already exists (unless force flag is used)
-            if not force and collection.get(ids=[_id])["ids"]:
-                skipped += 1
-                continue
+                if not force and collection.get(ids=[_id])["ids"]:
+                    skipped += 1
+                    pbar.update(1)
+                    continue
 
-            # Build metadata
-            metadata = {}
+                metadata = {}
+                published_dt = doc.get("published")
+                if published_dt and isinstance(published_dt, datetime):
+                    metadata["published"] = published_dt.isoformat()
 
-            # Add publication date as ISO string for filtering
-            published_dt = doc.get("published")
-            if published_dt and isinstance(published_dt, datetime):
-                metadata["published"] = published_dt.isoformat()
+                ner = doc.get("ner")
+                if ner and "entities" in ner:
+                    entity_texts = [
+                        e.get("text", "") for e in ner["entities"] if e.get("text")
+                    ]
+                    if entity_texts:
+                        metadata["entities"] = json.dumps(entity_texts)
 
-            # Add entities as JSON string for filtering
-            ner = doc.get("ner")
-            if ner and "entities" in ner:
-                # Store entity texts as a JSON string for filtering
-                entity_texts = [
-                    e.get("text", "") for e in ner["entities"] if e.get("text")
-                ]
-                if entity_texts:
-                    metadata["entities"] = json.dumps(entity_texts)
+                docs.append(text)
+                ids.append(_id)
+                metadatas.append(metadata)
+                pbar.update(1)
 
-            docs.append(text)
-            ids.append(_id)
-            metadatas.append(metadata)
-
-            if len(docs) >= BATCH_SIZE:
-                embs = (
-                    encoder.encode(docs, convert_to_tensor=True).cpu().numpy().tolist()
-                )
-                collection.add(
-                    documents=docs, embeddings=embs, ids=ids, metadatas=metadatas
-                )
-                stored += len(ids)
-                docs, ids, metadatas = [], [], []
+                if len(docs) >= BATCH_SIZE:
+                    embs = (
+                        encoder.encode(docs, convert_to_tensor=True)
+                        .cpu()
+                        .numpy()
+                        .tolist()
+                    )
+                    collection.add(
+                        documents=docs, embeddings=embs, ids=ids, metadatas=metadatas
+                    )
+                    stored += len(ids)
+                    docs, ids, metadatas = [], [], []
 
     if docs:
         embs = encoder.encode(docs, convert_to_tensor=True).cpu().numpy().tolist()
+        collection.add(documents=docs, embeddings=embs, ids=ids, metadatas=metadatas)
+        stored += len(ids)
         collection.add(documents=docs, embeddings=embs, ids=ids, metadatas=metadatas)
         stored += len(ids)
 

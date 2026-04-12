@@ -1,0 +1,22 @@
+make vector
+Clearing existing Chroma collection...
+Counting documents to load...
+Vectorizing:  29%|███████████████▊                                      | 1000/3416 [49:11<1:58:51,  2.95s/it]
+Traceback (most recent call last):
+  File "/Users/kyle/hub/propaganda/db/./mongo2chroma.py", line 1093, in <module>
+    main()
+    ~~~~^^
+  File "/Users/kyle/hub/propaganda/db/./mongo2chroma.py", line 991, in main
+    count = load_into_chroma(
+        limit=int(args.limit) if args.limit is not None else None,
+    ...<6 lines>...
+        embed_model=embed_model,
+    )
+  File "/Users/kyle/hub/propaganda/db/./mongo2chroma.py", line 330, in load_into_chroma
+    for batch in batch_load_from_mongo(q, projection, batch_size=1000, limit=limit):
+                 ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kyle/hub/propaganda/db/./mongo2chroma.py", line 94, in batch_load_from_mongo
+    batch_num += 1
+    ^^^^^^^^^
+UnboundLocalError: cannot access local variable 'batch_num' where it is not associated with a value
+make: *** [vector] Error 1

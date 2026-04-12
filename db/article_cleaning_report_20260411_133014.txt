@@ -1,0 +1,17 @@
+ARTICLE CLEANING REPORT
+============================================================
+
+Generated: 2026-04-11T13:30:14.551542
+
+Total documents in database:     206,507
+Documents processed:             206,507
+Documents modified:              2,369
+Documents unchanged:             202,078
+Batches processed:               2066
+
+Single-word lines removed:       2,756
+Double newlines replaced:        34,534
+
+Total characters before:         600,834,623
+Total characters after:          600,755,234
+Characters saved:                79,389

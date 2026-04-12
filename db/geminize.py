@@ -3,6 +3,7 @@
 """
 Database utility module for managing and accessing data.
 """
+
 """
 mongo_gemini_rag.py
 Process MongoDB articles through Google Gemini with RAG input.
@@ -43,7 +44,7 @@ except ImportError:
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://root:example@localhost:27017")
 MONGO_DB = "rssnews"
 MONGO_COLL = "articles"
-DEFAULT_MODEL = "models/gemini-2.5-flash"
+DEFAULT_MODEL = "models/gemini-flash-latest"
 
 # ------------------------------------------------------------------
 # Setup
@@ -81,6 +82,8 @@ def build_mongo_query(
     news_sources: Optional[List[str]] = None,
     src_field: str = "article",
     id_list: Optional[List[str]] = None,
+    dst_field: Optional[str] = None,
+    update_existing: bool = False,
 ) -> dict:
     """
     Build MongoDB query filter.
@@ -109,6 +112,10 @@ def build_mongo_query(
     # Add news source filter
     if news_sources:
         q["source"] = {"$in": news_sources}
+
+    # Filter out records that already have destination field set (unless --update is used)
+    if dst_field and not update_existing:
+        q[dst_field] = {"$exists": False}
 
     return q
 
@@ -169,6 +176,7 @@ def process_articles(
     dry_run: bool = False,
     extract_json: bool = False,
     prompt_cache_file: Optional[str] = None,
+    modeltag: Optional[str] = None,
 ) -> dict:
     """
     Process articles through Gemini LLM.
@@ -176,7 +184,13 @@ def process_articles(
     """
     # Build query
     mongo_query = build_mongo_query(
-        start_date, end_date, news_sources, src_field, id_list
+        start_date,
+        end_date,
+        news_sources,
+        src_field,
+        id_list,
+        dst_field,
+        update_existing,
     )
 
     # --- New Strategy: Fetch all IDs first to avoid long-lived cursors ---
@@ -212,12 +226,6 @@ def process_articles(
         }
 
     print(f"Found {total_docs} documents to process")
-
-    # Apply limit if specified
-    if limit:
-        total_docs = min(total_docs, limit)
-        all_ids = all_ids[:total_docs]  # Apply limit to the ID list
-        print(f"Limiting to {total_docs} documents")
 
     # Initialize LLM model (Remains the same)
     model = None
@@ -309,12 +317,7 @@ def process_articles(
             stats["skipped"] += 1
             continue
 
-        # Skip if destination field already exists and has content (unless --update flag is set)
-        if not update_existing and dst_field in doc and doc[dst_field]:
-            stats["skipped"] += 1
-            continue
-
-        # Build prompt with RAG input (Remains the same)
+        # Build prompt with RAG input
         title = doc.get("title", "")
         source = doc.get("source", "")
         published = doc.get("published", "")
@@ -385,7 +388,7 @@ Article Content:
                         lines = lines[:-1]
                     result_text_cleaned = "\n".join(lines).strip()
 
-            # Prepare update data (Remains the same)
+            # Prepare update data
             update_timestamp = datetime.now()
             update_data = {
                 dst_field: result_text_cleaned,
@@ -396,6 +399,10 @@ Article Content:
                 f"{dst_field}_timestamp": update_timestamp,
                 f"{dst_field}_inference_time": inference_time,
             }
+
+            # Add modeltag field if specified
+            if modeltag:
+                update_data[modeltag] = model_name
 
             stats["processed"] += 1
 
@@ -538,6 +545,10 @@ def main(argv=None):
     parser.add_argument(
         "--prompt-cache-file", help="Path to .safetensors prompt cache file (MLX only)"
     )
+    parser.add_argument(
+        "--modeltag",
+        help="MongoDB field name to store the model name (e.g., 'bias_model')",
+    )
 
     args = parser.parse_args(argv)
 
@@ -624,7 +635,7 @@ def main(argv=None):
         else:
             print(
                 f"Processing specific IDs: {', '.join(id_list[:5])}"
-                + (f" ... and {len(id_list)-5} more" if len(id_list) > 5 else "")
+                + (f" ... and {len(id_list) - 5} more" if len(id_list) > 5 else "")
             )
     if args.start_date:
         print(f"Start date: {args.start_date}")
@@ -660,6 +671,7 @@ def main(argv=None):
         dry_run=args.dry_run,
         extract_json=args.json,
         prompt_cache_file=args.prompt_cache_file,
+        modeltag=args.modeltag,
     )
 
     # Print final report
@@ -683,10 +695,10 @@ def main(argv=None):
     print(f"Total inference time: {stats['inference_time']:.2f}s")
     if stats["processed"] > 0:
         print(
-            f"Average inference time: {stats['inference_time']/stats['processed']:.2f}s per article"
+            f"Average inference time: {stats['inference_time'] / stats['processed']:.2f}s per article"
         )
         print(
-            f"Average total time: {stats['total_time']/stats['processed']:.2f}s per article"
+            f"Average total time: {stats['total_time'] / stats['processed']:.2f}s per article"
         )
     print("=" * 70)
 
