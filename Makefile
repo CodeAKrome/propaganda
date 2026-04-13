@@ -101,10 +101,10 @@ entity:
 
 # build propaganda go binary
 build:
-	go build
+	cd rss && go build
 # read RSS feeds and load data into mongodb
 load:
-	./propaganda config/big.tsv config/kill.tsv
+	cd rss && go run . ../config/big.tsv ../config/kill.tsv
 	source $(DB_ENV)/bin/activate && cd db && ./dedupe.py
 #	go run main.go config/big.tsv config/kill.tsv
 # start back end before front end
@@ -121,7 +121,7 @@ vector:
 	@source $(DB_ENV)/bin/activate && cd db && ./mongo2chroma.py load --start-date $(NUMDAYS) --force
 # Do NER
 ner:
-	cd ../ner && ./RUNME.sh $(NUMDAYS)
+	cd ner-hub && go run . --start-date $(NUMDAYS) endpoints.tsv
 
 # run before bias. Create .vec and .ids files to use for bias and generating articles
 mkvec:
@@ -199,7 +199,7 @@ fini:
 mgconsole:
 	docker run -it memgraph/mgconsole:latest --host host.docker.internal
 testload:
-	./propaganda config/test.tsv config/kill.tsv
+	cd rss && go run . ../config/test.tsv ../config/kill.tsv
 #	go run main.go config/test.tsv config/kill.tsv
 
 # ==============================================================================

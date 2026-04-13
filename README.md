@@ -31,10 +31,10 @@ A complete local-first news aggregation, analysis, and reporting pipeline.
 
 ```bash
 # 1. Load RSS feeds
-go run main.go config/big.tsv config/kill.tsv
+cd rss && go run . ../config/big.tsv ../config/kill.tsv
 
 # 2. Run NER
-python ner/main.py
+cd ner-hub && go run . --start-date -7 endpoints.tsv
 
 # 3. Generate vectors
 python db/mongo2chroma.py load --limit 100
@@ -121,7 +121,7 @@ make smallthingsthatgo  # Quick test
 | Need... | Use |
 |---------|-----|
 | Load RSS feeds | `make load` → [main_go.md](docs/main_go.md) |
-| Extract entities | `make ner` → [ner/main.py](ner/main.py) |
+| Extract entities | `make ner` → [ner-hub/main.go](ner-hub/main.go) |
 | Search articles | [hybrid.md](docs/hybrid.md) → `python db/hybrid.py` |
 | Generate vectors | `make vector` → [mongo2chroma.md](docs/mongo2chroma.md) |
 | Detect bias | `make t5bias` → [llm/bias_processor.py](llm/bias_processor.py) |
@@ -160,22 +160,22 @@ See `.env.example` for the complete list.
 
 ```
 propaganda/
-├── main.go           # RSS aggregator
-├── Makefile          # Pipeline tasks
-├── config/           # Feed configs
-├── db/               # Database scripts
+├── rss/               # RSS feed aggregator (Go)
+├── Makefile           # Pipeline tasks
+├── config/            # Feed configs
+├── db/                # Database scripts
 │   ├── mongo2chroma.py
 │   ├── hybrid.py
 │   ├── geminize.py
 │   └── report.py
-├── ner/              # Named Entity Recognition
-├── llm/              # LLM processing
-├── t5/               # T5 bias detection
-├── mgm/              # Video generation
-├── front/            # React web UI
-├── back/             # Express API
-├── dashboard/        # Streamlit dashboard
-└── docs/             # Documentation
+├── ner-hub/           # Named Entity Recognition (Go)
+├── llm/               # LLM processing
+├── t5/                # T5 bias detection
+├── mgm/               # Video generation
+├── front/             # React web UI
+├── back/              # Express API
+├── dashboard/         # Streamlit dashboard
+└── docs/              # Documentation
 ```
 
 ## Frontend
