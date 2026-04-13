@@ -32,7 +32,7 @@ class OllamaAI:
         Returns an image object from a path, URL or base64 encoded image data.
         """
         if PathUrlBase64.startswith(("http://", "https://")):
-            response = requests.get(PathUrlBase64)
+            response = requests.get(PathUrlBase64, timeout=30)
             img = Image.open(BytesIO(response.content))
         elif PathUrlBase64.startswith("data:image"):
             img_data = PathUrlBase64.split(",")[1]

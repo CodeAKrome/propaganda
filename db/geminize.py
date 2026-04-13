@@ -71,7 +71,7 @@ def parse_date_arg(date_str: str) -> datetime:
     """
     if date_str.startswith("-") and date_str[1:].isdigit():
         days_ago = int(date_str)
-        return datetime.now() + timedelta(days=days_ago)
+        return datetime.now() - timedelta(days=-days_ago)
     else:
         return datetime.fromisoformat(date_str.replace("Z", "+00:00"))
 
@@ -293,15 +293,12 @@ def process_articles(
 
         # Fetch the full document content for the current ID
         try:
-            projection = {
-                "_id": 1,
-                "title": 1,
-                "source": 1,
-                "published": 1,
-                src_field: 1,
-                dst_field: 1,
-            }
-            doc = mongo_coll.find_one({"_id": _id}, projection)
+            fields = {"_id": 1, "title": 1, "source": 1, "published": 1}
+            if src_field not in fields:
+                fields[src_field] = 1
+            if dst_field != src_field:
+                fields[dst_field] = 1
+            doc = mongo_coll.find_one({"_id": _id}, fields)
             if not doc:
                 stats["skipped"] += 1
                 continue

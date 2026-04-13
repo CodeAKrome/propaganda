@@ -21,6 +21,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/net/html"
+	"net/url"
 )
 
 const (
@@ -31,7 +32,6 @@ const (
 	workerCount    = 8
 	requestTimeout = 15 * time.Second
 	maxRetries     = 3
-	initialBackoff = 2 * time.Second
 	MINLINE        = 128
 	uaStatsFile    = "user_agent_stats.txt"
 )
@@ -198,7 +198,9 @@ func main() {
 	}
 
 	ctx := context.Background()
-	uri := "mongodb://" + os.Getenv("MONGO_USER") + ":" + os.Getenv("MONGO_PASS") + "@localhost:27017"
+	mongoUser := url.QueryEscape(os.Getenv("MONGO_USER"))
+	mongoPass := url.QueryEscape(os.Getenv("MONGO_PASS"))
+	uri := "mongodb://" + mongoUser + ":" + mongoPass + "@localhost:27017"
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	if err != nil {
 		log.Fatalf("mongo connect: %v", err)
@@ -485,6 +487,7 @@ func fetchArticleWithUA(url, userAgent string) (string, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		resp.Body.Close()
 		return "", fmt.Errorf("http %d", resp.StatusCode)
 	}
 
