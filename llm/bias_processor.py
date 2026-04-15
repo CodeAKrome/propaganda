@@ -64,23 +64,9 @@ class BiasProcessor:
             api_url: URL of the T5 bias detection server
             output_file: Path to save processed article IDs
         """
-        mongo_user = os.getenv("MONGO_USER")
-        mongo_pass = os.getenv("MONGO_PASS")
+        mongo_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017")
 
-        mongo_uri = os.getenv("MONGO_URI")
-
-        # if not mongo_user or not mongo_pass:
-        #     raise ValueError(
-        #         "MONGO_USER and MONGO_PASS environment variables must be set"
-        #     )
-
-        if not mongo_uri:
-            raise ValueError("MONGO_URI environment variables must be set")
-
-        uri = f"mongodb://{mongo_user}:{mongo_pass}@localhost:27017"
-        #        uri = f"mongodb://{mongo_uri}"
-
-        self.client = MongoClient(uri)
+        self.client = MongoClient(mongo_uri)
         self.db = self.client["rssnews"]
         self.collection = self.db["articles"]
         self.api_url = api_url.rstrip("/")

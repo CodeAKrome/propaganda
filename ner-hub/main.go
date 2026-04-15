@@ -225,8 +225,11 @@ func main() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
-	uri := "mongodb://" + os.Getenv("MONGO_USER") + ":" + os.Getenv("MONGO_PASS") + "@localhost:27017"
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://localhost:27017"
+	}
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoURI))
 	if err != nil {
 		log.Fatalf("mongo connect: %v", err)
 	}
@@ -249,9 +252,14 @@ func main() {
 	}
 
 	filter := bson.M{
-		"article":     bson.M{"$exists": true, "$ne": nil},
-		"fetch_error": bson.M{"$exists": false},
-		"ner":         bson.M{"$exists": false},
+		"article": bson.M{"$exists": true, "$ne": nil},
+		"$and": bson.A{
+			bson.M{"$or": bson.A{
+				bson.M{"fetch_error": bson.M{"$exists": false}},
+				bson.M{"fetch_error": ""},
+			}},
+		},
+		"ner": bson.M{"$exists": false},
 	}
 
 	if startTime != nil || endTime != nil {

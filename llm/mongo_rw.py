@@ -3,6 +3,7 @@
 """
 Large Language Model integration and processing module.
 """
+
 """
 MongoDB field reader/writer tool using Fire library.
 
@@ -24,16 +25,8 @@ class MongoFieldTool:
 
     def __init__(self):
         """Initialize MongoDB connection."""
-        mongo_user = os.getenv("MONGO_USER")
-        mongo_pass = os.getenv("MONGO_PASS")
-
-        if not mongo_user or not mongo_pass:
-            raise ValueError(
-                "MONGO_USER and MONGO_PASS environment variables must be set"
-            )
-
-        uri = f"mongodb://{mongo_user}:{mongo_pass}@localhost:27017"
-        self.client = MongoClient(uri)
+        mongo_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+        self.client = MongoClient(mongo_uri)
         self.db = self.client["rssnews"]
         self.collection = self.db["articles"]
 
@@ -98,16 +91,18 @@ class MongoFieldTool:
             if not force:
                 doc = self.collection.find_one(
                     {"_id": ObjectId(id)},
-                    {field: 1}  # Only fetch the specific field
+                    {field: 1},  # Only fetch the specific field
                 )
-                
+
                 if doc is None:
                     print(f"Error: Document with ID '{id}' not found")
                     return False
 
                 # Check if field exists and has data (not None and not empty string)
                 if field in doc and doc[field] not in (None, ""):
-                    print(f"Skipped: Field '{field}' already has data. Use --force to overwrite.")
+                    print(
+                        f"Skipped: Field '{field}' already has data. Use --force to overwrite."
+                    )
                     return False
 
             # For bias field, parse JSON string and store as object

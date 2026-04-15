@@ -3,6 +3,7 @@
 """
 Large Language Model integration and processing module.
 """
+
 import sys
 import os
 import subprocess
@@ -13,17 +14,9 @@ from bson.objectid import ObjectId
 
 
 def get_mongo_connection():
-    """Initialize and return MongoDB connection."""
-    mongo_user = os.getenv("MONGO_USER")
-    mongo_pass = os.getenv("MONGO_PASS")
-
-    if not mongo_user or not mongo_pass:
-        raise ValueError(
-            "MONGO_USER and MONGO_PASS environment variables must be set"
-        )
-
-    uri = f"mongodb://{mongo_user}:{mongo_pass}@localhost:27017"
-    client = MongoClient(uri)
+    """Initialize and return MongoDB connection using MONGO_URI."""
+    mongo_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+    client = MongoClient(mongo_uri)
     db = client["rssnews"]
     collection = db["articles"]
     return collection
@@ -32,22 +25,19 @@ def get_mongo_connection():
 def check_field_exists(collection, mongo_id, field):
     """
     Check if a field exists and has a value in the MongoDB document.
-    
+
     Returns:
         True if field exists and has a non-empty value, False otherwise
     """
     try:
-        doc = collection.find_one(
-            {"_id": ObjectId(mongo_id)},
-            {field: 1}
-        )
-        
+        doc = collection.find_one({"_id": ObjectId(mongo_id)}, {field: 1})
+
         if doc is None:
             return False
-        
+
         # Check if field exists and has data (not None and not empty string)
         return field in doc and doc[field] not in (None, "")
-    
+
     except Exception as e:
         tqdm.write(f"Error checking field for {mongo_id}: {e}")
         return False
@@ -56,7 +46,7 @@ def check_field_exists(collection, mongo_id, field):
 def fmt_command(model, mongo_id, cache, src, dest):
     """
     Format a shell command using the model name and MongoDB ID.
-    
+
     Args:
         model: MLX model name
         mongo_id: MongoDB document ID
@@ -80,9 +70,14 @@ def main():
     parser.add_argument("model", help="Name of MLX model to use")
     parser.add_argument("--cache", required=True, help="Path to prompt cache file")
     parser.add_argument("--src", required=True, help="Source field name in MongoDB")
-    parser.add_argument("--dest", required=True, help="Destination field name in MongoDB")
-    parser.add_argument("--force", action="store_true", 
-                        help="Force update even if destination field has a value")
+    parser.add_argument(
+        "--dest", required=True, help="Destination field name in MongoDB"
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Force update even if destination field has a value",
+    )
     args = parser.parse_args()
 
     # Connect to MongoDB
@@ -94,7 +89,7 @@ def main():
 
     # Read all MongoDB IDs from stdin
     mongo_ids = [line.strip() for line in sys.stdin if line.strip()]
-    
+
     if not mongo_ids:
         print("No MongoDB IDs provided", file=sys.stderr)
         return
@@ -109,16 +104,16 @@ def main():
             unique_ids.append(mongo_id)
         else:
             duplicates += 1
-    
+
     if duplicates > 0:
         print(f"Found {duplicates} duplicate IDs (removed)", file=sys.stderr)
-    
+
     mongo_ids = unique_ids
 
     # Filter out IDs that already have data (unless --force is used)
     ids_to_process = []
     skipped = 0
-    
+
     if not args.force:
         for mongo_id in mongo_ids:
             if check_field_exists(collection, mongo_id, args.dest):
@@ -127,20 +122,26 @@ def main():
                 ids_to_process.append(mongo_id)
     else:
         ids_to_process = mongo_ids
-    
+
     # Exit if nothing to process
     if not ids_to_process:
-        print(f"No IDs to process. All {skipped} IDs already have data in field '{args.dest}'", file=sys.stderr)
+        print(
+            f"No IDs to process. All {skipped} IDs already have data in field '{args.dest}'",
+            file=sys.stderr,
+        )
         print("Use --force to overwrite existing data", file=sys.stderr)
         return
-    
+
     # Report pre-processing summary
     if skipped > 0:
-        print(f"Pre-scan: {len(ids_to_process)} IDs to process, {skipped} already have data (skipped)", file=sys.stderr)
-    
+        print(
+            f"Pre-scan: {len(ids_to_process)} IDs to process, {skipped} already have data (skipped)",
+            file=sys.stderr,
+        )
+
     # Process each ID with progress bar
     processed = 0
-    
+
     for mongo_id in tqdm(ids_to_process, desc="Processing IDs", unit="id"):
         # Get the command for this ID
         command = fmt_command(args.model, mongo_id, args.cache, args.src, args.dest)

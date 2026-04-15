@@ -24,7 +24,7 @@ from bson import ObjectId
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from lib.utils import parse_date_arg, parse_entity_spec, parse_entity_list
+from lib.utils import parse_date_arg, parse_entity_list
 
 # ------------------------------------------------------------------
 # Config — change if necessary
@@ -199,7 +199,7 @@ class FlairPooledEncoder:
         return TensorWrapper(result)
 
 
-from lib.utils import parse_date_arg, parse_entity_spec, parse_entity_list
+from lib.utils import parse_date_arg, parse_entity_list
 
 
 def parse_id_file(filepath: str) -> List[str]:
@@ -366,8 +366,6 @@ def load_into_chroma(
 
     if docs:
         embs = encoder.encode(docs, convert_to_tensor=True).cpu().numpy().tolist()
-        collection.add(documents=docs, embeddings=embs, ids=ids, metadatas=metadatas)
-        stored += len(ids)
         collection.add(documents=docs, embeddings=embs, ids=ids, metadatas=metadatas)
         stored += len(ids)
 

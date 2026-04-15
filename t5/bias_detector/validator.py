@@ -31,14 +31,8 @@ class BiasValidator:
         Args:
             api_url: URL of the T5 bias detection server
         """
-        mongo_user = os.getenv("MONGO_USER")
-        mongo_pass = os.getenv("MONGO_PASS")
-
-        if not mongo_user or not mongo_pass:
-            raise ValueError("MONGO_USER and MONGO_PASS environment variables must be set")
-
-        uri = f"mongodb://{mongo_user}:{mongo_pass}@localhost:27017"
-        self.client = MongoClient(uri)
+        mongo_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+        self.client = MongoClient(mongo_uri)
         self.db = self.client["rssnews"]
         self.collection = self.db["articles"]
         self.api_url = api_url.rstrip("/")

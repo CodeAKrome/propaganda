@@ -21,7 +21,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/net/html"
-	"net/url"
 )
 
 const (
@@ -198,10 +197,11 @@ func main() {
 	}
 
 	ctx := context.Background()
-	mongoUser := url.QueryEscape(os.Getenv("MONGO_USER"))
-	mongoPass := url.QueryEscape(os.Getenv("MONGO_PASS"))
-	uri := "mongodb://" + mongoUser + ":" + mongoPass + "@localhost:27017"
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://localhost:27017"
+	}
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoURI))
 	if err != nil {
 		log.Fatalf("mongo connect: %v", err)
 	}
@@ -606,7 +606,15 @@ func storeArticles(ctx context.Context, coll *mongo.Collection, arts []Article) 
 }
 
 func backfillArticles(ctx context.Context, coll *mongo.Collection) error {
-	cur, err := coll.Find(ctx, bson.M{"raw": bson.M{"$exists": false}})
+	cur, err := coll.Find(ctx, bson.M{
+		"article": bson.M{"$exists": false},
+		"$and": bson.A{
+			bson.M{"$or": bson.A{
+				bson.M{"raw": bson.M{"$exists": false}},
+				bson.M{"raw": ""},
+			}},
+		},
+	})
 	if err != nil {
 		return err
 	}
