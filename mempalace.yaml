@@ -2,35 +2,124 @@ wing: propaganda
 rooms:
 - name: mgm
   description: Files from mgm/
+  keywords:
+  - mgm
+  - mgm
 - name: llm
   description: Files from llm/
+  keywords:
+  - llm
+  - llm
 - name: rating
   description: Files from rating/
+  keywords:
+  - rating
+  - rating
 - name: redist
   description: Files from redist/
+  keywords:
+  - redist
+  - redist
 - name: back
   description: Files from back/
+  keywords:
+  - back
+  - back
 - name: ner
   description: Files from ner/
+  keywords:
+  - ner
+  - ner
+- name: lora_server
+  description: Files from LoRA-server/
+  keywords:
+  - lora_server
+  - lora-server
+- name: lora_output
+  description: Files from lora-output/
+  keywords:
+  - lora_output
+  - lora-output
 - name: configuration
   description: Files from config/
+  keywords:
+  - configuration
+  - config
+- name: rss
+  description: Files from rss/
+  keywords:
+  - rss
+  - rss
+- name: documentation
+  description: Files from docs/
+  keywords:
+  - documentation
+  - docs
 - name: dashboard
   description: Files from dashboard/
+  keywords:
+  - dashboard
+  - dashboard
 - name: vec
   description: Files from vec/
+  keywords:
+  - vec
+  - vec
+- name: lora_train
+  description: Files from LoRA-train/
+  keywords:
+  - lora_train
+  - lora-train
 - name: mp3
   description: Files from mp3/
+  keywords:
+  - mp3
+  - mp3
 - name: dbscan
   description: Files from dbscan/
+  keywords:
+  - dbscan
+  - dbscan
 - name: semantic
   description: Files from semantic/
+  keywords:
+  - semantic
+  - semantic
+- name: lib
+  description: Files from lib/
+  keywords:
+  - lib
+  - lib
 - name: backend
   description: Files from db/
+  keywords:
+  - backend
+  - db
 - name: chroma_db
   description: Files from chroma_db/
+  keywords:
+  - chroma_db
+  - chroma_db
+- name: data
+  description: Files from data/
+  keywords:
+  - data
+  - data
 - name: front
   description: Files from front/
+  keywords:
+  - front
+  - front
+- name: ner_hub
+  description: Files from ner-hub/
+  keywords:
+  - ner_hub
+  - ner-hub
 - name: testing
-  description: Files from tests/
+  description: Files from test/
+  keywords:
+  - testing
+  - test
 - name: general
   description: Files that don't fit other rooms
+  keywords: []

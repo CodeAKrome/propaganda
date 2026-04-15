@@ -180,3 +180,31 @@ NER_URL=http://localhost:8100/extract
 ```
 
 For full list of environment variables, see `.env.example`.
+
+## Python API
+
+```python
+from db.hybrid import get_encoder, parse_entity_list, parse_date_arg
+
+# Get encoder
+encoder = get_encoder("flair-pooled")  # or "bge-large"
+
+# Encode text
+embedding = encoder.encode("Your search query").cpu().numpy()
+
+# Parse date arguments
+from datetime import datetime
+date = parse_date_arg("-7")  # 7 days ago
+date = parse_date_arg("2025-01-01")  # specific date
+
+# Parse entity specs
+entities = parse_entity_list("PERSON/Trump,ORG/NATO")
+# Returns: [("PERSON", "Trump"), ("ORG", "NATO")]
+```
+
+## Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | Success |
+| 1 | No results or error |

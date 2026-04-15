@@ -88,21 +88,44 @@ make smallthingsthatgo  # Quick test
 | [t5/bias_detector/](t5/bias_detector/) | T5+LoRA bias detection |
 | [llm/bias_processor.py](llm/bias_processor.py) | LLM-based bias processing |
 
-## Documentation
+## Documentation (Complete)
 
-### API Reference
+### Data Ingestion & NER
+
+- [main_go.md](docs/main_go.md) — RSS feed aggregator (Go)
+- [ner.md](docs/ner.md) — NER processor (Go)
+
+### Database & Search
 
 - [mongo2chroma.md](docs/mongo2chroma.md) — Vector loading & semantic search
 - [hybrid.md](docs/hybrid.md) — Hybrid search with BM25 reranking
+- [dedupe.md](docs/dedupe.md) — Article deduplication
+
+### LLM & Bias
+
 - [geminize.md](docs/geminize.md) — LLM article processing pipeline
-- [report.md](docs/report.md) — News report generation with LLM failover
+- [bias_processor.md](docs/bias_processor.md) — LLM bias processing
 - [ollamaai.md](docs/ollamaai.md) — Ollama CLI client for text/vision
-- [main_go.md](docs/main_go.md) — RSS feed aggregator (Go)
+- [t5_bias.md](docs/t5_bias.md) — T5 bias detection system
+
+### Training
+
+- [lora.md](docs/lora.md) — LoRA training pipeline
+
+### Reporting & Generation
+
+- [report.md](docs/report.md) — News report generation with LLM failover
 - [mgm.md](docs/mgm.md) — Video generation with SD Turbo + Kokoro TTS
+- [tts.md](docs/tts.md) — TTS utilities
+
+### Analysis & Clustering
+
 - [dashboard.md](docs/dashboard.md) — Streamlit data visualization dashboard
+- [dbscan.md](docs/dbscan.md) — News article clustering
 
-### Pipeline Reference
+### Utilities & Reference
 
+- [utilities.md](docs/utilities.md) — Utility scripts reference
 - [makefile.md](docs/makefile.md) — All Makefile targets with pipeline graph
 
 ### Browser Extension
