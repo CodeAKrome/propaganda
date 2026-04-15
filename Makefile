@@ -1,5 +1,6 @@
 CONDA_MP3_ENV = kokoro
 DB_ENV = db/.venv
+DBSCAN_ENV = dbscan/.venv
 SHELL := /bin/zsh
 TITLEFILE = output/titles.tsv
 NUMDAYS := $(shell cat db/timestamp.txt 2>/dev/null | cut -d'T' -f1)
@@ -16,8 +17,8 @@ TIMESTAMP_OFFSET = 3
 
 # <=-- Main --=>
 
-testrun: timestamp load ner t5bias vector entity cleantext cleanoutput runhybrid runreport cyphertograph dbscan vecdbscan mddbscan cleanmp3 mp3small fini
-test2: entity cleantext cleanoutput runhybrid runreport cyphertograph dbscan vecdbscan mddbscan cleanmp3 mp3small fini
+testrun: timestamp load ner t5bias vector entity cleantext cleanoutput runhybrid runreport cyphertograph cleanmp3 mp3small dbscan vecdbscan mddbscan fini
+test2: cleanmp3 mp3small dbscan vecdbscan mddbscan fini
 smallthingsthatgo: timestamp load ner vector entity mkvecsmall bias mkvecsmall querysmall cleanmp3 mp3small fini
 
 # Doesn't clean db/output or mp3/mp3
@@ -65,7 +66,7 @@ cleantext:
 
 dbscan:
 	cd db && (echo "article_id\ttitle" && cut -f3,4 $(TITLEFILE)) > output/titles_dbscan.tsv
-	dbscan/main.py --input db/output/titles_dbscan.tsv --output db/output/categories.json --similarity-threshold 0.68 --min-cluster-size 2
+	source $(DBSCAN_ENV)/bin/activate && cd dbscan && ./main.py --input ../db/output/titles_dbscan.tsv --output ../db/output/categories.json --similarity-threshold 0.68 --min-cluster-size 2
 
 vecdbscan:
 	find db/cluster -name '*.vec' -exec rm {} \;
