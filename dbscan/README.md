@@ -193,3 +193,31 @@ JSON file with categorized articles:
 **Empty categories**: Lower similarity threshold or min cluster size
 
 ![tuning](tuning.png)
+
+## Shell Scripts
+
+### process.sh
+Runs the DBSCAN categorization pipeline.
+
+```bash
+./process.sh
+
+# Runs: python main.py --input articles.tsv --output categories.json
+# Uses default parameters from config.py
+```
+
+### test.sh
+Tests DBSCAN functionality.
+
+```bash
+./test.sh
+
+# Runs test suite for DBSCAN components
+# Tests: embeddings, clustering, categorizer
+```
+
+## See Also
+
+- Main README: [../README.md](../README.md)
+- Mongo2Chroma: [../docs/mongo2chroma.md](../docs/mongo2chroma.md)
+- Dashboard: [../dashboard/README.md](../dashboard/README.md)

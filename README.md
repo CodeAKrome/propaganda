@@ -132,6 +132,23 @@ make smallthingsthatgo  # Quick test
 
 - [browser-extension/README.md](t5/browser-extension/README.md) — Chrome/Firefox extension for real-time bias detection
 
+### Shell Scripts
+
+Shell scripts for various pipeline tasks. See individual directory READMEs for full usage documentation.
+
+| Directory | Description |
+|-----------|-------------|
+| [db/README.md](db/README.md) | Batch processing, vector generation, reporting scripts (37 scripts) |
+| [llm/README.md](llm/README.md) | LLM testing, SVO extraction, bias testing scripts (15 scripts) |
+| [ner/README.md](ner/README.md) | NER service management scripts |
+| [ner-hub/README.md](ner-hub/README.md) | NER processor scripts |
+| [mgm/README.md](mgm/README.md) | Video generation scripts |
+| [mp3/README.md](mp3/README.md) | TTS batch processing scripts |
+| [vec/README.md](vec/README.md) | Memgraph vector database scripts |
+| [dbscan/README.md](dbscan/README.md) | Article clustering scripts |
+| [redist/README.md](redist/README.md) | Model training scripts |
+| [semantic/README.md](semantic/README.md) | Semantic search scripts |
+
 ### Environment & Setup
 
 - [.env.example](.env.example) — All environment variables
