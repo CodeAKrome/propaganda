@@ -1,3 +1,7 @@
+llm/tmp
+timestamp.txt
+*.cfg
+llm/test
 *.mp3
 *.vec
 *.cypher

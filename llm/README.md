@@ -258,3 +258,76 @@ Test outputs are stored in:
 - Main README: [../README.md](../README.md)
 - Bias Processing: [../docs/bias_processor.md](../docs/bias_processor.md)
 - LoRA Training: [../LoRA-train/README.md](../LoRA-train/README.md)
+
+---
+
+## mongo_rw.py
+
+MongoDB field reader/writer tool for reading and writing individual fields in documents.
+
+### Usage
+
+```bash
+# READ (default: output to stdout)
+./mongo_rw.py read --field <field> --id <id>                    # single ID
+./mongo_rw.py read --field <field> --id "id1,id2,id3"           # comma-separated
+./mongo_rw.py read --field <field> --idfile <file>              # file: one ID per line
+./mongo_rw.py read --field <field> --idfile -                    # stdin: one ID per line
+./mongo_rw.py read --field <field> --id <id> --data <file>      # output to file
+./mongo_rw.py read --field <field> --id <id> --data -            # output to stdout
+
+# WRITE (default: read from stdin)
+./mongo_rw.py write --field <field> --id <id>                    # read from stdin
+./mongo_rw.py write --field <field> --id <id> --data -            # stdin explicit
+./mongo_rw.py write --field <field> --id <id> --data <file>      # read from file
+./mongo_rw.py write --field <field> --idfile <file> --data <data>  # batch: IDs from file, data from file
+./mongo_rw.py write --field <field> --id <id> --force           # overwrite existing data
+```
+
+### Arguments
+
+| Argument | Description |
+|----------|-------------|
+| `--id` | MongoDB ID(s) - single or comma-separated (e.g., `"id1,id2"`) |
+| `--idfile` | File with IDs (newline-separated, one per line) or `-` for stdin |
+| `--field` | Field name to read/write (required) |
+| `--data` | Data source/target: file path, `-` for stdin/stdout, or omit for default |
+| `--force` | Overwrite existing field data on write |
+
+### Examples
+
+```bash
+# Read a single field
+./mongo_rw.py read --field title --id 696282dd5f8dd0157bb3d388
+
+# Read bias JSON from multiple IDs
+./mongo_rw.py read --field bias --id "id1,id2,id3"
+
+# Read from file containing IDs (one per line)
+./mongo_rw.py read --field title --idfile ids.txt
+
+# Write data from stdin
+echo '{"L": 0.5, "C": 0.3, "R": 0.2}' | ./mongo_rw.py write --field bias --id 696282dd5f8dd0157bb3d388
+
+# Write from file with force to overwrite
+./mongo_rw.py write --field bias --id 696282dd5f8dd0157bb3d388 --data bias.json --force
+
+# Output to file instead of stdout
+./mongo_rw.py read --field title --id 696282dd5f8dd0157bb3d388 --data output.txt
+
+# Batch write with IDs from file
+./mongo_rw.py write --field status --idfile ids.txt --data "processed"
+```
+
+### Environment
+
+```bash
+export MONGO_URI="mongodb://root:example@localhost:27017"
+```
+
+### Notes
+
+- For bias field writes, data is automatically parsed as JSON and stored as object
+- Without `--force`, write will skip if field already has data
+- Multiple IDs are processed in order, errors are reported at end
+- JSON fields are output as JSON, other fields output as plain text

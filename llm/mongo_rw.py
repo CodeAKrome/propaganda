@@ -1,15 +1,31 @@
 #!/usr/bin/env python3
-
 """
-Large Language Model integration and processing module.
-"""
+mongo_rw - MongoDB field reader/writer tool.
 
-"""
-MongoDB field reader/writer tool using Fire library.
+Reads and writes individual fields in MongoDB documents.
+Target collection: rssnews.articles
 
-Usage:
-  python mongo_tool.py read --id=<doc_id> --field=<field_name>
-  python mongo_tool.py write --id=<doc_id> --field=<field_name> --data=<value> [--force]
+Commands:
+  read  --field <field> --id <id> [--idfile <file>] [--data <file>]
+  write --field <field> --id <id> [--idfile <file>] [--data <file>] [--force]
+
+Examples:
+  # READ (default: output to stdout)
+  ./mongo_rw.py read --field title --id 696282dd5f8dd0157bb3d388
+  ./mongo_rw.py read --field bias --id "id1,id2,id3"
+  ./mongo_rw.py read --field title --idfile ids.txt
+  ./mongo_rw.py read --field title --idfile -          # from stdin
+  ./mongo_rw.py read --field title --id ID --data -      # to stdout
+  ./mongo_rw.py read --field title --id ID --data file.txt
+
+  # WRITE (default: read from stdin)
+  echo "value" | ./mongo_rw.py write --field myfield --id ID
+  ./mongo_rw.py write --field bias --id ID --data -      # stdin explicit
+  ./mongo_rw.py write --field bias --id ID --data file.json
+  ./mongo_rw.py write --field status --id ID --force    # overwrite
+
+Environment:
+  MONGO_URI=mongodb://root:example@localhost:27017
 """
 
 import os
@@ -20,124 +36,189 @@ from pymongo import MongoClient
 from bson.objectid import ObjectId
 
 
-class MongoFieldTool:
-    """Tool for reading and writing individual fields in MongoDB documents."""
+def parse_ids(id_str=None, idfile=None):
+    """Parse IDs from --id and --idfile arguments."""
+    ids = []
 
-    def __init__(self):
-        """Initialize MongoDB connection."""
-        mongo_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017")
-        self.client = MongoClient(mongo_uri)
-        self.db = self.client["rssnews"]
-        self.collection = self.db["articles"]
+    if id_str:
+        for part in id_str.split(","):
+            part = part.strip()
+            if part:
+                ids.append(part)
 
-    def read(self, id: str, field: str):
-        """
-        Read a specific field from a document.
+    if idfile:
+        if idfile == "-":
+            content = sys.stdin.read()
+        else:
+            with open(idfile, "r") as f:
+                content = f.read()
 
-        Args:
-            id: MongoDB document ID
-            field: Field name to read
+        for line in content.split("\n"):
+            line = line.strip()
+            if line:
+                ids.append(line)
 
-        Returns:
-            The value of the specified field
-        """
+    return ids
+
+
+def read(id=None, idfile=None, field=None, data=None):
+    """Read a specific field from document(s).
+
+    Arguments:
+      --id      MongoDB ID(s) - single or comma-separated
+      --idfile  File with IDs (one per line) or - for stdin
+      --field   Field name to read (required)
+      --data    Output file path, - for stdout
+
+    Examples:
+      ./mongo_rw.py read --field title --id ID
+      ./mongo_rw.py read --field bias --id "id1,id2"
+      ./mongo_rw.py read --field title --idfile ids.txt
+    """
+    mongo_uri = os.getenv("MONGO_URI", "mongodb://root:example@localhost:27017")
+    client = MongoClient(mongo_uri)
+    collection = client["rssnews"]["articles"]
+
+    if not field:
+        print("Error: --field is required")
+        return
+
+    ids = parse_ids(id, idfile)
+    if not ids:
+        print("Error: No IDs provided (use --id or --idfile)")
+        return
+
+    results = []
+    errors = []
+
+    for id_str in ids:
         try:
-            doc = self.collection.find_one({"_id": ObjectId(id)})
+            doc = collection.find_one({"_id": ObjectId(id_str)})
 
             if doc is None:
-                print(f"Error: Document with ID '{id}' not found")
-                return None
+                errors.append(f"Document '{id_str}' not found")
+                continue
 
             if field not in doc:
-                print(f"Error: Field '{field}' not found in document")
-                return None
+                errors.append(f"Field '{field}' not found in '{id_str}'")
+                continue
 
-            value = doc[field]
-
-            # If value is dict or list, output as JSON only
-            if isinstance(value, (dict, list)):
-                print(json.dumps(value))
-            else:
-                print(value)
-
-            return None
+            results.append({"id": id_str, "field": field, "value": doc[field]})
 
         except Exception as e:
-            print(f"Error reading field: {e}")
-            return None
+            errors.append(f"Error reading '{id_str}': {e}")
 
-    def write(self, id: str, field: str, data: str, force: bool = False):
-        """
-        Write data to a specific field in a document.
+    # Output results
+    if data is not None:
+        if data == "-":
+            for r in results:
+                val = r["value"]
+                print(json.dumps(val) if isinstance(val, (dict, list)) else val)
+        else:
+            with open(data, "w") as f:
+                for r in results:
+                    val = r["value"]
+                    f.write(
+                        (json.dumps(val) if isinstance(val, (dict, list)) else str(val))
+                        + "\n"
+                    )
+    else:
+        for r in results:
+            val = r["value"]
+            print(json.dumps(val) if isinstance(val, (dict, list)) else val)
 
-        Args:
-            id: MongoDB document ID
-            field: Field name to write
-            data: Data to write to the field (use '-' to read from stdin)
-            force: If True, overwrite existing data; if False, skip if field has data
+    for err in errors:
+        print(f"Warning: {err}", file=sys.stderr)
 
-        Returns:
-            True if successful, False otherwise
-        """
+
+def write(id=None, idfile=None, field=None, data=None, force=False):
+    """Write data to a specific field in document(s).
+
+    Arguments:
+      --id      MongoDB ID(s) - single or comma-separated
+      --idfile  File with IDs (one per line) or - for stdin
+      --field   Field name to write (required)
+      --data    Data source: file path, - for stdin
+      --force   Overwrite existing field data
+
+    Examples:
+      echo "value" | ./mongo_rw.py write --field myfield --id ID
+      ./mongo_rw.py write --field bias --id ID --data file.json
+      ./mongo_rw.py write --field status --id ID --force
+    """
+    mongo_uri = os.getenv("MONGO_URI", "mongodb://root:example@localhost:27017")
+    client = MongoClient(mongo_uri)
+    collection = client["rssnews"]["articles"]
+
+    if not field:
+        print("Error: --field is required")
+        return
+
+    ids = parse_ids(id, idfile)
+    if not ids:
+        print("Error: No IDs provided (use --id or --idfile)")
+        return
+
+    # Load data
+    if data is None:
+        data_content = sys.stdin.read().strip()
+        if not data_content:
+            print("Error: No data provided (use --data or stdin)")
+            return
+    elif data == "-":
+        data_content = sys.stdin.read().strip()
+        if not data_content:
+            print("Error: No data provided via stdin")
+            return
+    else:
+        with open(data, "r") as f:
+            data_content = f.read().strip()
+
+    # Parse JSON for bias field
+    final_data = data_content
+    if field == "bias":
         try:
-            # Read from stdin if data is '-'
-            if data == "-":
-                data = sys.stdin.read().strip()
-                if not data:
-                    print("Error: No data received from stdin")
-                    return False
+            final_data = json.loads(data_content)
+        except json.JSONDecodeError:
+            pass
 
-            # If not forcing, check if field already has data using projection
+    success_count = 0
+    errors = []
+
+    for id_str in ids:
+        try:
             if not force:
-                doc = self.collection.find_one(
-                    {"_id": ObjectId(id)},
-                    {field: 1},  # Only fetch the specific field
-                )
+                doc = collection.find_one({"_id": ObjectId(id_str)}, {field: 1})
 
                 if doc is None:
-                    print(f"Error: Document with ID '{id}' not found")
-                    return False
+                    errors.append(f"Document '{id_str}' not found")
+                    continue
 
-                # Check if field exists and has data (not None and not empty string)
                 if field in doc and doc[field] not in (None, ""):
-                    print(
-                        f"Skipped: Field '{field}' already has data. Use --force to overwrite."
+                    errors.append(
+                        f"Skipped '{id_str}': field '{field}' already has data (use --force)"
                     )
-                    return False
+                    continue
 
-            # For bias field, parse JSON string and store as object
-            if field == "bias":
-                try:
-                    data = json.loads(data)
-                except json.JSONDecodeError:
-                    # If not valid JSON, store as-is (legacy behavior)
-                    pass
-
-            # Perform the update
-            result = self.collection.update_one(
-                {"_id": ObjectId(id)}, {"$set": {field: data}}
+            result = collection.update_one(
+                {"_id": ObjectId(id_str)}, {"$set": {field: final_data}}
             )
 
             if result.matched_count == 0:
-                print(f"Error: Document with ID '{id}' not found")
-                return False
-
-            if result.modified_count > 0:
-                print(f"Successfully updated field '{field}'")
+                errors.append(f"Document '{id_str}' not found")
             else:
-                print(f"Field '{field}' already had this value (no change made)")
-
-            return True
+                success_count += 1
 
         except Exception as e:
-            print(f"Error writing field: {e}")
-            return False
+            errors.append(f"Error writing to '{id_str}': {e}")
 
+    if success_count > 0:
+        print(f"Successfully updated {success_count} document(s)")
 
-def main():
-    """Main entry point for Fire CLI."""
-    fire.Fire(MongoFieldTool())
+    for err in errors:
+        print(f"Error: {err}", file=sys.stderr)
 
 
 if __name__ == "__main__":
-    main()
+    commands = {"read": read, "write": write}
+    fire.Fire(commands, name="mongo_rw")

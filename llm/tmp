@@ -1,9 +1,0 @@
-==========
-{
-  "dir": {"L": 0.1, "C": 0.2, "R": 0.7},
-  "deg": {"L": 0.1, "M": 0.2, "H": 0.7},
-  "reason": "The article exhibits strong right-bias through lexical markers like 'organized criminals,' 'attempted murder,' and 'hammers, Molotov cocktails, nail-filled paper bombs,' which frame protesters
-==========
-Prompt: 3574 tokens, 133.521 tokens-per-sec
-Generation: 100 tokens, 2.067 tokens-per-sec
-Peak memory: 18.184 GB
