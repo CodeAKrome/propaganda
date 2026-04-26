@@ -422,6 +422,14 @@ Various focused pipelines for specific tasks.
 | `NUMDAYS` | From `db/timestamp.txt` or today | Date range for processing |
 | `TIMESTAMP_OFFSET` | `3` | Days ago for timestamp |
 
+### Useful Targets
+
+| Target | Description |
+|--------|-------------|
+| `make check-timestamp` | Validate timestamp is recent (within TIMESTAMP_OFFSET days) |
+| `make timestamp` | Generate fresh timestamp file |
+| `make entity` | Extract titles and entities (required before dbscan) |
+
 ---
 
 ## Examples
@@ -445,3 +453,73 @@ make mp3small
 # Run specific entity
 make runhybrid
 ```
+
+---
+
+## Troubleshooting
+
+### Timestamp Issues
+
+**Problem**: Empty vec files ("No articles match the query")
+
+**Cause**: Timestamp is too old - MongoDB has no articles in that date range.
+
+**Solution**:
+```bash
+# Check timestamp status
+make check-timestamp
+
+# Regenerate timestamp (default: 3 days ago)
+make timestamp
+
+# Or manually set specific days
+python db/mktimestamp.py 7
+```
+
+**Problem**: Different targets return different results
+
+**Cause**: Timestamp modified during pipeline run.
+
+**Solution**:
+```bash
+# Run timestamp first, then pipeline
+make timestamp && make testrun
+```
+
+### DBSCAN/Entity Issues
+
+**Problem**: `dbscan` fails with "No articles found"
+
+**Cause**: `entity` target must run before `dbscan` to create `output/titles.tsv`.
+
+**Solution**:
+```bash
+# Run entity first
+make entity
+
+# Then run dbscan
+make dbscan
+
+# Or run the full categorize pipeline
+make categorize
+```
+
+### Performance Issues
+
+**Problem**: `runreport` takes too long (sequential processing)
+
+**Solution**: Use parallel processing:
+```bash
+# Process 4 articles concurrently
+python db/runreport.py hybrid_batch.tsv --parallel 4
+```
+
+See [Report Generation](report.md) for more options.
+
+### Common Error Messages
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| "No articles match the query" | Stale timestamp or no data in MongoDB | Run `make timestamp` |
+| "titles.tsv not found" | `entity` target not run | Run `make entity` |
+| "collection not found" | ChromaDB not initialized | Run `make vector` |

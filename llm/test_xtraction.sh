@@ -1,1 +1,1 @@
-cat llms.txt | parallel -j1 'cat prompt/polxtract.txt prompt/israel.vec | ollama run {} > out/{= s/:/-/g =}.txt'
+cat llms.txt | parallel -j1 'cat prompt/polxtract.txt prompt/israel.vec | ollama run --hidethinking {} > out/{= s/:/-/g =}.txt'

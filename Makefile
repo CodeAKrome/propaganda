@@ -5,20 +5,23 @@ SHELL := /bin/zsh
 TITLEFILE = output/titles.tsv
 NUMDAYS := $(shell cat db/timestamp.txt 2>/dev/null | cut -d'T' -f1)
 NUMDAYS ?= $(shell date +%F)  # fallback to today if file missing
-TIMESTAMP_OFFSET = 3
+TIMESTAMP_OFFSET = 2
 
 .PHONY: mkvecsmallest build load back front vector query mp3 mgconsole testload \
 	thingsthatgo fini ner fner fnervector entity fvector bias mkvec fbias \
 	querysmall mkvecsmall smallthingsthatgo cleanoutput fload oldthingsthatgo \
 	fquerymp3 fquery fmp3 black querysmallest cleanmp3 mp3small smallestthingsthatgo \
 	timestamp testrun dbscan vecdbscan mddbscan biast5 t5server categorize cleantext \
-	runhybrid runreport cyphertograph test2 \
+	runhybrid runreport cyphertograph test2 test3\
 	lora-extract lora-train lora-test lora-serve lora-stop lora-merge lora-validate dashboard
 
 # <=-- Main --=>
 
 testrun: timestamp load ner t5bias vector entity cleantext cleanoutput runhybrid runreport cyphertograph cleanmp3 mp3small dbscan vecdbscan mddbscan fini
-test2: cleanmp3 mp3small dbscan vecdbscan mddbscan fini
+
+test2: timestamp load ner bias vector cleantext cleanoutput entity runhybrid runreport cyphertograph cleanmp3 mp3small dbscan vecdbscan mddbscan fini
+
+test3: timestamp load ner bias vector cleantext cleanoutput entity runhybrid runreport
 smallthingsthatgo: timestamp load ner vector entity mkvecsmall bias mkvecsmall querysmall cleanmp3 mp3small fini
 
 # Doesn't clean db/output or mp3/mp3
@@ -43,6 +46,9 @@ runhybrid:
 runreport:
 	source $(DB_ENV)/bin/activate && cd db && ./runreport.py hybrid_batch.tsv
 
+cleanansi:
+	@for f in $$(find db/output -name "*.md"); do python3 db/filter_ansi.py < "$$f" > "$$f.tmp" && mv "$$f.tmp" "$$f"; done
+
 
 fquerymp3: cleanoutput querysmall cleanmp3 mp3small fini
 
@@ -65,7 +71,7 @@ cleantext:
 	source $(DB_ENV)/bin/activate && cd db && ./clean_article_text.py
 
 dbscan:
-	cd db && (echo "article_id\ttitle" && cut -f3,4 $(TITLEFILE)) > output/titles_dbscan.tsv
+	cd db && (echo "article_id	title" && cut -f3,4 output/titles.tsv) > output/titles_dbscan.tsv
 	source $(DBSCAN_ENV)/bin/activate && cd dbscan && ./main.py --input ../db/output/titles_dbscan.tsv --output ../db/output/categories.json --similarity-threshold 0.68 --min-cluster-size 2
 
 vecdbscan:
@@ -88,6 +94,25 @@ t5server:
 # this is -offset days
 timestamp:
 	db/mktimestamp.py $(TIMESTAMP_OFFSET)
+
+# Check if timestamp is fresh (within TIMESTAMP_OFFSET days)
+check-timestamp:
+	@ts=$$(cat db/timestamp.txt 2>/dev/null | cut -d'T' -f1); \
+	if [ -z "$$ts" ]; then \
+		echo "ERROR: db/timestamp.txt missing - run 'make timestamp'"; \
+		exit 1; \
+	fi; \
+	current=$$(date -u +%Y-%m-%d); \
+	max_days=$$(expr $(TIMESTAMP_OFFSET) + 1); \
+	ts_epoch=$$(date -u -j -f "%Y-%m-%d" "$$ts" +%s 2>/dev/null || echo 0); \
+	current_epoch=$$(date -u +%s); \
+	days_diff=$$(expr \( $$current_epoch - $$ts_epoch \) / 86400); \
+	if [ "$$days_diff" -gt "$$max_days" ]; then \
+		echo "WARNING: Timestamp is stale ($$ts, $$days_diff days old)"; \
+		echo "Expected within $(TIMESTAMP_OFFSET) days - run 'make timestamp'"; \
+		exit 1; \
+	fi; \
+	echo "Timestamp OK: $$ts ($$days_diff days old, within limit)"
 
 black:
 	black db/*.py
@@ -163,12 +188,6 @@ query:
 
 cleanoutput:
 	-rm -rf db/output/*
-#	find /db/output -type f -delete
-#	find db/output -name "*.md" -delete
-#	find db/output -name "*.txt" -delete
-#	find db/output -name "*.vec" -delete
-#	find db/output -name "*.cypher" -delete
-#	find db/output -name "*.reporter" -delete
 
 querysmall:
 	source $(DB_ENV)/bin/activate && cd db && ./batchquery.sh './report.py' $(NUMDAYS)

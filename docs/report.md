@@ -131,8 +131,27 @@ The `runreport` target processes a batch file with format:
 startdate,filename,entity,query
 ```
 
+### Parallel Processing
+
+You can run multiple articles concurrently using the `--parallel` flag:
+
+```bash
+# Process 4 articles at once
+python db/runreport.py hybrid_batch.tsv --parallel 4
+
+# Short form
+python db/runreport.py hybrid_batch.tsv -p 8
+```
+
+**Performance Notes**:
+- Default is 1 (sequential)
+- Memory usage doesn't increase significantly with parallel processing (LLM runs in Ollama)
+- Recommended: 2-4 for typical workloads
+- Higher values may hit rate limits or cause Ollama slowdown
+
 Example `hybrid_batch.tsv`:
 ```
+startdate,filename,entity,query
 -7,iran_news,Iran,Iran developments
 -14,ukraine_war,Ukraine,Ukraine conflict
 -3,climate,Climate,Climate policy

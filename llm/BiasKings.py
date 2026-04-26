@@ -28,6 +28,7 @@ def get_mongo_client():
 def get_top_bias_articles(collection, direction: str, limit: int = 3):
     """
     Get articles with highest bias in specified direction.
+    Only considers articles with high degree (H), then sorts by direction.
 
     Args:
         collection: MongoDB articles collection
@@ -35,26 +36,32 @@ def get_top_bias_articles(collection, direction: str, limit: int = 3):
         limit: Number of results to return
 
     Returns:
-        List of articles sorted by bias in specified direction
+        List of articles with high degree, sorted by direction
     """
-    query = {
-        "bias": {"$exists": True},
-        f"bias.dir.{direction}": {"$exists": True, "$gt": 0},
-    }
+    pipeline = [
+        {
+            "$match": {
+                "bias": {"$exists": True},
+                f"bias.dir.{direction}": {"$exists": True, "$gt": 0},
+                "bias.deg.H": {"$exists": True, "$gt": 0.5},
+            }
+        },
+        {"$sort": {f"bias.dir.{direction}": -1}},
+        {"$limit": limit},
+        {
+            "$project": {
+                "_id": 1,
+                "title": 1,
+                "source": 1,
+                "published": 1,
+                "bias.dir": 1,
+                "bias.deg": 1,
+                "bias.reason": 1,
+            }
+        },
+    ]
 
-    projection = {
-        "_id": 1,
-        "title": 1,
-        "source": 1,
-        "published": 1,
-        "bias.dir": 1,
-        "bias.deg": 1,
-        "bias.reason": 1,
-    }
-
-    sort_field = f"bias.dir.{direction}"
-
-    return list(collection.find(query, projection).sort(sort_field, -1).limit(limit))
+    return list(collection.aggregate(pipeline))
 
 
 def print_results(articles: list, direction: str, label: str):

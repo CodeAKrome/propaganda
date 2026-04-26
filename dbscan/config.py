@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
-
-"""
-Database utility module for managing and accessing data.
-"""
 """
 Configuration constants for the news categorization system.
 """
 
 # Embedding model
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+
+# Batch processing for embeddings
+EMBEDDING_BATCH_SIZE = 32  # Process in batches for memory efficiency
 
 # ChromaDB settings
 COLLECTION_NAME = "news_articles"

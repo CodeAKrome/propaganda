@@ -8,6 +8,8 @@ Performs semantic search using vector embeddings, then filters and optionally re
 
 ## Usage
 
+**Important**: Date arguments with `-N` (e.g., `-7`) mean "N days ago", not "N days from now". This was fixed to correctly look back in time.
+
 ```bash
 python db/hybrid.py [query] [options]
 ```
@@ -29,6 +31,13 @@ python db/hybrid.py [query] [options]
 | `--substr` | Enable substring matching | `--substr` |
 
 ### Date Filtering
+
+**Important**: Date arguments use negative numbers to look back in time:
+- `-7` = 7 days ago
+- `-1` = yesterday
+- `-2` = 2 days ago
+
+The `-N` syntax correctly subtracts N days from the current date.
 
 | Option | Description | Example |
 |--------|-------------|---------|

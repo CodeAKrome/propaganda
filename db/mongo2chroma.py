@@ -34,7 +34,7 @@ MONGO_DB = "rssnews"
 MONGO_COLL = "articles"
 
 CHROMA_PATH = os.getenv("CHROMA_PATH", "./chroma_db")
-CHROMA_COLL = "articles"
+CHROMA_COLL = "news_articles"
 BATCH_SIZE = 32
 
 # Embedding model defaults - can be overridden via CLI

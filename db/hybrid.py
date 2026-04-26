@@ -39,7 +39,7 @@ MONGO_DB = "rssnews"
 MONGO_COLL = "articles"
 
 CHROMA_PATH = os.getenv("CHROMA_PATH", "./chroma_db")  # same persistent path
-CHROMA_COLL = "articles"  # use the same collection as mongo2chroma.py
+CHROMA_COLL = "news_articles"  # use the same collection as mongo2chroma.py
 
 # Embedding model defaults - can be overridden via CLI
 DEFAULT_EMBED_TYPE = (
@@ -107,6 +107,11 @@ class FlairPooledEncoder:
         return TensorWrapper(result)
 
 
+# Lazy-loaded encoder (set on first use)
+_encoder = None
+_embed_type = None
+
+
 def get_encoder(embed_type: str = "flair-pooled", embed_model: str | None = None):
     """
     Lazy-load encoder based on type.
@@ -139,10 +144,6 @@ def get_encoder(embed_type: str = "flair-pooled", embed_model: str | None = None
     return _encoder
 
 
-# Default encoder for backwards compatibility
-encoder = get_encoder()
-
-
 # ----------  re-use helper code from mongo2chroma.py  --------------
 def parse_date_arg(date_str: str) -> datetime:
     if not date_str:
@@ -150,7 +151,12 @@ def parse_date_arg(date_str: str) -> datetime:
     if date_str.startswith("-"):
         remainder = date_str[1:]
         if remainder.isdigit():
-            return datetime.now() + timedelta(days=int(remainder))
+            # Use UTC now and subtract days (look back in time)
+            from datetime import timezone
+
+            return datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(
+                days=int(remainder)
+            )
         raise ValueError(f"Invalid relative date format: {date_str}")
     try:
         return datetime.fromisoformat(date_str)
@@ -309,7 +315,7 @@ def main(argv=None):
         # Default to flair-pooled
         embed_type, embed_model = "flair-pooled", None
 
-    # Get the appropriate encoder
+    # Get the appropriate encoder (pass the determined embed_type)
     encoder = get_encoder(embed_type, embed_model)
 
     and_entities = parse_entity_list(args.andentity)

@@ -2,16 +2,49 @@
 
 """
 Database utility module for managing and accessing data.
+
+Improvements:
+- Error handling with retry logic
+- Timeout handling for LLM calls
+- Graceful degradation on failure
+- Logging instead of print statements
 """
 
 import sys
 import subprocess
 import os
+import time
+import logging
 from pathlib import Path
+from typing import Optional, Tuple, List
+from dataclasses import dataclass
+
 import fire
 
 
-def count_ids(vec_file):
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class CommandResult:
+    """Result of a command execution."""
+
+    exit_code: int
+    success: bool
+    stdout: str = ""
+    stderr: str = ""
+    duration_ms: int = 0
+
+
+LLM_TIMEOUT_SEC = 600  # 10 minutes max per request
+MAX_RETRIES = 2
+
+
+def count_ids(vec_file: str) -> int:
     """Count the number of 'ID:' entries in the vec file."""
     try:
         with open(vec_file, "r") as f:
@@ -20,22 +53,50 @@ def count_ids(vec_file):
         return 0
 
 
-def run_command(cmd, timeout_sec=600):
-    """Run a shell command with timeout and return exit code and success status."""
+def run_command(
+    cmd: str, timeout_sec: int = LLM_TIMEOUT_SEC, retry_count: int = 0
+) -> Tuple[int, bool]:
+    """
+    Run a shell command with timeout and return exit code and success status.
+    Includes retry logic for transient failures.
+    """
     try:
+        start_time = time.time()
         result = subprocess.run(
             cmd, shell=True, timeout=timeout_sec, capture_output=True, text=True
         )
-        return result.returncode, result.returncode == 0
+        duration_ms = int((time.time() - start_time) * 1000)
+
+        if result.returncode == 0:
+            logger.debug(f"Command succeeded in {duration_ms}ms: {cmd[:50]}...")
+            return result.returncode, True
+
+        # Command failed - retry if we haven't exceeded retry count
+        if retry_count < MAX_RETRIES:
+            logger.warning(
+                f"Command failed (exit {result.returncode}), retrying ({retry_count + 1}/{MAX_RETRIES})"
+            )
+            time.sleep(1)  # Brief pause before retry
+            return run_command(cmd, timeout_sec, retry_count + 1)
+
+        logger.error(f"Command failed after {MAX_RETRIES} retries: {cmd[:50]}...")
+        return result.returncode, False
+
     except subprocess.TimeoutExpired:
-        print(f"Command timed out after {timeout_sec}s", file=sys.stderr)
-        return 124, False  # timeout exit code
+        logger.error(f"Command timed out after {timeout_sec}s")
+        return 124, False
     except Exception as e:
-        print(f"Command failed with exception: {e}", file=sys.stderr)
+        logger.error(f"Command failed with exception: {e}")
         return 1, False
 
 
-def cypher(pairs, svo_prompt, vec_file, cypher_file):
+def cypher(
+    pairs: List[str],
+    svo_prompt: str,
+    vec_file: str,
+    cypher_file: str,
+    timeout_sec: int = LLM_TIMEOUT_SEC,
+) -> bool:
     """Generate cypher relationships with failover between different LLM providers."""
     remaining_pairs = list(pairs)
 
@@ -43,63 +104,65 @@ def cypher(pairs, svo_prompt, vec_file, cypher_file):
         src = remaining_pairs[0]
         model = remaining_pairs[1]
 
-        print(f"Trying cypher with {src}: {model}")
+        logger.info(f"Trying cypher with {src}: {model}")
 
         # Clear previous output
         Path(cypher_file).write_text("")
 
         # Build command based on source
         if src == "ollama":
-            cmd = f"cat {svo_prompt} {vec_file} | ollama run --hidethinking {model} 2>/dev/null | sort | uniq > {cypher_file}"
+            cmd = f"cat {svo_prompt} {vec_file} | ollama run --hidethinking --nowordwrap gpt-oss:120b 2>/dev/null > {cypher_file}.tmp && python3 filter_ansi.py < {cypher_file}.tmp > {cypher_file} && rm {cypher_file}.tmp"
         elif src == "gemini":
             cmd = f"cat {svo_prompt} {vec_file} | ./gemini.py {model} 2>/dev/null | sort | uniq > {cypher_file}"
         elif src == "mlx":
             cmd = f"cat {svo_prompt} {vec_file} | ./mlxllm.py - --model {model} 2>/dev/null | sort | uniq > {cypher_file}"
         else:
-            print(f"Unknown cypher source: {src}", file=sys.stderr)
+            logger.warning(f"Unknown cypher source: {src}")
             remaining_pairs = remaining_pairs[2:]
             continue
 
-        print(f"cyphering: {cmd}", file=sys.stderr)
-        exit_code, _ = run_command(cmd)
+        logger.debug(f"cyphering: {cmd[:80]}...")
+        exit_code, success = run_command(cmd, timeout_sec)
 
         # Check if file has content
         file_exists = Path(cypher_file).exists()
         file_size = Path(cypher_file).stat().st_size if file_exists else 0
 
-        print(
-            f"Debug: exit_code={exit_code}, file exists={file_exists}, size={file_size} bytes",
-            file=sys.stderr,
+        logger.debug(
+            f"Debug: exit_code={exit_code}, file exists={file_exists}, size={file_size} bytes"
         )
 
-        if exit_code == 0 and file_size > 0:
-            print(f"Cypher succeeded with {src}: {model}")
+        if success and file_size > 0:
+            logger.info(f"Cypher succeeded with {src}: {model}")
             return True
         else:
-            print(
-                f"Cypher failed with {src}: {model} (exit_code: {exit_code})",
-                file=sys.stderr,
+            logger.warning(
+                f"Cypher failed with {src}: {model} (exit_code: {exit_code})"
             )
 
             # Remove failed pair, but keep if it's the last one
             if len(remaining_pairs) > 2:
-                print(
-                    f"Removing failed model {src}: {model} from retry list",
-                    file=sys.stderr,
-                )
+                logger.info(f"Removing failed model {src}: {model} from retry list")
                 remaining_pairs = remaining_pairs[2:]
             else:
-                print("Last model failed, stopping attempts", file=sys.stderr)
+                logger.error("Last model failed, stopping attempts")
                 break
 
-    print("All cypher attempts failed.", file=sys.stderr)
+    logger.error("All cypher attempts failed.")
     Path(cypher_file).write_text("")  # empty file on total failure
     return False
 
 
 def report(
-    pairs, reporter_prompt, cypher_file, reporter_file, vec_file, news_file, query
-):
+    pairs: List[str],
+    reporter_prompt: str,
+    cypher_file: str,
+    reporter_file: str,
+    vec_file: str,
+    news_file: str,
+    query: str,
+    timeout_sec: int = LLM_TIMEOUT_SEC,
+) -> bool:
     """Generate report with failover between different LLM providers."""
     remaining_pairs = list(pairs)
 
@@ -117,56 +180,60 @@ def report(
         src = remaining_pairs[0]
         model = remaining_pairs[1]
 
-        print(f"Trying report with {src}: {model}", file=sys.stderr)
+        logger.info(f"Trying report with {src}: {model}")
 
         # Clear previous output
         Path(news_file).write_text("")
 
         # Build command based on source
         if src == "ollama":
-            cmd = f"cat {reporter_file} {vec_file} | ollama run --hidethinking {model} > {news_file} 2>/dev/null"
+            cmd = f"cat {reporter_file} {vec_file} | ollama run --hidethinking --nowordwrap gpt-oss:120b 2>/dev/null > {news_file}.tmp && python3 filter_ansi.py < {news_file}.tmp > {news_file} && rm {news_file}.tmp"
         elif src == "gemini":
             cmd = f"cat {reporter_file} {vec_file} | ./gemini.py {model} > {news_file} 2>/dev/null"
         elif src == "mlx":
             cmd = f"cat {reporter_file} {vec_file} | ./mlxllm.py - --model {model} > {news_file} 2>/dev/null"
         else:
-            print(f"Unknown report source: {src}", file=sys.stderr)
+            logger.warning(f"Unknown report source: {src}")
             remaining_pairs = remaining_pairs[2:]
             continue
 
-        exit_code, _ = run_command(cmd)
+        exit_code, success = run_command(cmd, timeout_sec)
 
         # Check if file has content
         file_exists = Path(news_file).exists()
         file_size = Path(news_file).stat().st_size if file_exists else 0
-        output_empty = "yes" if file_size == 0 else "no"
+        output_empty = file_size == 0
 
-        if exit_code == 0 and file_size > 0:
-            print(f"Report succeeded with {src}: {model}", file=sys.stderr)
+        if success and not output_empty:
+            logger.info(f"Report succeeded with {src}: {model}")
             return True
         else:
-            print(
-                f"Report failed with {src}: {model} (exit_code: {exit_code}, output empty: {output_empty})",
-                file=sys.stderr,
+            logger.warning(
+                f"Report failed with {src}: {model} (exit_code: {exit_code}, output empty: {output_empty})"
             )
 
             # Remove failed pair, but keep if it's the last one
             if len(remaining_pairs) > 2:
-                print(
-                    f"Removing failed model {src}: {model} from retry list",
-                    file=sys.stderr,
-                )
+                logger.info(f"Removing failed model {src}: {model} from retry list")
                 remaining_pairs = remaining_pairs[2:]
             else:
-                print("Last model failed, stopping attempts", file=sys.stderr)
+                logger.error("Last model failed, stopping attempts")
                 break
 
-    print("All report attempts failed.", file=sys.stderr)
+    logger.error("All report attempts failed.")
     Path(news_file).write_text("Nothing relevant found or generation failed.")
     return False
 
 
-def main(startdate, filename, entity, query, svoprompt="prompt/kgsvo.txt", workdir="output"):
+def main(
+    startdate: str,
+    filename: str,
+    entity: str,
+    query: str,
+    svoprompt: str = "prompt/kgsvo.txt",
+    workdir: str = "output",
+    timeout: int = LLM_TIMEOUT_SEC,
+):
     """
     Generate news reports from vector files using LLM analysis.
 
@@ -177,6 +244,7 @@ def main(startdate, filename, entity, query, svoprompt="prompt/kgsvo.txt", workd
         query: Query string for the report
         svoprompt: Path to SVO prompt file (default: prompt/kgsvo.txt)
         workdir: Directory for input/output files (default: output)
+        timeout: Timeout for LLM calls in seconds (default: 300)
     """
     # File paths
     vec = f"{workdir}/{filename}.vec"
@@ -188,10 +256,11 @@ def main(startdate, filename, entity, query, svoprompt="prompt/kgsvo.txt", workd
 
     # Count entries
     count = count_ids(vec)
-    print(f"{filename}\t{startdate}\t{count}")
+    logger.info(f"{filename}\t{startdate}\t{count}")
 
     # Exit if no entries
     if count == 0:
+        logger.warning(f"No articles found for {filename}, skipping")
         return
 
     # Reporter prompt
@@ -236,40 +305,31 @@ Use a professional newscaster tone like Walter Kronkite.
 Only reply with what the reporter says, not any stage direction like musical intros or camera direction.
 Do not use markup. Do not make tables. Reply with plain text only."""
 
-    # Model configurations - define your preferred failover order
-#    cypher_pairs = ["ollama", "gpt-oss:120b"]
-
+    # Model configurations - use only gpt-oss:120b via Ollama
     cypher_pairs = [
-        "gemini",
-        "models/gemini-3.1-pro-preview",
-        "gemini",
-        "models/gemini-3-flash-preview",
-        "gemini",
-        "models/gemini-pro-latest",
-        "gemini",
-        "models/gemini-flash-latest",
         "ollama",
         "gpt-oss:120b",
     ]
 
     report_pairs = [
-        "gemini",
-        "models/gemini-3.1-pro-preview",
-        "gemini",
-        "models/gemini-3-flash-preview",
-        "gemini",
-        "models/gemini-pro-latest",
-        "gemini",
-        "models/gemini-flash-latest",
         "ollama",
         "gpt-oss:120b",
     ]
 
-    # Run cypher generation
-    cypher(cypher_pairs, svo_prompt, vec, cypherfile)
+    # Run cypher generation with timeout
+    cypher(cypher_pairs, svo_prompt, vec, cypherfile, timeout_sec=timeout)
 
-    # Run report generation
-    report(report_pairs, reporter_prompt, cypherfile, reporterfile, vec, news, query)
+    # Run report generation with timeout
+    report(
+        report_pairs,
+        reporter_prompt,
+        cypherfile,
+        reporterfile,
+        vec,
+        news,
+        query,
+        timeout_sec=timeout,
+    )
 
 
 if __name__ == "__main__":

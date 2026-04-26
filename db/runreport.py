@@ -3,6 +3,7 @@
 """
 Database utility module for managing and accessing data.
 """
+
 """
 runreport.py
 Batch runner for report.py using a tab-delimited configuration file.
@@ -59,6 +60,13 @@ def main():
         default=None,
         help="Run only this row number (1-indexed, excluding header)",
     )
+    parser.add_argument(
+        "--parallel",
+        "-p",
+        type=int,
+        default=1,
+        help="Number of articles to process concurrently (default: 1)",
+    )
     args = parser.parse_args()
 
     # Read TSV
@@ -76,46 +84,97 @@ def main():
             sys.exit(1)
 
     total = len(rows)
-    print(f"{'DRY RUN: ' if args.dry_run else ''}Processing {total} reports from {args.tsv}", file=sys.stderr)
+    print(
+        f"{'DRY RUN: ' if args.dry_run else ''}Processing {total} reports from {args.tsv}",
+        file=sys.stderr,
+    )
+    if args.parallel > 1:
+        print(f"  Running with --parallel {args.parallel}", file=sys.stderr)
 
     if not args.dry_run:
         import report
+        import concurrent.futures
 
-    for i, (row_num, row) in enumerate(rows, start=1):
-        label = (row.get("label") or "").strip() or f"row-{row_num}"
-        query = (row.get("query") or "").strip()
-        entity = (row.get("orentity") or row.get("andentity") or "").strip()
-        start_date = (row.get("start_date") or "").strip()
+        def process_row(args_tuple):
+            row_num, row, svoprompt, output = args_tuple
+            label = (row.get("label") or "").strip() or f"row-{row_num}"
+            query = (row.get("query") or "").strip()
+            entity = (row.get("orentity") or row.get("andentity") or "").strip()
+            start_date = (row.get("start_date") or "").strip()
 
-        vec_path = os.path.join(args.output, f"{label}.vec")
-        news_path = os.path.join(args.output, f"{label}.md")
+            vec_path = os.path.join(output, f"{label}.vec")
+            news_path = os.path.join(output, f"{label}.md")
 
-        print(f"\n{'='*72}", file=sys.stderr)
-        print(f"[{i}/{total}] {label}", file=sys.stderr)
-        print(f"  vec:   {vec_path}", file=sys.stderr)
-        print(f"  out:   {news_path}", file=sys.stderr)
-        print(f"  query: {query[:80]}{'...' if len(query) > 80 else ''}", file=sys.stderr)
-        print(f"{'='*72}", file=sys.stderr)
-
-        if args.dry_run:
-            exists = os.path.exists(vec_path)
-            print(f"report.main('{start_date}', '{label}', '{entity}', '{query}', svoprompt='{args.svoprompt}', workdir='{args.output}')  [{vec_path} {'exists' if exists else 'MISSING'}]")
-        else:
             if not os.path.exists(vec_path):
-                print(f"  SKIP: {vec_path} not found", file=sys.stderr)
-                continue
+                return (label, "SKIP", "vec not found")
+
             try:
                 report.main(
                     startdate=start_date,
                     filename=label,
                     entity=entity,
                     query=query,
-                    svoprompt=args.svoprompt,
-                    workdir=args.output,
+                    svoprompt=svoprompt,
+                    workdir=output,
                 )
-                print(f"  wrote {news_path}", file=sys.stderr)
+                return (label, "OK", news_path)
             except Exception as e:
-                print(f"ERROR on row {row_num} ({label}): {e}", file=sys.stderr)
+                return (label, "ERROR", str(e))
+
+        # Prepare args for parallel processing
+        process_args = [
+            (row_num, row, args.svoprompt, args.output) for row_num, row in rows
+        ]
+
+        # Run in parallel
+        completed = 0
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=args.parallel
+        ) as executor:
+            futures = {executor.submit(process_row, pa): pa for pa in process_args}
+            for future in concurrent.futures.as_completed(futures):
+                label, status, detail = future.result()
+                completed += 1
+                if status == "OK":
+                    print(
+                        f"[{completed}/{total}] {label}: wrote {detail}",
+                        file=sys.stderr,
+                    )
+                elif status == "SKIP":
+                    print(
+                        f"[{completed}/{total}] {label}: SKIP - {detail}",
+                        file=sys.stderr,
+                    )
+                else:
+                    print(
+                        f"[{completed}/{total}] {label}: ERROR - {detail}",
+                        file=sys.stderr,
+                    )
+    else:
+        # Sequential dry-run mode
+        for i, (row_num, row) in enumerate(rows, start=1):
+            label = (row.get("label") or "").strip() or f"row-{row_num}"
+            query = (row.get("query") or "").strip()
+            entity = (row.get("orentity") or row.get("andentity") or "").strip()
+            start_date = (row.get("start_date") or "").strip()
+
+            vec_path = os.path.join(args.output, f"{label}.vec")
+            news_path = os.path.join(args.output, f"{label}.md")
+
+            print(f"\n{'=' * 72}", file=sys.stderr)
+            print(f"[{i}/{total}] {label}", file=sys.stderr)
+            print(f"  vec:   {vec_path}", file=sys.stderr)
+            print(f"  out:   {news_path}", file=sys.stderr)
+            print(
+                f"  query: {query[:80]}{'...' if len(query) > 80 else ''}",
+                file=sys.stderr,
+            )
+            print(f"{'=' * 72}", file=sys.stderr)
+
+            exists = os.path.exists(vec_path)
+            print(
+                f"report.main('{start_date}', '{label}', '{entity}', '{query}', svoprompt='{args.svoprompt}', workdir='{args.output}')  [{vec_path} {'exists' if exists else 'MISSING'}]"
+            )
 
 
 if __name__ == "__main__":
