@@ -130,7 +130,7 @@ def sanitize_id(name: str) -> str:
 
 def escape_html(text: str) -> str:
     """Escape HTML special characters."""
-    return text.replace('&', '&').replace('<', '<').replace('>', '>').replace('"', '"').replace("'", "'")
+    return text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;').replace("'", "&#39;")
 
 
 def escape_js(text: str) -> str:
@@ -203,18 +203,12 @@ def generate_dot(nodes: set, edges: list, title: str) -> str:
 
 def generate_html(nodes: set, edges: list, title: str) -> str:
     """Generate interactive HTML using vis.js with entity-based colors and shapes."""
-    
+
     # Pre-process nodes and edges
     sorted_nodes = sorted(nodes)
     node_to_idx = {node: i for i, node in enumerate(sorted_nodes)}
-    
+
     # Build nodes data with entity-based styling
-    nodes_json = []
-    for i, node in enumerate(sorted_nodes):
-        entity_info = detect_entity_type(node)
-        escaped_label = escape_js(node)
-        
-        # Build nodes data with entity-based styling
     nodes_json = []
     for i, node in enumerate(sorted_nodes):
         entity_info = detect_entity_type(node)

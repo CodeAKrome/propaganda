@@ -17,12 +17,6 @@ import re
 import sys
 from datetime import datetime
 
-...
-import os
-import re
-import sys
-from datetime import datetime
-
 import pymongo
 from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 from bson import ObjectId

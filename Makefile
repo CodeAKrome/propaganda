@@ -1,5 +1,6 @@
 CONDA_MP3_ENV = kokoro
 DB_ENV = db/.venv
+CONDA_NER_ENV = flair
 DBSCAN_ENV = dbscan/.venv
 SHELL := /bin/zsh
 TITLEFILE = output/titles.tsv
@@ -12,16 +13,16 @@ TIMESTAMP_OFFSET = 2
 	querysmall mkvecsmall smallthingsthatgo cleanoutput fload oldthingsthatgo \
 	fquerymp3 fquery fmp3 black querysmallest cleanmp3 mp3small smallestthingsthatgo \
 	timestamp testrun dbscan vecdbscan mddbscan biast5 t5server categorize cleantext \
-	runhybrid runreport cyphertograph test2 test3\
+	runhybrid runreport cyphertograph test2 test3 clear-vector\
 	lora-extract lora-train lora-test lora-serve lora-stop lora-merge lora-validate dashboard
 
 # <=-- Main --=>
 
 testrun: timestamp load ner t5bias vector entity cleantext cleanoutput runhybrid runreport cyphertograph cleanmp3 mp3small dbscan vecdbscan mddbscan fini
 
-test2: timestamp load ner bias vector cleantext cleanoutput entity runhybrid runreport cyphertograph cleanmp3 mp3small dbscan vecdbscan mddbscan fini
+test2: timestamp load ner bias vector cleantext cleanoutput entity runhybrid runreport cyphertograph cleanmp3 mp3small dbscan vecdbscan mddbscan cleanclusteransi fini
 
-test3: timestamp load ner bias vector cleantext cleanoutput entity runhybrid runreport
+test3: cyphertograph cleanmp3 mp3small dbscan vecdbscan mddbscan fini
 smallthingsthatgo: timestamp load ner vector entity mkvecsmall bias mkvecsmall querysmall cleanmp3 mp3small fini
 
 # Doesn't clean db/output or mp3/mp3
@@ -34,6 +35,11 @@ oldthingsthatgo: entity mkvecsmall bias mkvecsmall querysmall cleanmp3 mp3small 
 thingsthatgo: load ner vector entity mkvec bias query mp3 fini
 
 # new stuff, just query
+nerserver:
+	source $$(conda info --base)/etc/profile.d/conda.sh && \
+	conda activate $(CONDA_NER_ENV) && \
+	cd ner && \
+	./ner.py
 cyphertograph:
 	db/cypher_to_graph.py
 iran:
@@ -48,6 +54,9 @@ runreport:
 
 cleanansi:
 	@for f in $$(find db/output -name "*.md"); do python3 db/filter_ansi.py < "$$f" > "$$f.tmp" && mv "$$f.tmp" "$$f"; done
+
+cleanclusteransi:
+	@for f in $$(find db/cluster -name "*.md"); do python3 db/filter_ansi.py < "$$f" > "$$f.tmp" && mv "$$f.tmp" "$$f"; done
 
 
 fquerymp3: cleanoutput querysmall cleanmp3 mp3small fini
@@ -144,7 +153,11 @@ dashboard:
 	cd dashboard && source .venv/bin/activate && streamlit run app.py
 # read data from mongodb and create vectors in chroma
 vector:
-	@source $(DB_ENV)/bin/activate && cd db && ./mongo2chroma.py load --start-date $(NUMDAYS) --force
+	@source $(DB_ENV)/bin/activate && cd db && ./mongo2chroma.py load --start-date $(NUMDAYS)
+
+# explicitly clear the ChromaDB vector database
+clear-vector:
+	@source $(DB_ENV)/bin/activate && cd db && ./mongo2chroma.py load --force
 # Do NER
 ner:
 	cd ner-hub && go run . --start-date $(NUMDAYS) endpoints.tsv

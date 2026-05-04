@@ -108,9 +108,6 @@ class FlairPooledEncoder:
 
 
 # Lazy-loaded encoder (set on first use)
-_encoder = None
-_embed_type = None
-
 
 def get_encoder(embed_type: str = "flair-pooled", embed_model: str | None = None):
     """
@@ -227,6 +224,128 @@ def debug(msg: str):
 
 
 # ------------------------------------------------------------------
+# SVO cypher generation: one LLM call per article, stored to MongoDB
+# ------------------------------------------------------------------
+SVO_PROMPT_PATH = os.path.join(os.path.dirname(__file__), "prompt", "kgsvo.txt")
+SVO_TIMEOUT_SEC = 600
+ERROR_LOG = os.path.join(os.path.dirname(__file__), "output", "svo_errors.txt")
+
+
+def _run_ollama_svo(article_text: str) -> str:
+    """Call Ollama with the SVO prompt on a single article. Returns the raw output."""
+    import subprocess
+    import tempfile
+    import uuid
+
+    prompt_path = SVO_PROMPT_PATH
+    if not os.path.exists(prompt_path):
+        return f"[ERROR: SVO prompt not found at {prompt_path}]"
+
+    tmp_id = uuid.uuid4().hex[:8]
+    tmp_out = f"/tmp/svo_{tmp_id}.out"
+    tmp_filtered = f"/tmp/svo_{tmp_id}.filtered"
+
+    try:
+        cmd = (
+            f"printf '%s\\n' {repr(article_text)} | "
+            f"cat {prompt_path} - | "
+            f"ollama run --hidethinking --nowordwrap gpt-oss:120b 2>/dev/null > {tmp_out} && "
+            f"python3 {os.path.join(os.path.dirname(__file__), 'filter_ansi.py')} < {tmp_out} > {tmp_filtered} && "
+            f"cat {tmp_filtered}"
+        )
+        result = subprocess.run(
+            cmd, shell=True, timeout=SVO_TIMEOUT_SEC, capture_output=True, text=True
+        )
+        return (
+            result.stdout
+            if result.returncode == 0
+            else f"[ERROR: exit {result.returncode}]"
+        )
+    except subprocess.TimeoutExpired:
+        return "[ERROR: timeout]"
+    except Exception as e:
+        return f"[ERROR: {e}]"
+    finally:
+        for f in (tmp_out, tmp_filtered):
+            try:
+                os.unlink(f)
+            except OSError:
+                pass
+
+
+def generate_svo_for_articles(hit_ids: List[str], skip_existing: bool = True) -> None:
+    """
+    Generate SVO relationships for each article in hit_ids and store in MongoDB.
+
+    Each article gets its own LLM call. Results are stored in MongoDB fields
+    'svo' (raw triplets, one per line) and 'svo_llm' (full LLM output, optional).
+    """
+    os.makedirs(os.path.dirname(ERROR_LOG), exist_ok=True)
+
+    filter_spec = {"_id": {"$in": [ObjectId(i) for i in hit_ids]}}
+    if skip_existing:
+        filter_spec["svo"] = {"$exists": False}
+
+    count = mongo_coll.count_documents(filter_spec)
+    debug(f"SVO generation: {count} articles to process")
+
+    if count == 0:
+        print("All articles already have svo, skipping.", file=sys.stderr)
+        return
+
+    cursor = mongo_coll.find(filter_spec, {"_id": 1, "article": 1, "svo": 1})
+    processed = 0
+    errors = 0
+
+    for doc in cursor:
+        oid = doc["_id"]
+        article_text = doc.get("article", "")
+        if not article_text:
+            continue
+
+        # Truncate very long articles to avoid token overflow (approx 32k tokens)
+        if len(article_text) > 80000:
+            article_text = article_text[:80000]
+
+        output = _run_ollama_svo(article_text)
+
+        if output.startswith("[ERROR:"):
+            errors += 1
+            with open(ERROR_LOG, "a") as elog:
+                elog.write(f"{str(oid)}: {output}\n")
+            mongo_coll.update_one(
+                {"_id": oid}, {"$set": {"svo": f"[ERROR: {output[8:-1]}]"}}
+            )
+        else:
+            # Extract valid triplet lines (lines matching the ("s","p","o","d") format)
+            triplet_lines = [
+                line.strip()
+                for line in output.split("\n")
+                if line.strip().startswith('("')
+            ]
+            svo_text = "\n".join(triplet_lines)
+            mongo_coll.update_one(
+                {"_id": oid},
+                {
+                    "$set": {
+                        "svo": svo_text,
+                        "svo_llm": output,
+                    }
+                },
+            )
+
+        processed += 1
+        if processed % 10 == 0:
+            debug(f"SVO progress: {processed}/{count} articles processed")
+
+    debug(f"SVO complete: {processed} processed, {errors} errors")
+    print(
+        f"SVO generation complete: {processed} processed, {errors} errors. Errors logged to {ERROR_LOG}",
+        file=sys.stderr,
+    )
+
+
+# ------------------------------------------------------------------
 def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Hybrid ChromaDB vector search with metadata filtering"
@@ -303,6 +422,24 @@ def main(argv=None):
         "--substr",
         action="store_true",
         help="Enable substring matching for entity searches. Entity query will match if it appears as a substring within any entity.",
+    )
+    parser.add_argument(
+        "--cypher",
+        action="store_true",
+        default=True,
+        help="Generate SVO cypher per article and store in MongoDB fields 'svo' and 'svo_llm'.",
+    )
+    parser.add_argument(
+        "--no-svo",
+        action="store_true",
+        default=True,
+        help="Skip articles that already have a 'svo' field in MongoDB (used with --cypher).",
+    )
+    parser.add_argument(
+        "--cypher-only",
+        action="store_true",
+        default=False,
+        help="Only generate cypher, skip the search output display.",
     )
     args = parser.parse_args(argv)
 
@@ -763,6 +900,12 @@ def main(argv=None):
         debug("No results found.")
         print("No articles match the query.")
         return
+
+    # --- SVO cypher generation per article ---
+    if args.cypher:
+        generate_svo_for_articles(hit_ids, skip_existing=args.no_svo)
+        if args.cypher_only:
+            return
 
     # Write IDs to file if requested
     if args.ids:

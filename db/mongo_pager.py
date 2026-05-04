@@ -153,7 +153,7 @@ class DocumentView(Static):
         """Update navigation button states based on current position"""
         can_go_prev = self.current_doc_index > 0 or (self.app_ref and self.app_ref.page > 0)
         can_go_next = (self.current_doc_index < len(self.docs_list) - 1) or \
-                      (self.app_ref and (self.app_ref.page + 1) * PAGE_SIZE < self.app_ref.total_docs)
+                      (self.app_ref and (self.app_ref.page + 1) * self.app_ref.page_size < self.app_ref.total_docs)
         
         self.query_one("#prev-doc", Button).disabled = not can_go_prev
         self.query_one("#next-doc", Button).disabled = not can_go_next
@@ -290,6 +290,7 @@ class MongoPager(App):
         self.collection = None
         self.current_docs = []
         self.term_height = 24
+        self.page_size = PAGE_SIZE
         
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
@@ -325,11 +326,10 @@ class MongoPager(App):
         try:
             size = shutil.get_terminal_size()
             self.term_height = size.lines
-            global PAGE_SIZE
             # Calculate optimal page size based on terminal height
             # Reserve 8 lines for header, footer, controls, and margins
             available_lines = max(10, size.lines - 8)
-            PAGE_SIZE = available_lines
+            self.page_size = available_lines
         except:
             pass
     
@@ -382,11 +382,11 @@ class MongoPager(App):
         try:
             self.update_terminal_size()  # Recalculate page size on each load
             self.total_docs = self.collection.count_documents(self.filter_query)
-            skip = self.page * PAGE_SIZE
+            skip = self.page * self.page_size
             cursor = self.collection.find(self.filter_query)\
                 .sort("published", -1)\
                 .skip(skip)\
-                .limit(PAGE_SIZE)
+                .limit(self.page_size)
             
             self.current_docs = list(cursor)
             
@@ -446,14 +446,14 @@ class MongoPager(App):
     
     def update_pagination(self):
         """Update page counter"""
-        total_pages = max(1, (self.total_docs + PAGE_SIZE - 1) // PAGE_SIZE)
+        total_pages = max(1, (self.total_docs + self.page_size - 1) // self.page_size)
         current = min(self.page + 1, total_pages)
         
         info = f"{current}/{total_pages}"
         self.query_one("#page-info", Static).update(info)
         
         self.query_one("#prev", Button).disabled = self.page == 0
-        self.query_one("#next", Button).disabled = (self.page + 1) * PAGE_SIZE >= self.total_docs
+        self.query_one("#next", Button).disabled = (self.page + 1) * self.page_size >= self.total_docs
     
     def check_view_visible(self) -> bool:
         """Check if document view is currently visible"""
@@ -463,7 +463,7 @@ class MongoPager(App):
     def action_next_page(self):
         if self.check_view_visible():
             return
-        if (self.page + 1) * PAGE_SIZE < self.total_docs:
+        if (self.page + 1) * self.page_size < self.total_docs:
             self.page += 1
             self.load_data()
     
@@ -518,7 +518,7 @@ class MongoPager(App):
         
         if event.key == "down" or event.key == "j":
             if cursor_row == len(self.current_docs) - 1 and len(self.current_docs) > 0:
-                if (self.page + 1) * PAGE_SIZE < self.total_docs:
+                if (self.page + 1) * self.page_size < self.total_docs:
                     self.page += 1
                     self.load_data()
                     event.stop()
