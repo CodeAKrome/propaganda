@@ -7,6 +7,7 @@ TITLEFILE = output/titles.tsv
 NUMDAYS := $(shell cat db/timestamp.txt 2>/dev/null | cut -d'T' -f1)
 NUMDAYS ?= $(shell date +%F)  # fallback to today if file missing
 TIMESTAMP_OFFSET = 2
+SLACK_VECTOR = 3333
 
 .PHONY: mkvecsmallest build load back front vector query mp3 mgconsole testload \
 	thingsthatgo fini ner fner fnervector entity fvector bias mkvec fbias \
@@ -153,7 +154,7 @@ dashboard:
 	cd dashboard && source .venv/bin/activate && streamlit run app.py
 # read data from mongodb and create vectors in chroma
 vector:
-	@source $(DB_ENV)/bin/activate && cd db && ./mongo2chroma.py load --start-date -2
+	@source $(DB_ENV)/bin/activate && cd db && ./mongo2chroma.py load --start-date -2 --slack $(SLACK_VECTOR)
 
 # explicitly clear the ChromaDB vector database
 clear-vector:

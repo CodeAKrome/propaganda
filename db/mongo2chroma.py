@@ -262,8 +262,14 @@ def load_into_chroma(
     force: bool = False,
     embed_type: str = "flair-pooled",
     embed_model: Optional[str] = None,
+    slack: Optional[int] = None,
 ) -> int:
-    """Embed every article and add into Chroma."""
+    """Embed every article and add into Chroma.
+
+    If slack is provided, after loading articles in the date range, if fewer than
+    slack articles were processed, continue loading additional older articles
+    (backfilling) until total processed >= slack.
+    """
     from tqdm import tqdm
 
     collection = get_chroma_collection()
@@ -368,6 +374,96 @@ def load_into_chroma(
 
     if skipped > 0:
         print(f"Skipped {skipped} documents already in Chroma (use --force to reload)")
+
+    # Slack logic: if fewer than slack articles processed, backfill with older articles
+    if slack is not None and stored < slack:
+        additional_needed = slack - stored
+        print(f"Slack target: {slack}, processed: {stored}, need {additional_needed} more - backfilling older articles")
+
+        # Get all existing ChromaDB IDs to avoid duplicates
+        existing_ids = set(collection.get(include=["ids"])["ids"])
+
+        # Build query for articles NOT in ChromaDB, sorted by published descending
+        backfill_q = {
+            "article": {"$exists": True, "$ne": None},
+            "$or": [
+                {"fetch_error": {"$exists": False}},
+                {"fetch_error": {"$in": [None, ""]}},
+            ],
+            "_id": {"$nin": [ObjectId(i) for i in existing_ids if ObjectId.is_valid(i)]},
+        }
+
+        # Don't apply date filter for backfill - go back as far as needed
+        # But respect entity filters if present
+        if and_entities or or_entities:
+            entity_filter = build_mongo_entity_filter(and_entities, or_entities)
+            if entity_filter:
+                backfill_q.update(entity_filter)
+
+        # Get total additional docs available
+        additional_docs = mongo_coll.count_documents(backfill_q)
+        print(f"Found {additional_docs} additional articles to backfill")
+
+        if additional_docs > 0:
+            with tqdm(total=additional_needed, desc="Backfilling") as pbar:
+                for batch in batch_load_from_mongo(
+                    backfill_q, projection, batch_size=1000, limit=additional_needed
+                ):
+                    for doc in batch:
+                        _id = str(doc["_id"])
+                        text = doc.get("article", "").strip()
+                        if not text:
+                            continue
+
+                        # Double-check not already in ChromaDB
+                        if collection.get(ids=[_id])["ids"]:
+                            continue
+
+                        metadata = {}
+                        published_dt = doc.get("published")
+                        if published_dt and isinstance(published_dt, datetime):
+                            metadata["published"] = published_dt.isoformat()
+
+                        ner = doc.get("ner")
+                        if ner and "entities" in ner:
+                            entity_texts = [
+                                e.get("text", "") for e in ner["entities"] if e.get("text")
+                            ]
+                            if entity_texts:
+                                metadata["entities"] = json.dumps(entity_texts)
+
+                        docs.append(text)
+                        ids.append(_id)
+                        metadatas.append(metadata)
+
+                        if len(docs) >= BATCH_SIZE:
+                            embs = (
+                                encoder.encode(docs, convert_to_tensor=True)
+                                .cpu()
+                                .numpy()
+                                .tolist()
+                            )
+                            collection.add(
+                                documents=docs, embeddings=embs, ids=ids, metadatas=metadatas
+                            )
+                            stored += len(ids)
+                            additional_needed -= len(ids)
+                            docs, ids, metadatas = [], [], []
+                            pbar.update(len(ids))
+
+                        if additional_needed <= 0:
+                            break
+
+                    if additional_needed <= 0:
+                        break
+
+            # Process remaining docs in buffer
+            if docs:
+                embs = encoder.encode(docs, convert_to_tensor=True).cpu().numpy().tolist()
+                collection.add(documents=docs, embeddings=embs, ids=ids, metadatas=metadatas)
+                stored += len(ids)
+
+        print(f"Backfill complete. Total stored: {stored}")
 
     return stored
 
@@ -809,6 +905,11 @@ def main(argv=None):
     p_load = sub.add_parser("load", help="Embed all articles into Chroma")
     p_load.add_argument("-l", "--limit", type=int, help="Only process N articles")
     p_load.add_argument(
+        "--slack",
+        type=int,
+        help="Target number of articles to process. If fewer than this many exist in date range, load additional older articles to reach target"
+    )
+    p_load.add_argument(
         "--start-date", help="Load articles published on/after this date (ISO or -N)"
     )
     p_load.add_argument(
@@ -985,6 +1086,7 @@ def main(argv=None):
             force=args.force,
             embed_type=embed_type,
             embed_model=embed_model,
+            slack=int(args.slack) if args.slack is not None else None,
         )
         print(f"✅  Stored {count} new vectors in Chroma")
         return
