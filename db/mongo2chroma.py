@@ -380,8 +380,18 @@ def load_into_chroma(
         additional_needed = slack - stored
         print(f"Slack target: {slack}, processed: {stored}, need {additional_needed} more - backfilling older articles")
 
-        # Get all existing ChromaDB IDs to avoid duplicates
-        existing_ids = set(collection.get(include=["ids"])["ids"])
+        # Get existing ChromaDB IDs to avoid duplicates
+        existing_ids = set()
+        try:
+            total_count = collection.count()
+            if total_count > 0:
+                fetch_count = min(total_count, 5000)
+                result = collection.get(limit=fetch_count, include=["ids"])
+                existing_ids = set(result.get("ids", []))
+                if total_count > fetch_count:
+                    print(f"Warning: ChromaDB has {total_count} IDs, only checking first {fetch_count}")
+        except Exception as e:
+            print(f"Warning: Could not fetch existing ChromaDB IDs: {e}")
 
         # Build query for articles NOT in ChromaDB, sorted by published descending
         backfill_q = {
