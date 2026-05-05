@@ -153,7 +153,7 @@ dashboard:
 	cd dashboard && source .venv/bin/activate && streamlit run app.py
 # read data from mongodb and create vectors in chroma
 vector:
-	@source $(DB_ENV)/bin/activate && cd db && ./mongo2chroma.py load
+	@source $(DB_ENV)/bin/activate && cd db && ./mongo2chroma.py load --start-date -2
 
 # explicitly clear the ChromaDB vector database
 clear-vector:
