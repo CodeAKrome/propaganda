@@ -33,6 +33,12 @@ if [[ $count -eq 0 ]]; then
     exit 0
 fi
 
+# Print all article titles before cypher generation
+echo "=== [$filename] Processing $count articles (before cypher) ==="
+grep "^Title:" "$vec" | sed 's/^Title: //'
+echo "============================================================="
+echo ""
+
 footer=$'\nUse the following data to answer:\n'
 
 read -r -d '' reporter <<'EOF'
@@ -403,7 +409,13 @@ report() {
 #     "mlx"   "mlx-community/Llama-3.3-70B-Instruct-8bit" 
 
 cypher \
-    "ollama"   "gpt-oss:20b" 
+    "ollama"   "gpt-oss:20b"
+
+# Print all article titles before report generation
+echo "=== [$filename] Processing $count articles (before report) ==="
+grep "^Title:" "$vec" | sed 's/^Title: //'
+echo "============================================================="
+echo ""
 
 # For reporting, prefer fast Gemini, fall back to others if needed
 # report \
