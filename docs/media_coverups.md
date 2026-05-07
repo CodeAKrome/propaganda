@@ -66,9 +66,17 @@ Guan                      | PERSON |   107 | 0.68 | 0.25 | 0.07 | 0.30   | 0.61 
 - Degree = High (H) bias means strong editorializing, not just mild framing
 - ⚠️ indicates subjects requiring further investigation
 
-### 2. Coverage Gaps
+### 2. Coverage Gaps (One-Sided Coverage Detection)
 
-Identifies topics with minimal or zero coverage. Zero coverage of important topics may indicate intentional suppression.
+Identifies topics with minimal or zero coverage, or where coverage is entirely from one political side. This helps detect:
+- **Zero coverage**: Topics completely ignored by media
+- **One-sided coverage**: Topics only covered by left OR right sources (not both)
+
+**Why This Matters:**
+If a topic is only covered by one political side, it may indicate:
+- Intentional suppression by opposing outlets
+- Selective coverage pushing a specific narrative
+- Lack of balanced reporting on the topic
 
 **Built-in Sensitive Topics Checked:**
 | Topic | Keywords | Signal |
@@ -80,6 +88,12 @@ Identifies topics with minimal or zero coverage. Zero coverage of important topi
 | North Korea Prison | Gulag, labor camp | ZERO COVERAGE |
 | Hong Kong Democracy | Hong Kong protests | Near-zero coverage |
 
+**One-Sided Detection Logic:**
+For each topic, the analysis checks:
+1. What sources cover this topic?
+2. What is the political bias of those sources?
+3. If ALL sources covering the topic lean the same direction → flagged as one-sided
+
 **Example Output:**
 ```
 === COVERAGE GAPS (Potential Suppression) ===
@@ -89,8 +103,21 @@ Nigerian Christian Persecution |        0 |       0 | 🚨 ZERO COVERAGE
 North Korea Prison Camps       |        0 |       0 | 🚨 ZERO COVERAGE
 Xinjiang/Uyghur Genocide       |        9 |       3 | ⚠️ LOW COVERAGE
 Tiananmen Square               |       52 |       8 | ⚠️ LIMITED
-Falun Gong / Shen Yun          |       62 |       8 | ⚠️ LIMITED
+
+=== ONE-SIDED COVERAGE (Articles Only by One Side) ===
+Topic                   | Left Sources | Right Sources | Dominant Side
+-----------------------------------------------------------------
+Ukraine War            |           0 |           45 | RIGHT ONLY ⚠️
+Israel-Gaza           |          38 |            0 | LEFT ONLY ⚠️
+Climate Policy         |          52 |            3 | LEFT HEAVY ⚠️
 ```
+
+**Interpretation:**
+- `LEFT ONLY` / `RIGHT ONLY` — Topic covered exclusively by sources of that bias
+- `LEFT HEAVY` / `RIGHT HEAVY` — Strong imbalance (>90% from one side)
+- `BALANCED` — Coverage from both political sides
+
+This is a key indicator of potential media bias or coordinated narrative suppression.
 
 ### 3. Source Concentration
 
