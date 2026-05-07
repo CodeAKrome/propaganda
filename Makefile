@@ -14,7 +14,8 @@ SLACK_VECTOR = 3333
 	querysmall mkvecsmall smallthingsthatgo cleanoutput fload oldthingsthatgo \
 	fquerymp3 fquery fmp3 black querysmallest cleanmp3 mp3small smallestthingsthatgo \
 	timestamp testrun dbscan vecdbscan mddbscan biast5 t5server categorize cleantext \
-	runhybrid runreport cyphertograph test2 test3 cleanclusteransi clear-vector\
+	runhybrid runreport cyphertograph test2 test3 cleanclusteransi clear-vector \
+	cleanoutputansi cleanmarkdownansi analyze-bias-coverage \
 	lora-extract lora-train lora-test lora-serve lora-stop lora-merge lora-validate dashboard
 
 # <=-- Main --=>
@@ -58,6 +59,11 @@ cleanansi:
 
 cleanclusteransi:
 	@for f in $$(find db/cluster -name "*.md"); do python3 db/filter_ansi.py < "$$f" > "$$f.tmp" && mv "$$f.tmp" "$$f"; done
+
+cleanoutputansi:
+	@for f in $$(find db/output -name "*.md"); do python3 db/filter_ansi.py < "$$f" > "$$f.tmp" && mv "$$f.tmp" "$$f"; done
+
+cleanmarkdownansi: cleanclusteransi cleanoutputansi
 
 
 fquerymp3: cleanoutput querysmall cleanmp3 mp3small fini

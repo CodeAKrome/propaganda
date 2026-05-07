@@ -56,6 +56,65 @@ make testrun    # Full pipeline
 make smallthingsthatgo  # Quick test
 ```
 
+## New Capabilities
+
+### Vector Loading with Slack Backfill
+
+Load up to 3333 articles per run, backfilling with older articles if date range has fewer:
+
+```bash
+# Via Makefile (default: 3333)
+make vector
+
+# Via Python directly
+python db/mongo2chroma.py load --start-date -2 --slack 3333
+```
+
+See [docs/slack_backfill.md](docs/slack_backfill.md) for details.
+
+### Media Coverup Detection
+
+Analyze bias data to find subjects with extreme coverage bias:
+
+```bash
+# Interactive CLI with Rich
+python scripts/find_media_coverups.py --output interactive
+
+# Output to CSV/JSON
+python scripts/find_media_coverups.py --output csv,json
+
+# Via Makefile
+make analyze-bias-coverage
+```
+
+See [docs/media_coverups.md](docs/media_coverups.md) for details.
+
+### Token Counting
+
+Count tokens in text files:
+
+```bash
+# Fast estimation (chars/4)
+python llm/tools/count_tokens.py input.txt
+
+# Accurate count with tiktoken
+python llm/tools/count_tokens.py input.txt --accurate
+```
+
+### Title Printing in Reports
+
+Report generation now prints all article titles for transparency:
+
+```
+=== [israel] Processing 40 articles (before cypher) ===
+ "Israel announces new military operation in Gaza"
+ "Netanyahug meets with Biden at White House"
+ "Israeli forces raid West Bank refugee camp"
+...
+```
+
+---
+
 ## Components
 
 ### Data Ingestion

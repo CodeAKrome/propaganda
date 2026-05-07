@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 700" font-family="Arial, sans-serif">
+  <title>Media Coverup Detection Analysis Flow</title>
+
+  <!-- Background -->
+  <rect width="900" height="700" fill="#f8f9fa"/>
+
+  <!-- Title -->
+  <text x="450" y="30" text-anchor="middle" font-size="20" font-weight="bold" fill="#2c3e50">
+    Media Coverup Detection Analysis Flow
+  </text>
+
+  <!-- Input Section -->
+  <rect x="50" y="60" width="180" height="50" rx="5" fill="#3498db" stroke="#2980b9" stroke-width="2"/>
+  <text x="140" y="80" text-anchor="middle" fill="white" font-weight="bold">MongoDB</text>
+  <text x="140" y="98" text-anchor="middle" fill="white" font-size="11">rssnews.articles</text>
+
+  <rect x="250" y="60" width="180" height="50" rx="5" fill="#9b59b6" stroke="#8e44ad" stroke-width="2"/>
+  <text x="340" y="80" text-anchor="middle" fill="white" font-weight="bold">Bias Data</text>
+  <text x="340" y="98" text-anchor="middle" fill="white" font-size="11">{dir.L/C/R, deg.L/M/H}</text>
+
+  <rect x="450" y="60" width="180" height="50" rx="5" fill="#e67e22" stroke="#d35400" stroke-width="2"/>
+  <text x="540" y="80" text-anchor="middle" fill="white" font-weight="bold">NER Entities</text>
+  <text x="540" y="98" text-anchor="middle" fill="white" font-size="11">GPE, PERSON, ORG</text>
+
+  <!-- Arrows to Processing -->
+  <path d="M140 110 L140 140" stroke="#7f8c8d" stroke-width="2" fill="none"/>
+  <path d="M340 110 L340 140" stroke="#7f8c8d" stroke-width="2" fill="none"/>
+  <path d="M540 110 L540 140" stroke="#7f8c8d" stroke-width="2" fill="none"/>
+
+  <!-- Main Processing Box -->
+  <rect x="200" y="140" width="500" height="60" rx="8" fill="#2c3e50" stroke="#1a252f" stroke-width="3"/>
+  <text x="450" y="165" text-anchor="middle" fill="white" font-size="16" font-weight="bold">find_media_coverups.py Analysis Engine</text>
+  <text x="450" y="185" text-anchor="middle" fill="#bdc3c7" font-size="12">--output interactive / csv / json</text>
+
+  <!-- Output Arrows -->
+  <path d="M280 200 L280 230" stroke="#7f8c8d" stroke-width="2" fill="none"/>
+  <path d="M450 200 L450 230" stroke="#7f8c8d" stroke-width="2" fill="none"/>
+  <path d="M620 200 L620 230" stroke="#7f8c8d" stroke-width="2" fill="none"/>
+
+  <!-- Analysis Types - Three Columns -->
+  <!-- Column 1: Bias Imbalance -->
+  <rect x="50" y="240" width="250" height="120" rx="8" fill="#e74c3c" stroke="#c0392b" stroke-width="2"/>
+  <text x="175" y="265" text-anchor="middle" fill="white" font-weight="bold">1. Bias Imbalance</text>
+  <text x="175" y="290" text-anchor="middle" fill="#fadbd8" font-size="11">For each subject:</text>
+  <text x="175" y="310" text-anchor="middle" fill="#fadbd8" font-size="10">- Avg L, C, R direction</text>
+  <text x="175" y="325" text-anchor="middle" fill="#fadbd8" font-size="10">- Imbalance = |R - L|</text>
+  <text x="175" y="340" text-anchor="middle" fill="#f1948a" font-size="10">Flag: Imb > 0.40</text>
+
+  <!-- Column 2: Coverage Gaps -->
+  <rect x="325" y="240" width="250" height="120" rx="8" fill="#f39c12" stroke="#e67e22" stroke-width="2"/>
+  <text x="450" y="265" text-anchor="middle" fill="white" font-weight="bold">2. Coverage Gaps</text>
+  <text x="450" y="290" text-anchor="middle" fill="#fdebd0" font-size="11">Check sensitive topics:</text>
+  <text x="450" y="310" text-anchor="middle" fill="#fdebd0" font-size="10">- Xinjiang, Falun Gong</text>
+  <text x="450" y="325" text-anchor="middle" fill="#fdebd0" font-size="10">- Tiananmen, Nigeria</text>
+  <text x="450" y="340" text-anchor="middle" fill="#f5b041" font-size="10">Flag: count < 100</text>
+
+  <!-- Column 3: Source Concentration -->
+  <rect x="600" y="240" width="250" height="120" rx="8" fill="#27ae60" stroke="#1e8449" stroke-width="2"/>
+  <text x="725" y="265" text-anchor="middle" fill="white" font-weight="bold">3. Source Concentration</text>
+  <text x="725" y="290" text-anchor="middle" fill="#d5f5e3" font-size="11">Per topic:</text>
+  <text x="725" y="310" text-anchor="middle" fill="#d5f5e3" font-size="10">- Count unique sources</text>
+  <text x="725" y="325" text-anchor="middle" fill="#d5f5e3" font-size="10">- Top 3 concentration %</text>
+  <text x="725" y="340" text-anchor="middle" fill="#82e0aa" font-size="10">Flag: top3 > 70%</text>
+
+  <!-- Output Section -->
+  <path d="M175 360 L175 390" stroke="#7f8c8d" stroke-width="2" fill="none"/>
+  <path d="M450 360 L450 390" stroke="#7f8c8d" stroke-width="2" fill="none"/>
+  <path d="M725 360 L725 390" stroke="#7f8c8d" stroke-width="2" fill="none"/>
+
+  <!-- Output Boxes -->
+  <rect x="50" y="400" width="250" height="80" rx="8" fill="#ecf0f1" stroke="#bdc3c7" stroke-width="2"/>
+  <text x="175" y="425" text-anchor="middle" font-weight="bold">Console / Interactive</text>
+  <text x="175" y="450" text-anchor="middle" fill="#7f8c8d" font-size="11">Rich CLI with tables</text>
+
+  <rect x="325" y="400" width="250" height="80" rx="8" fill="#ecf0f1" stroke="#bdc3c7" stroke-width="2"/>
+  <text x="450" y="425" text-anchor="middle" font-weight="bold">CSV Output</text>
+  <text x="450" y="450" text-anchor="middle" fill="#7f8c8d" font-size="11">output/media_coverups.csv</text>
+
+  <rect x="600" y="400" width="250" height="80" rx="8" fill="#ecf0f1" stroke="#bdc3c7" stroke-width="2"/>
+  <text x="725" y="425" text-anchor="middle" font-weight="bold">JSON Output</text>
+  <text x="725" y="450" text-anchor="middle" fill="#7f8c8d" font-size="11">output/media_coverups.json</text>
+
+  <!-- Dashboard Integration -->
+  <path d="M175 480 L175 520 L450 520" stroke="#7f8c8d" stroke-width="2" fill="none" stroke-dasharray="5,3"/>
+  <path d="M450 520 L725 520 L725 480" stroke="#7f8c8d" stroke-width="2" fill="none" stroke-dasharray="5,3"/>
+
+  <rect x="250" y="530" width="400" height="60" rx="8" fill="#8e44ad" stroke="#6c3483" stroke-width="2"/>
+  <text x="450" y="555" text-anchor="middle" fill="white" font-weight="bold">Streamlit Dashboard Integration</text>
+  <text x="450" y="575" text-anchor="middle" fill="#d7bde2" font-size="11">Interactive charts with Plotly + Refresh button</text>
+
+  <!-- Legend / Key -->
+  <rect x="50" y="610" width="800" height="70" rx="5" fill="white" stroke="#bdc3c7" stroke-width="1"/>
+  <text x="70" y="630" fill="#2c3e50" font-weight="bold">Key Thresholds:</text>
+  <text x="70" y="655" fill="#7f8c8d" font-size="11">• Imbalance: |R-L| > 0.40 | Coverage Gap: < 100 articles | Source Concentration: top 3 > 70%</text>
+  <text x="70" y="672" fill="#7f8c8d" font-size="11">• Degree: High (H) bias multiplies severity | Min articles: 50 (default)</text>
+</svg>

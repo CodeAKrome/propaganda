@@ -17,6 +17,7 @@ python db/mongo2chroma.py load [options]
 | Option | Description | Example |
 |--------|-------------|---------|
 | `-l, --limit N` | Only process N articles | `--limit 1000` |
+| `--slack N` | Target articles to process; backfills if date range has fewer | `--slack 3333` |
 | `--start-date DATE` | Articles published on/after date | `--start-date -7` or `--start-date 2025-01-01` |
 | `--end-date DATE` | Articles published on/before date | `--end-date -1` |
 | `--andentity TEXT` | Entities ALL must match | `--andentity "PERSON/Trump,ORG/UN"` |
@@ -37,6 +38,12 @@ python db/mongo2chroma.py load --orentity "GPE/Iran" --force
 
 # Load with BGE embeddings
 python db/mongo2chroma.py load --bge-large --limit 1000
+
+# Load with slack backfill (default in Makefile)
+python db/mongo2chroma.py load --start-date -2 --slack 3333
+# Output:
+# Slack target: 3333, processed: 108, need 3225 more - backfilling older articles
+# Backfill complete. Total stored: 3333
 ```
 
 ---

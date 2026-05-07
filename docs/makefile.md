@@ -11,8 +11,13 @@ Complete reference for all Makefile targets in the propaganda project.
 | Target | Description |
 |--------|-------------|
 | `make testrun` | Full pipeline (timestamp → fini) |
+| `make test2` | Pipeline with bias detection |
 | `make smallthingsthatgo` | Quick test pipeline |
 | `make smallestthingsthatgo` | Minimal test pipeline |
+| `make vector` | Load vectors with slack backfill (--slack 3333) |
+| `make analyze-bias-coverage` | Run media coverup detection |
+| `make clear-vector` | Clear ChromaDB vector database |
+| `make cleanclusteransi` | Remove ANSI codes from cluster/*.md files |
 
 ---
 
@@ -108,14 +113,31 @@ make t5server
 ### Vector Search
 
 #### vector
-Load articles into ChromaDB vector database.
+Load articles into ChromaDB vector database with slack backfill.
 
 ```bash
 make vector
 ```
-- Runs `db/mongo2chroma.py load --start-date $(NUMDAYS) --force`
-- Input: MongoDB articles since `NUMDAYS`
+- Runs `python db/mongo2chroma.py load --start-date -2 --slack $(SLACK_VECTOR)`
+- Default SLACK_VECTOR = 3333 (see line 10 of Makefile)
+- If fewer than --slack articles in date range, backfills with older articles
+- Input: MongoDB articles (last 2 days + backfill as needed)
 - Output: Vectors in ChromaDB
+- Skips articles already in ChromaDB (accumulates over time)
+
+**Examples:**
+```bash
+# Default: load up to 3333 articles
+make vector
+
+# Override slack value
+make vector SLACK_VECTOR=1000
+
+# Original behavior (no slack) - deprecated
+python db/mongo2chroma.py load --start-date -2
+```
+
+See [docs/slack_backfill.md](slack_backfill.md) for full details.
 
 ---
 
