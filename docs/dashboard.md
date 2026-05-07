@@ -51,6 +51,53 @@ Opens at: http://localhost:8501
 - Model performance metrics
 - Device used (MPS/CUDA/CPU)
 
+### Media Coverup Detection
+
+Interactive tool to identify subjects with extreme bias coverage indicating potential media coverups or suppression.
+
+#### Features
+
+- **Filter Panel (Sidebar)**
+  - Entity Type: Multi-select (GPE, PERSON, ORG)
+  - Direction: Radio (Left, Right, Both)
+  - Imbalance Threshold: Slider (0.0 - 1.0, default 0.40)
+  - Min Articles: Number input (default 50)
+  - Date Range: Select (30d, 90d, 1y, All time)
+
+- **Interactive Visualizations (Plotly)**
+  - Sortable data table with click-to-drill-down
+  - Bar chart for coverage gaps (clickable for source breakdown)
+  - Line chart for temporal trends (hover details, multi-select)
+  - Treemap for source concentration (click to drill down)
+
+- **Analysis Types**
+  - Extreme Bias Imbalance: Subjects where |R-L| > 0.40
+  - Coverage Gaps: Topics with < 100 articles (potential suppression)
+  - Source Concentration: Topics with >70% from top 3 sources
+
+- **Refresh Button**
+  - Large button with "Last refreshed: X seconds ago" counter
+  - Click to re-run analysis with current filters
+
+#### Launch
+
+```bash
+make dashboard
+# Or: cd dashboard && source .venv/bin/activate && streamlit run app.py
+```
+
+Navigate to the "Media Coverup Detection" tab (or see sidebar).
+
+#### CLI Alternative
+
+For command-line analysis:
+```bash
+python scripts/find_media_coverups.py --output interactive
+python scripts/find_media_coverups.py --output csv,json
+```
+
+See [docs/media_coverups.md](media_coverups.md) for full documentation.
+
 ---
 
 ## Screenshots

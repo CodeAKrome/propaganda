@@ -221,9 +221,79 @@ python db/llm_analysis.py --input results.json
 ## Quick Reference
 
 | Need... | Use |
-|--------|-----|
+|---------|-----|
 | Extract IDs | `db/extract_ids.py` |
 | Generate timestamp | `db/mktimestamp.py` |
 | Convert vectors | `db/mongo2chroma.py load` |
 | Test timeout | `db/test_timeout.py` |
 | Run report | `db/runreport.py` |
+
+---
+
+## Analysis Tools
+
+### find_media_coverups.py
+
+Analyze MongoDB bias data to identify subjects with extreme coverage bias indicating potential media coverups.
+
+```bash
+# Interactive CLI (Rich)
+python scripts/find_media_coverups.py --output interactive
+
+# Output to CSV/JSON
+python scripts/find_media_coverups.py --output csv,json
+
+# With custom thresholds
+python scripts/find_media_coverups.py -i 0.50 -n 100 -e GPE
+```
+
+**Options:**
+- `-n, --min-articles` — Minimum articles (default: 50)
+- `-i, --imbalance-threshold` — Bias threshold (default: 0.40)
+- `-c, --coverage-gap-threshold` — Coverage gap threshold (default: 100)
+- `-e, --entity-type` — Entity type: GPE, PERSON, ORG, ALL
+- `-o, --output` — Output: console, csv, json, interactive
+
+**Makefile target:**
+```bash
+make analyze-bias-coverage
+```
+
+See [docs/media_coverups.md](media_coverups.md) for full documentation.
+
+### count_tokens.py
+
+Count tokens in text files to estimate context window usage.
+
+```bash
+# Fast estimation (chars/4)
+python llm/tools/count_tokens.py article.txt
+
+# Accurate tiktoken count
+python llm/tools/count_tokens.py --accurate article.txt
+
+# Show context window percentage
+python llm/tools/count_tokens.py --context-window 128k article.txt
+```
+
+**Options:**
+- `--estimate` — Fast character/4 estimation (default)
+- `--accurate` — Use tiktoken for accurate count
+- `--encoder` — Tokenizer: cl100k_base, p50k_base, r50k_base
+- `--context-window` — Context size: 4k, 8k, 32k, 128k, 200k
+
+### filter_ansi.py
+
+Filter ANSI escape codes and unwrap fixed-width text from LLM output.
+
+```bash
+# Process a single file
+python db/filter_ansi.py < input.md > output.md
+```
+
+**Makefile targets:**
+```bash
+make cleanclusteransi    # Clean db/cluster/*.md
+make cleanoutputansi    # Clean db/output/*.md  
+make cleanmarkdownansi  # Clean both
+```

@@ -65,6 +65,10 @@ cleanoutputansi:
 
 cleanmarkdownansi: cleanclusteransi cleanoutputansi
 
+# Analyze bias coverage and detect potential media coverups
+analyze-bias-coverage:
+	@source $(DB_ENV)/bin/activate && python3 scripts/find_media_coverups.py --output interactive
+
 
 fquerymp3: cleanoutput querysmall cleanmp3 mp3small fini
 

@@ -319,6 +319,43 @@ echo '{"L": 0.5, "C": 0.3, "R": 0.2}' | ./mongo_rw.py write --field bias --id 69
 ./mongo_rw.py write --field status --idfile ids.txt --data "processed"
 ```
 
+### Tools
+
+#### count_tokens.py
+Count tokens in text files to estimate context window usage.
+
+```bash
+# Fast estimation (chars/4)
+python tools/count_tokens.py article.txt
+
+# Accurate count with tiktoken
+python tools/count_tokens.py --accurate article.txt
+
+# Show percentage of context window
+python tools/count_tokens.py --context-window 128k article.txt
+
+# Process multiple files
+python tools/count_tokens.py file1.txt file2.txt file3.txt
+
+# Read from stdin
+cat article.txt | python tools/count_tokens.py --estimate
+```
+
+**Options:**
+| Option | Description |
+|--------|-------------|
+| `--estimate` | Fast character/4 estimation (default) |
+| `--accurate` | Use tiktoken for accurate count |
+| `--encoder` | Tokenizer: cl100k_base, p50k_base, r50k_base (default: cl100k_base) |
+| `--context-window` | Show percentage of context window (4k, 8k, 32k, 128k, 200k) |
+
+**Common Context Windows:**
+- `4k` - GPT-3.5, Claude Instant
+- `8k` - GPT-4, Claude
+- `32k` - GPT-4-32k, Claude 100k
+- `128k` - GPT-4 Turbo, Claude 200k
+- `200k` - Claude 200k
+
 ### Environment
 
 ```bash

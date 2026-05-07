@@ -290,6 +290,48 @@ See individual documentation for these core Python scripts:
 | [report.py](report.py) | Report generation (Python version) |
 | [dedupe.py](dedupe.py) | Deduplication |
 
+### Additional Python Scripts
+
+#### filter_ansi.py
+Filters ANSI escape codes and unwraps fixed-width text from LLM output.
+
+```bash
+# Process a single file
+python filter_ansi.py < input.md > output.md
+
+# Process all cluster markdown files
+for f in db/cluster/*.md; do python filter_ansi.py < "$f" > "$f.tmp" && mv "$f.tmp" "$f"; done
+```
+
+**Features:**
+- Removes ANSI escape codes from LLM output
+- Unwraps line-wrapped text (fixes 70-char line breaks)
+- Re-joins hyphenated words split across lines
+- Handles non-breaking spaces and special characters
+
+**Makefile targets:**
+```bash
+make cleanclusteransi   # Process db/cluster/*.md
+make cleanoutputansi    # Process db/output/*.md  
+make cleanmarkdownansi  # Process both
+```
+
+#### svo_backfill.py
+Backfills Subject-Verb-Object (SVO) extraction for articles.
+
+```bash
+# Run SVO backfill (default: processes all articles without SVO)
+python svo_backfill.py
+
+# With limit
+python svo_backfill.py --limit 1000
+
+# With date filter
+python svo_backfill.py --start-date -30
+```
+
+See [docs/slack_backfill.md](../docs/slack_backfill.md) for more on vector loading with backfill.
+
 ## Configuration
 
 ### Environment Variables
