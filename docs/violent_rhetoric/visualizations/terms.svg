@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 350"
+       style="font-family: 'SF Pro', -apple-system, sans-serif;">
+  <style>
+    .label {{ font-size: 11px; }}
+    .title {{ font-size: 14px; font-weight: 600; }}
+    .subtitle {{ font-size: 11px; fill: #666; }}
+  </style>
+  
+  <text x="300" y="25" text-anchor="middle" class="title">Top Violent Terms by Political Orientation</text>
+  <text x="300" y="45" text-anchor="middle" class="subtitle">Most frequently used violent language</text>
+<text x="110" y="70" text-anchor="middle" class="label" font-weight="600">LEFT</text>
+<text x="30" y="95" class="label">attack</text>
+<rect x="90" y="85" width="120.0" height="14" fill="#3498db" rx="2" opacity="0.7"/>
+<text x="215.0" y="95" class="label" fill="#666">10</text>
+<text x="30" y="120" class="label">killed</text>
+<rect x="90" y="110" width="96.0" height="14" fill="#3498db" rx="2" opacity="0.7"/>
+<text x="191.0" y="120" class="label" fill="#666">8</text>
+<text x="30" y="145" class="label">torture</text>
+<rect x="90" y="135" width="60.0" height="14" fill="#3498db" rx="2" opacity="0.7"/>
+<text x="155.0" y="145" class="label" fill="#666">5</text>
+<text x="30" y="170" class="label">killing</text>
+<rect x="90" y="160" width="60.0" height="14" fill="#3498db" rx="2" opacity="0.7"/>
+<text x="155.0" y="170" class="label" fill="#666">5</text>
+<text x="30" y="195" class="label">blood</text>
+<rect x="90" y="185" width="48.0" height="14" fill="#3498db" rx="2" opacity="0.7"/>
+<text x="143.0" y="195" class="label" fill="#666">4</text>
+<text x="290" y="70" text-anchor="middle" class="label" font-weight="600">CENTER</text>
+<text x="210" y="95" class="label">war</text>
+<rect x="270" y="85" width="120.0" height="14" fill="#95a5a6" rx="2" opacity="0.7"/>
+<text x="395.0" y="95" class="label" fill="#666">4388</text>
+<text x="210" y="120" class="label">attack</text>
+<rect x="270" y="110" width="78.56882406563355" height="14" fill="#95a5a6" rx="2" opacity="0.7"/>
+<text x="353.5688240656335" y="120" class="label" fill="#666">2873</text>
+<text x="210" y="145" class="label">killed</text>
+<rect x="270" y="135" width="73.12670920692798" height="14" fill="#95a5a6" rx="2" opacity="0.7"/>
+<text x="348.126709206928" y="145" class="label" fill="#666">2674</text>
+<text x="210" y="170" class="label">killing</text>
+<rect x="270" y="160" width="32.6253418413856" height="14" fill="#95a5a6" rx="2" opacity="0.7"/>
+<text x="307.6253418413856" y="170" class="label" fill="#666">1193</text>
+<text x="210" y="195" class="label">fight</text>
+<rect x="270" y="185" width="29.5897903372835" height="14" fill="#95a5a6" rx="2" opacity="0.7"/>
+<text x="304.5897903372835" y="195" class="label" fill="#666">1082</text>
+<text x="470" y="70" text-anchor="middle" class="label" font-weight="600">RIGHT</text>
+<text x="390" y="95" class="label">war</text>
+<rect x="450" y="85" width="120.0" height="14" fill="#e74c3c" rx="2" opacity="0.7"/>
+<text x="575.0" y="95" class="label" fill="#666">1096</text>
+<text x="390" y="120" class="label">attack</text>
+<rect x="450" y="110" width="93.83211678832116" height="14" fill="#e74c3c" rx="2" opacity="0.7"/>
+<text x="548.8321167883212" y="120" class="label" fill="#666">857</text>
+<text x="390" y="145" class="label">killed</text>
+<rect x="450" y="135" width="73.9051094890511" height="14" fill="#e74c3c" rx="2" opacity="0.7"/>
+<text x="528.9051094890511" y="145" class="label" fill="#666">675</text>
+<text x="390" y="170" class="label">fight</text>
+<rect x="450" y="160" width="55.51094890510949" height="14" fill="#e74c3c" rx="2" opacity="0.7"/>
+<text x="510.5109489051095" y="170" class="label" fill="#666">507</text>
+<text x="390" y="195" class="label">shot</text>
+<rect x="450" y="185" width="46.31386861313869" height="14" fill="#e74c3c" rx="2" opacity="0.7"/>
+<text x="501.3138686131387" y="195" class="label" fill="#666">423</text>
+</svg>

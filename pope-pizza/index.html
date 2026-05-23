@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pope Pizza</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); padding: 20px; font-family: 'Cinzel', serif; }
+        h1 { color: #f5c542; font-size: 2.5rem; margin-bottom: 20px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+        .pizza-container { position: relative; width: 600px; height: 600px; }
+        #pizzaCanvas { width: 100%; height: 100%; border-radius: 50%; box-shadow: 0 0 60px rgba(245, 197, 66, 0.4); }
+        .loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #f5c542; font-size: 1.2rem; }
+        .controls { margin-top: 30px; display: flex; gap: 15px; }
+        button { padding: 12px 24px; font-size: 1rem; font-family: 'Cinzel', serif; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; }
+        .download-btn { background: linear-gradient(135deg, #f5c542, #e6a530); color: #1a1a2e; }
+        .download-btn:hover { transform: scale(1.05); }
+        .refresh-btn { background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; }
+        .refresh-btn:hover { transform: scale(1.05); }
+        .refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .credits { margin-top: 20px; color: #888; font-size: 0.75rem; text-align: center; }
+        .credits a { color: #f5c542; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <h1>🍕 POPE PIZZA 🍕</h1>
+    <div class="pizza-container">
+        <canvas id="pizzaCanvas" width="600" height="600"></canvas>
+        <div class="loading" id="loading">🙏 Loading Images...</div>
+    </div>
+    <div class="controls">
+        <button type="button" class="refresh-btn" id="shuffleBtn" onclick="shufflePizza()">🔀 Shuffle Toppings</button>
+        <button type="button" class="download-btn" onclick="downloadPizza()">⬇️ Download</button>
+    </div>
+    <div class="credits">
+        Images: Wikimedia Commons (Public Domain / CC BY-SA)
+    </div>
+
+    <script>
+        const canvas = document.getElementById('pizzaCanvas');
+        const ctx = canvas.getContext('2d');
+        const loading = document.getElementById('loading');
+        const shuffleBtn = document.getElementById('shuffleBtn');
+        const cx = 300, cy = 300;
+        
+        const popeData = [
+            { name: 'Francis', url: 'https://upload.wikimedia.org/wikipedia/commons/7/76/Pope_Francis.jpg' },
+            { name: 'John Paul II', url: 'https://upload.wikimedia.org/wikipedia/en/b/bb/Pope_John_Paul_II.JPG' },
+            { name: 'Benedict XVI', url: 'https://upload.wikimedia.org/wikipedia/commons/3/30/Pope_Benedict_XVI.jpg' },
+            { name: 'Paul VI', url: 'https://upload.wikimedia.org/wikipedia/commons/6/64/Pope_Paul_VI.jpg' },
+            { name: 'Pius IX', url: 'https://upload.wikimedia.org/wikipedia/commons/a/a2/Pope_Pius_IX.jpg' },
+            { name: 'Leo XIII', url: 'https://upload.wikimedia.org/wikipedia/commons/1/1f/Pope_Leo_XIII.jpg' },
+            { name: 'Pius X', url: 'https://upload.wikimedia.org/wikipedia/commons/1/1b/Pope_Pius_X.jpg' },
+            { name: 'Benedict XV', url: 'https://upload.wikimedia.org/wikipedia/commons/a/ab/Pope_Benedict_XV.jpg' },
+            { name: 'Gregory XVI', url: 'https://upload.wikimedia.org/wikipedia/commons/0/00/Pope_Gregory_XVI.jpg' },
+            { name: 'Pius VII', url: 'https://upload.wikimedia.org/wikipedia/commons/5/53/Pope_Pius_VII.jpg' },
+            { name: 'Leo XII', url: 'https://upload.wikimedia.org/wikipedia/commons/e/ef/Pope_Leo_XII.jpg' },
+            { name: 'Clement XIV', url: 'https://upload.wikimedia.org/wikipedia/commons/1/1e/Pope_Clement_XIV.jpg' },
+            { name: 'Sixtus V', url: 'https://upload.wikimedia.org/wikipedia/commons/3/37/Pope_Sixtus_V.jpg' },
+            { name: 'Alexander VII', url: 'https://upload.wikimedia.org/wikipedia/commons/c/c6/Pope_Alexander_VII.jpg' },
+            { name: 'Innocent III', url: 'https://upload.wikimedia.org/wikipedia/commons/7/70/Pope_Innocent_III.jpg' },
+            { name: 'Leo X', url: 'https://upload.wikimedia.org/wikipedia/commons/7/7e/Pope_Leo_X.jpg' },
+            { name: 'Pius VI', url: 'https://upload.wikimedia.org/wikipedia/commons/f/fc/Pope_Pius_VI.jpg' },
+            { name: 'Urban VIII', url: 'https://upload.wikimedia.org/wikipedia/commons/0/0f/Pope_Urban_VIII.jpg' },
+            { name: 'Benedict XIII', url: 'https://upload.wikimedia.org/wikipedia/commons/a/a6/Pope_Benedict_XIII.jpg' },
+            { name: 'Clement IX', url: 'https://upload.wikimedia.org/wikipedia/commons/4/40/Pope_Clement_IX.jpg' },
+            { name: 'Julius II', url: 'https://upload.wikimedia.org/wikipedia/commons/a/af/Pope_Julius_II.jpg' }
+        ];
+        
+        let images = [];
+        
+        function init() {
+            loading.style.display = 'block';
+            shuffleBtn.disabled = true;
+            images = [];
+            
+            let loaded = 0;
+            popeData.forEach((pope, i) => {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => {
+                    images[i] = img;
+                    loaded++;
+                    checkDone();
+                };
+                img.onerror = () => {
+                    console.log('FAILED:', pope.name);
+                    images[i] = null;
+                    loaded++;
+                    checkDone();
+                };
+                img.src = pope.url;
+            });
+            
+            function checkDone() {
+                if (loaded === popeData.length) {
+                    const validCount = images.filter(img => img !== null).length;
+                    console.log('Loaded:', validCount, '/', popeData.length);
+                    loading.style.display = 'none';
+                    shuffleBtn.disabled = false;
+                    drawPizza();
+                }
+            }
+        }
+        
+        function drawPizzaBase() {
+            ctx.beginPath();
+            ctx.arc(cx, cy, 298, 0, Math.PI * 2);
+            ctx.fillStyle = '#8B4513';
+            ctx.fill();
+            
+            for (let i = 0; i < 12; i++) {
+                ctx.beginPath();
+                ctx.arc(cx, cy, 285 + i * 2.5, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(139,69,19,${0.25 - i * 0.015})`;
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            }
+            
+            ctx.beginPath();
+            ctx.arc(cx, cy, 270, 0, Math.PI * 2);
+            const cg = ctx.createRadialGradient(cx, cy, 30, cx, cy, 270);
+            cg.addColorStop(0, '#FFF8DC');
+            cg.addColorStop(0.4, '#FFE4B5');
+            cg.addColorStop(0.8, '#FFA500');
+            cg.addColorStop(1, '#CD853F');
+            ctx.fillStyle = cg;
+            ctx.fill();
+        }
+        
+        function drawSauce() {
+            for (let i = 0; i < 18; i++) {
+                const a = (i / 18) * Math.PI * 2 + Math.random() * 0.6;
+                const r = 50 + Math.random() * 160;
+                ctx.beginPath();
+                ctx.arc(cx + Math.cos(a) * r, cy + Math.sin(a) * r, 10 + Math.random() * 16, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(220, 20, 60, ${0.12 + Math.random() * 0.18})`;
+                ctx.fill();
+            }
+        }
+        
+        function drawPepperoni() {
+            for (let i = 0; i < 20; i++) {
+                const a = (i / 20) * Math.PI * 2 + Math.random() * 0.4;
+                const r = 70 + Math.random() * 180;
+                const x = cx + Math.cos(a) * r;
+                const y = cy + Math.sin(a) * r;
+                ctx.beginPath();
+                ctx.arc(x, y, 14 + Math.random() * 12, 0, Math.PI * 2);
+                ctx.fillStyle = `rgb(${160 + Math.random() * 40}, ${25 + Math.random() * 30}, ${25 + Math.random() * 30})`;
+                ctx.fill();
+            }
+        }
+        
+        function drawBasil() {
+            for (let i = 0; i < 35; i++) {
+                const a = Math.random() * Math.PI * 2;
+                const r = 60 + Math.random() * 190;
+                const x = cx + Math.cos(a) * r;
+                const y = cy + Math.sin(a) * r;
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(Math.random() * Math.PI * 2);
+                ctx.beginPath();
+                ctx.ellipse(0, 0, 10 + Math.random() * 8, 5 + Math.random() * 4, 0, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(34, ${120 + Math.random() * 45}, 34, ${0.7 + Math.random() * 0.25})`;
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+        
+        function cropCircle(img, size) {
+            const tc = document.createElement('canvas');
+            tc.width = tc.height = size;
+            const tctx = tc.getContext('2d');
+            tctx.beginPath();
+            tctx.arc(size/2, size/2, size/2, 0, Math.PI * 2);
+            tctx.clip();
+            const s = Math.max(size / img.width, size / img.height);
+            tctx.drawImage(img, 0, 0, img.width * s, img.height * s);
+            tctx.beginPath();
+            tctx.arc(size/2, size/2, size/2 - 3, 0, Math.PI * 2);
+            tctx.strokeStyle = '#FFD700';
+            tctx.lineWidth = 4;
+            tctx.stroke();
+            return tc;
+        }
+        
+        function drawPopes() {
+            const validImages = images.filter(img => img !== null);
+            if (validImages.length === 0) return;
+            
+            const indices = validImages.map((_, i) => i);
+            for (let i = indices.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                let temp = indices[i];
+                indices[i] = indices[j];
+                indices[j] = temp;
+            }
+            
+            const numToppings = validImages.length;
+            const positions = [];
+            for (let i = 0; i < numToppings; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const radius = 40 + Math.random() * 200;
+                positions.push({
+                    x: cx + Math.cos(angle) * radius,
+                    y: cy + Math.sin(angle) * radius,
+                    size: 50 + Math.random() * 90
+                });
+            }
+            
+            for (let i = positions.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                let temp = positions[i];
+                positions[i] = positions[j];
+                positions[j] = temp;
+            }
+            
+            for (let i = 0; i < numToppings; i++) {
+                const imgIndex = indices[i];
+                const p = positions[i];
+                const img = validImages[imgIndex];
+                try {
+                    const c = cropCircle(img, Math.floor(p.size));
+                    ctx.drawImage(c, p.x - p.size/2, p.y - p.size/2);
+                } catch(e) {}
+            }
+        }
+        
+        function drawTomatoes() {
+            for (let i = 0; i < 14; i++) {
+                const a = (i / 14) * 6.28 + Math.random() * 0.3;
+                const r = 55 + Math.random() * 210;
+                ctx.beginPath();
+                ctx.arc(cx + Math.cos(a) * r, cy + Math.sin(a) * r, 8, 0, 6.28);
+                ctx.fillStyle = '#FF4500';
+                ctx.fill();
+            }
+        }
+        
+        function drawSteam() {
+            ctx.save();
+            ctx.globalAlpha = 0.1;
+            ctx.beginPath();
+            ctx.arc(cx, 230, 100, 0, 6.28);
+            const sg = ctx.createRadialGradient(cx, 190, 0, cx, 260, 100);
+            sg.addColorStop(0, 'rgba(255,255,255,0.5)');
+            sg.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = sg;
+            ctx.fill();
+            ctx.restore();
+        }
+        
+        function drawPizza() {
+            ctx.clearRect(0, 0, 600, 600);
+            drawPizzaBase();
+            drawSauce();
+            drawPepperoni();
+            drawBasil();
+            drawPopes();
+            drawTomatoes();
+            drawSteam();
+        }
+        
+        function shufflePizza() {
+            drawPizza();
+        }
+        
+        function downloadPizza() {
+            const link = document.createElement('a');
+            link.download = 'pope-pizza.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+        
+        window.onload = init;
+    </script>
+</body>
+</html>

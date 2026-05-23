@@ -43,8 +43,9 @@ app.get('/api/articles', async (req, res) => {
   if (failed) {
     // user explicitly wants failures – no extra filtering
   } else {
+    // Hide articles < 128 chars by default (flagged by flagShortArticle)
     match.article = { $exists: true };
-    match.too_short = { $ne: true }; // <-- hide short articles by default
+    match.too_short = { $ne: true }; // use ?failed=true to see short articles
   }
 
   const [rows, total] = await Promise.all([

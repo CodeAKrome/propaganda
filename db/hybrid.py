@@ -47,6 +47,13 @@ DEFAULT_EMBED_TYPE = (
 )
 EMBED_MODEL = "BAAI/bge-large-en-v1.5"
 FLAIR_MODEL = "news-forward"
+
+# Auto-bias configuration (default: ON)
+# Environment overrides: OLLAMA_BIAS_MODEL, BIAS_PROMPT_FILE, BIAS_AUTO_ENABLED
+DEFAULT_BIAS_MODEL = os.getenv("OLLAMA_BIAS_MODEL", "gpt-oss:120b")
+BIAS_PROMPT_PATH = os.getenv("BIAS_PROMPT_FILE", os.path.join(os.path.dirname(__file__), "..", "llm", "prompt", "claudeopus_CoVe.xml"))
+BIAS_AUTO_ENABLED = os.getenv("BIAS_AUTO_ENABLED", "true").lower() in ("true", "1", "yes")
+BIAS_BATCH_PROGRESS = 50  # Show progress every N articles
 # ------------------------------------------------------------------
 
 mongo_client = pymongo.MongoClient(MONGO_URI)
@@ -218,6 +225,66 @@ def format_bias(bias: Dict | str | None) -> str:
     return "\n".join(lines)
 
 
+def generate_bias_for_articles(
+    article_ids: List[str],
+    model: Optional[str] = None,
+) -> dict:
+    """
+    Generate bias for articles missing it using gpt-oss:120b via Ollama.
+    Writes results to MongoDB.
+
+    Args:
+        article_ids: List of MongoDB ObjectId strings to process
+        model: Model name (default: DEFAULT_BIAS_MODEL or OLLAMA_BIAS_MODEL env)
+
+    Returns:
+        dict with 'processed', 'errors', 'modified_ids' counts
+    """
+    import time
+
+    if not article_ids:
+        return {"processed": 0, "errors": 0}
+
+    if model is None:
+        model = DEFAULT_BIAS_MODEL
+
+    prompt_file = BIAS_PROMPT_PATH
+    if os.path.exists(prompt_file):
+        with open(prompt_file) as f:
+            query = f.read()
+    else:
+        print(f"[WARN] Bias prompt file not found: {prompt_file}", file=sys.stderr)
+        query = "Analyze the political bias of this article. Output JSON with dir (L/C/R) and deg (L/M/H)."
+
+    from geminize import process_articles
+
+    total = len(article_ids)
+    print(f"[AUTO-BIAS] Generating bias for {total} articles with {model}...", file=sys.stderr)
+    start_time = time.time()
+
+    result = process_articles(
+        model_name=model,
+        src_field="article",
+        dst_field="bias",
+        query=query,
+        id_list=article_ids,
+        use_ollama=True,
+        extract_json=True,
+    )
+
+    elapsed = time.time() - start_time
+    processed = result.get("processed", 0)
+    errors = result.get("errors", 0)
+    rate = processed / elapsed if elapsed > 0 else 0
+
+    print(
+        f"[AUTO-BIAS] Complete: {processed} processed, {errors} errors, {elapsed:.1f}s total ({rate:.2f}/sec)",
+        file=sys.stderr,
+    )
+
+    return result
+
+
 # --------------  debug helpers  ------------------------------------
 def debug(msg: str):
     print(f"{msg}", file=sys.stderr)
@@ -246,21 +313,35 @@ def _run_ollama_svo(article_text: str) -> str:
     tmp_filtered = f"/tmp/svo_{tmp_id}.filtered"
 
     try:
-        cmd = (
-            f"printf '%s\\n' {repr(article_text)} | "
-            f"cat {prompt_path} - | "
-            f"ollama run --hidethinking --nowordwrap gpt-oss:120b 2>/dev/null > {tmp_out} && "
-            f"python3 {os.path.join(os.path.dirname(__file__), 'filter_ansi.py')} < {tmp_out} > {tmp_filtered} && "
-            f"cat {tmp_filtered}"
-        )
+        # Read prompt file
+        with open(prompt_path, "r") as f:
+            prompt_content = f.read()
+
+        # Combine prompt + article text
+        full_input = prompt_content + "\n" + article_text
+
+        # Call ollama with input via stdin (no shell injection)
         result = subprocess.run(
-            cmd, shell=True, timeout=SVO_TIMEOUT_SEC, capture_output=True, text=True
+            ["ollama", "run", "--hidethinking", "--nowordwrap", "gpt-oss:120b"],
+            input=full_input,
+            capture_output=True,
+            text=True,
+            timeout=SVO_TIMEOUT_SEC,
         )
-        return (
-            result.stdout
-            if result.returncode == 0
-            else f"[ERROR: exit {result.returncode}]"
+
+        if result.returncode != 0:
+            return f"[ERROR: exit {result.returncode}]"
+
+        # Filter ANSI codes
+        filter_script = os.path.join(os.path.dirname(__file__), "filter_ansi.py")
+        result2 = subprocess.run(
+            ["python3", filter_script],
+            input=result.stdout,
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
+        return result2.stdout if result2.returncode == 0 else result.stdout
     except subprocess.TimeoutExpired:
         return "[ERROR: timeout]"
     except Exception as e:
@@ -440,6 +521,23 @@ def main(argv=None):
         action="store_true",
         default=False,
         help="Only generate cypher, skip the search output display.",
+    )
+    parser.add_argument(
+        "--auto-bias",
+        action="store_true",
+        default=BIAS_AUTO_ENABLED,
+        help=f"Auto-generate bias for articles missing it (default: {BIAS_AUTO_ENABLED}, override with BIAS_AUTO_ENABLED env)",
+    )
+    parser.add_argument(
+        "--no-auto-bias",
+        action="store_true",
+        help="Disable automatic bias generation",
+    )
+    parser.add_argument(
+        "--bias-model",
+        type=str,
+        default=None,
+        help=f"Model for bias generation (default: {DEFAULT_BIAS_MODEL}, override with OLLAMA_BIAS_MODEL env)",
     )
     args = parser.parse_args(argv)
 
@@ -938,6 +1036,39 @@ def main(argv=None):
     show_entities = (
         parse_entity_list(args.showentity) if args.showentity is not None else None
     )
+
+    # Check for missing bias and auto-generate if enabled
+    missing_bias_ids = []
+    for _id in hit_ids:
+        doc = id_to_doc.get(_id)
+        if doc and (doc.get("bias") is None or doc.get("bias") == ""):
+            missing_bias_ids.append(_id)
+
+    if missing_bias_ids and not args.no_auto_bias:
+        print(
+            f"[AUTO-BIAS] {len(missing_bias_ids)} articles missing bias, generating...",
+            file=sys.stderr,
+        )
+        model = args.bias_model or DEFAULT_BIAS_MODEL
+        gen_result = generate_bias_for_articles(missing_bias_ids, model=model)
+
+        # Re-fetch updated bias data from MongoDB
+        updated_docs = {
+            str(d["_id"]): d
+            for d in mongo_coll.find(
+                {"_id": {"$in": [ObjectId(i) for i in missing_bias_ids]}},
+                {"_id": 1, "bias": 1},
+            )
+        }
+        # Update cached documents with new bias values
+        for _id, updated_doc in updated_docs.items():
+            if _id in id_to_doc:
+                id_to_doc[_id]["bias"] = updated_doc.get("bias")
+
+        print(
+            f"[AUTO-BIAS] Updated {len(updated_docs)} articles with bias data",
+            file=sys.stderr,
+        )
 
     for _id in hit_ids:
         doc = id_to_doc.get(_id)

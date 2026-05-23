@@ -25,6 +25,9 @@ MONGO_DB = "rssnews"
 MONGO_COLL = "articles"
 MONGO_TELEMETRY_COLL = "training_telemetry"
 
+# Debug mode - set via environment variable DEBUG=1 to enable debug output
+DEBUG = os.getenv("DEBUG", "0") == "1"
+
 
 @st.cache_resource
 def get_mongo_client():
@@ -318,7 +321,8 @@ def get_training_runs():
         coll = get_telemetry_collection()
         # Just get all documents
         results = list(coll.find({}))
-        print(f"[DEBUG] Found {len(results)} telemetry documents")
+        if DEBUG:
+            print(f"[DEBUG] Found {len(results)} telemetry documents")
         
         if not results:
             return pd.DataFrame()
@@ -362,10 +366,12 @@ def get_training_runs():
                 runs[run_id]["total_steps"] = r.get("total_steps")
                 runs[run_id]["duration_seconds"] = r.get("duration_seconds")
         
-        print(f"[DEBUG] Grouped into {len(runs)} runs")
+        if DEBUG:
+            print(f"[DEBUG] Grouped into {len(runs)} runs")
         return pd.DataFrame(list(runs.values()))
     except Exception as e:
-        print(f"[DEBUG] Error fetching training runs: {e}")
+        if DEBUG:
+            print(f"[DEBUG] Error fetching training runs: {e}")
         import traceback
         traceback.print_exc()
         return pd.DataFrame()
@@ -394,7 +400,8 @@ def get_training_metrics(run_id: str = None):
             })
         return pd.DataFrame(records)
     except Exception as e:
-        print(f"[DEBUG] Error fetching metrics: {e}")
+        if DEBUG:
+            print(f"[DEBUG] Error fetching metrics: {e}")
         return pd.DataFrame()
 
 
@@ -876,7 +883,8 @@ def main():
     
     try:
         training_runs_df = get_training_runs()
-        print(f"[DEBUG] training_runs_df shape: {training_runs_df.shape}")
+        if DEBUG:
+            print(f"[DEBUG] training_runs_df shape: {training_runs_df.shape}")
         
         if not training_runs_df.empty:
             st.write("DEBUG - runs found:", training_runs_df["run_id"].tolist())

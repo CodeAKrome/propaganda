@@ -24,7 +24,7 @@ testrun: timestamp load ner t5bias vector entity cleantext cleanoutput runhybrid
 
 test2: timestamp load ner bias vector cleantext cleanoutput entity runhybrid runreport cyphertograph cleanmp3 mp3small dbscan vecdbscan mddbscan cleanclusteransi fini
 
-test3: cyphertograph cleanmp3 mp3small dbscan vecdbscan mddbscan fini
+test3: runhybrid runreport cyphertograph
 smallthingsthatgo: timestamp load ner vector entity mkvecsmall bias mkvecsmall querysmall cleanmp3 mp3small fini
 
 # Doesn't clean db/output or mp3/mp3
@@ -46,7 +46,7 @@ cyphertograph:
 	db/cypher_to_graph.py
 iran:
 	source $(DB_ENV)/bin/activate && cd db && ./hybrid.py --orentity Iran --start-date -2 --bm25-query "Summarize actions taken in the Iran war." --search Iran --substr -n 52 --showentity > output/iran.vec
-	source $(DB_ENV)/bin/activate && cd db && cat prompt/LottaTalker.md output/iran.vec | ollama run --hidethinking --verbose gpt-oss:120b-cloud > output/iran_gptoss120b.md
+	source $(DB_ENV)/bin/activate && cd db && cat prompt/LottaTalker.md output/iran.vec | ollama run --hidethinking --verbose gpt-oss:120b > output/iran_gptoss120b.md
 
 runhybrid:
 	source $(DB_ENV)/bin/activate && cd db && ./runhybrid.py hybrid_batch.tsv

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 350" width="800" height="350">
+  <defs>
+    <style>
+      .title { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 18px; font-weight: bold; fill: #333; }
+      .subtitle { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 12px; fill: #666; }
+      .cell-label { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 11px; fill: #fff; font-weight: bold; }
+      .row-label { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 12px; fill: #333; }
+      .col-label { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 11px; fill: #666; }
+      .note { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 9px; fill: #888; }
+      .cell-christian { fill: #e74c3c; }
+      .cell-muslim { fill: #95a5a6; }
+      .cell-both { fill: #9b59b6; }
+      .cell-none { fill: #ecf0f1; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="100%" height="100%" fill="#fafafa"/>
+
+  <!-- Title -->
+  <text x="40" y="30" class="title">PERPETRATOR TARGETING MATRIX</text>
+  <text x="40" y="48" class="subtitle">Which groups target which populations (2019-2023)</text>
+
+  <!-- Column Headers -->
+  <text x="140" y="85" class="col-label" text-anchor="middle">Christian</text>
+  <text x="230" y="85" class="col-label" text-anchor="middle">Muslim</text>
+  <text x="320" y="85" class="col-label" text-anchor="middle">Both</text>
+
+  <!-- Row: Armed Fulani Herdsmen -->
+  <text x="40" y="115" class="row-label">Armed Fulani</text>
+  <text x="45" y="127" class="row-label" font-size="10">Herdsmen</text>
+  <rect x="130" y="100" width="40" height="30" class="cell-christian" rx="3"/>
+  <text x="150" y="119" class="cell-label" text-anchor="middle">55%</text>
+  <rect x="220" y="100" width="40" height="30" class="cell-muslim" rx="3"/>
+  <text x="240" y="119" class="cell-label" text-anchor="middle">24%</text>
+  <rect x="310" y="100" width="40" height="30" class="cell-none" rx="3"/>
+
+  <!-- Row: Other Terrorist Groups -->
+  <text x="40" y="160" class="row-label">Other Terrorist</text>
+  <text x="45" y="172" class="row-label" font-size="10">Groups</text>
+  <rect x="130" y="145" width="40" height="30" class="cell-christian" rx="3"/>
+  <text x="150" y="164" class="cell-label" text-anchor="middle">60%</text>
+  <rect x="220" y="145" width="40" height="30" class="cell-muslim" rx="3"/>
+  <text x="240" y="164" class="cell-label" text-anchor="middle">53%</text>
+  <rect x="310" y="145" width="40" height="30" class="cell-both" rx="3"/>
+  <text x="330" y="164" class="cell-label" text-anchor="middle" font-size="9">Both</text>
+
+  <!-- Row: Boko Haram -->
+  <text x="40" y="205" class="row-label">Boko Haram</text>
+  <rect x="130" y="190" width="40" height="30" class="cell-both" rx="3"/>
+  <text x="150" y="209" class="cell-label" text-anchor="middle">Both</text>
+  <rect x="220" y="190" width="40" height="30" class="cell-both" rx="3"/>
+  <text x="240" y="209" class="cell-label" text-anchor="middle">Both</text>
+  <rect x="310" y="190" width="40" height="30" class="cell-both" rx="3"/>
+
+  <!-- Row: ISWAP -->
+  <text x="40" y="250" class="row-label">ISWAP</text>
+  <rect x="130" y="235" width="40" height="30" class="cell-christian" rx="3"/>
+  <text x="150" y="254" class="cell-label" text-anchor="middle" font-size="9">Yes*</text>
+  <rect x="220" y="235" width="40" height="30" class="cell-muslim" rx="3"/>
+  <text x="240" y="254" class="cell-label" text-anchor="middle" font-size="9">Yes</text>
+  <rect x="310" y="235" width="40" height="30" class="cell-both" rx="3"/>
+  <text x="330" y="254" class="cell-label" text-anchor="middle" font-size="9">Both</text>
+
+  <!-- Row: Nigerian Government -->
+  <text x="40" y="295" class="row-label">Nigerian Govt</text>
+  <text x="45" y="307" class="row-label" font-size="10">(Security Forces)</text>
+  <rect x="130" y="280" width="40" height="30" class="cell-none" rx="3"/>
+  <text x="150" y="299" class="cell-label" text-anchor="middle" font-size="9">Tolerates</text>
+  <rect x="220" y="280" width="40" height="30" class="cell-none" rx="3"/>
+  <text x="240" y="299" class="cell-label" text-anchor="middle" font-size="9">Tolerates</text>
+  <rect x="310" y="280" width="40" height="30" class="cell-none" rx="3"/>
+
+  <!-- Legend -->
+  <rect x="450" y="100" width="15" height="15" class="cell-christian" rx="2"/>
+  <text x="475" y="112" class="note">Primarily targets Christians</text>
+
+  <rect x="450" y="125" width="15" height="15" class="cell-muslim" rx="2"/>
+  <text x="475" y="137" class="note">Primarily targets Muslims</text>
+
+  <rect x="450" y="150" width="15" height="15" class="cell-both" rx="2"/>
+  <text x="475" y="162" class="note">Targets both equally</text>
+
+  <!-- Key Insight -->
+  <rect x="450" y="200" width="320" height="80" fill="#fff" stroke="#e74c3c" stroke-width="1" rx="5"/>
+  <text x="460" y="220" class="note" font-weight="bold" fill="#e74c3c">KEY FINDING</text>
+  <text x="460" y="238" class="note">Fulani Herders disproportionately target</text>
+  <text x="460" y="253" class="note" font-weight="bold">Christians (55% vs 24% Muslims)</text>
+  <text x="460" y="268" class="note">Other Terrorist Groups target BOTH equally</text>
+
+  <!-- Note -->
+  <text x="40" y="330" class="note">* ISWAP specifically executes Christians who refuse to pay jizya tax</text>
+  <text x="40" y="345" class="note">Data: ORFA 4-Year Report | Percentage = share of victims from that religious group</text>
+
+</svg>

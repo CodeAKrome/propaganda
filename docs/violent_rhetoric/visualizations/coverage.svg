@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 300" 
+       style="font-family: 'SF Pro', -apple-system, sans-serif;">
+  <style>
+    .label { font-size: 12px; fill: #333; }
+    .title { font-size: 14px; font-weight: 600; }
+    .value { font-size: 11px; fill: #666; }
+    .axis { stroke: #ddd; stroke-width: 1; }
+  </style>
+  
+  <text x="230.0" y="25" text-anchor="middle" class="title">Violent Rhetoric by Political Orientation</text>
+  <text x="230.0" y="45" text-anchor="middle" class="value">Percentage of articles containing violent language</text>
+<line x1="60" y1="70" x2="60" y2="270" class="axis"/>
+<text x="50" y="74.0" text-anchor="end" class="value">33.4%</text>
+<line x1="58" y1="70.0" x2="440" y2="70.0" stroke="#eee" stroke-width="1"/>
+<text x="50" y="124.0" text-anchor="end" class="value">25.1%</text>
+<line x1="58" y1="120.0" x2="440" y2="120.0" stroke="#eee" stroke-width="1"/>
+<text x="50" y="174.0" text-anchor="end" class="value">16.7%</text>
+<line x1="58" y1="170.0" x2="440" y2="170.0" stroke="#eee" stroke-width="1"/>
+<text x="50" y="224.0" text-anchor="end" class="value">8.4%</text>
+<line x1="58" y1="220.0" x2="440" y2="220.0" stroke="#eee" stroke-width="1"/>
+<text x="50" y="274.0" text-anchor="end" class="value">0.0%</text>
+<line x1="58" y1="270.0" x2="440" y2="270.0" stroke="#eee" stroke-width="1"/>
+<rect x="80" y="229.03406615858478" width="80" height="40.965933841415236" fill="#3498db" rx="2"/>
+<text x="120.0" y="221.03406615858478" text-anchor="middle" class="value">6.8%</text>
+<text x="120.0" y="290" text-anchor="middle" class="label">LEFT</text>
+<text x="120.0" y="249.5170330792924" text-anchor="middle" fill="white" font-size="10">39</text>
+<rect x="200" y="133.11682290678974" width="80" height="136.88317709321026" fill="#95a5a6" rx="2"/>
+<text x="240.0" y="125.11682290678974" text-anchor="middle" class="value">22.9%</text>
+<text x="240.0" y="290" text-anchor="middle" class="label">CENTER</text>
+<text x="240.0" y="201.55841145339485" text-anchor="middle" fill="white" font-size="10">15410</text>
+<rect x="320" y="103.33333333333331" width="80" height="166.66666666666669" fill="#e74c3c" rx="2"/>
+<text x="360.0" y="95.33333333333331" text-anchor="middle" class="value">27.8%</text>
+<text x="360.0" y="290" text-anchor="middle" class="label">RIGHT</text>
+<text x="360.0" y="186.66666666666666" text-anchor="middle" fill="white" font-size="10">4551</text>
+</svg>

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" width="800" height="500">
+  <defs>
+    <style>
+      .title { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 18px; font-weight: bold; fill: #333; }
+      .subtitle { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 12px; fill: #666; }
+      .section-title { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 14px; font-weight: bold; fill: #333; }
+      .label { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 12px; fill: #333; }
+      .data-label { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 11px; fill: #fff; font-weight: bold; }
+      .value { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 11px; fill: #333; font-weight: bold; }
+      .ratio { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 10px; fill: #e74c3c; }
+      .bar-christian { fill: #3498db; }
+      .bar-muslim { fill: #95a5a6; }
+      .bar-fulani { fill: #e74c3c; }
+      .bar-other { fill: #f39c12; }
+      .bar-boko { fill: #9b59b6; }
+      .bar-other-perp { fill: #7f8c8d; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="100%" height="100%" fill="#fafafa"/>
+
+  <!-- Title -->
+  <text x="40" y="30" class="title">CHRISTIAN VS MUSLIM VICTIMS (2019-2023)</text>
+  <text x="40" y="48" class="subtitle">Source: ORFA 4-Year Report | Period: October 2019 - September 2023</text>
+
+  <!-- SECTION 1: Killings -->
+  <text x="40" y="80" class="section-title">KILLINGS</text>
+
+  <!-- Christian killed bar -->
+  <rect x="40" y="95" width="580" height="30" class="bar-christian" rx="3"/>
+  <text x="630" y="115" class="value">16,769</text>
+
+  <!-- Label -->
+  <text x="45" y="115" class="data-label">Christians killed</text>
+
+  <!-- Muslim killed bar -->
+  <rect x="40" y="140" width="230" height="30" class="bar-muslim" rx="3"/>
+  <text x="280" y="160" class="value">6,235</text>
+
+  <!-- Label -->
+  <text x="45" y="160" class="data-label" fill="#333">Muslims killed</text>
+
+  <!-- Ratio -->
+  <text x="40" y="190" class="ratio">Ratio: 2.7 Christians killed for every Muslim</text>
+
+  <!-- SECTION 2: Abductions -->
+  <text x="40" y="220" class="section-title">ABDUCTIONS</text>
+
+  <!-- Christian abducted bar -->
+  <rect x="40" y="235" width="500" height="30" class="bar-christian" rx="3"/>
+  <text x="550" y="255" class="value">15,000+</text>
+  <text x="45" y="255" class="data-label">Christians abducted</text>
+
+  <!-- Muslim abducted bar -->
+  <rect x="40" y="280" width="100" height="30" class="bar-muslim" rx="3"/>
+  <text x="150" y="300" class="value">3,000</text>
+  <text x="45" y="300" class="data-label" fill="#333">Muslims abducted</text>
+
+  <!-- Ratio -->
+  <text x="40" y="330" class="ratio">Ratio: 5.1 Christians abducted for every Muslim</text>
+
+  <!-- SECTION 3: Perpetrator Breakdown -->
+  <text x="40" y="360" class="section-title">CHRISTIAN DEATHS BY PERPETRATOR</text>
+
+  <!-- Armed Fulani Herdsmen -->
+  <rect x="40" y="375" width="493" height="25" class="bar-fulani" rx="2"/>
+  <text x="543" y="392" class="value">55%</text>
+  <text x="45" y="392" class="data-label">Armed Fulani Herdsmen</text>
+
+  <!-- Other Terrorist Groups -->
+  <rect x="40" y="410" width="261" height="25" class="bar-other" rx="2"/>
+  <text x="310" y="427" class="value">29%</text>
+  <text x="45" y="427" class="data-label">Other Terrorist Groups</text>
+
+  <!-- Boko Haram/ISWAP -->
+  <rect x="40" y="445" width="72" height="25" class="bar-boko" rx="2"/>
+  <text x="120" y="462" class="value">8%</text>
+  <text x="45" y="462" class="data-label">Boko Haram/ISWAP</text>
+
+  <!-- Other -->
+  <rect x="40" y="480" width="36" height="15" class="bar-other-perp" rx="2"/>
+  <text x="85" y="492" class="value">4%</text>
+  <text x="45" y="492" class="data-label" font-size="9">Other</text>
+
+  <!-- KEY INSIGHT -->
+  <rect x="600" y="380" width="180" height="100" fill="#fff" stroke="#e74c3c" stroke-width="1" rx="5"/>
+  <text x="610" y="400" class="label" font-size="11" font-weight="bold" fill="#e74c3c">KEY INSIGHT</text>
+  <text x="610" y="420" class="label" font-size="10">Fulani militants kill</text>
+  <text x="610" y="435" class="label" font-size="10" font-weight="bold">MORE Christians</text>
+  <text x="610" y="450" class="label" font-size="10">than ALL jihadi groups</text>
+  <text x="610" y="465" font-size="9" fill="#666">COMBINED</text>
+
+</svg>

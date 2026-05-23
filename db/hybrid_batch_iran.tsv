@@ -1,0 +1,2 @@
+label	n	showentity	substr	orentity	search	orsearch	start_date	query	vector	text	andentity	end_date	fulltext	bm25	ids	flair_pooled	bge_large	embedding
+iran	42	*	1	Iran			-2	Summarize news about Iran. Analize actions and motivations.
