@@ -42,14 +42,14 @@ nerserver:
 cyphertograph:
 	db/cypher_to_graph.py
 iran:
-	source $(DB_ENV)/bin/activate && cd db && ./hybrid.py --orentity Iran --start-date -2 --bm25-query "Summarize actions taken in the Iran war." --search Iran --substr -n 52 --showentity > output/iran.vec
-	source $(DB_ENV)/bin/activate && cd db && cat prompt/LottaTalker.md output/iran.vec | ollama run --hidethinking --verbose gpt-oss:120b > output/iran_gptoss120b.md
+	poetry run cd db && ./hybrid.py --orentity Iran --start-date -2 --bm25-query "Summarize actions taken in the Iran war." --search Iran --substr -n 52 --showentity > output/iran.vec
+	poetry run cd db && cat prompt/LottaTalker.md output/iran.vec | ollama run --hidethinking --verbose gpt-oss:120b > output/iran_gptoss120b.md
 
 runhybrid:
-	source $(DB_ENV)/bin/activate && cd db && ./runhybrid.py hybrid_batch.tsv
+	poetry run cd db && ./hybrid.py hybrid_batch.tsv
 
 runreport:
-	source $(DB_ENV)/bin/activate && cd db && ./runreport.py hybrid_batch.tsv
+	poetry run cd db && ./hybrid.py hybrid_batch.tsv
 
 cleanansi:
 	@for f in $$(find db/output -name "*.md"); do python3 db/filter_ansi.py < "$$f" > "$$f.tmp" && mv "$$f.tmp" "$$f"; done
@@ -64,7 +64,7 @@ cleanmarkdownansi: cleanclusteransi cleanoutputansi
 
 # Analyze bias coverage and detect potential media coverups
 analyze-bias-coverage:
-	@source $(DB_ENV)/bin/activate && python3 scripts/find_media_coverups.py --output interactive
+	@poetry run python3 scripts/find_media_coverups.py --output interactive
 
 
 fquerymp3: cleanoutput querysmall cleanmp3 mp3small fini
@@ -85,7 +85,7 @@ categorize: entity dbscan vecdbscan mddbscan
 
 # Remove one word lines and double newlines.
 cleantext:
-	source $(DB_ENV)/bin/activate && cd db && ./clean_article_text.py
+	poetry run cd db && ./clean_article_text.py
 
 dbscan:
 	cd db && (echo "article_id	title" && cut -f3,4 output/titles.tsv) > output/titles_dbscan.tsv
@@ -93,7 +93,7 @@ dbscan:
 
 vecdbscan:
 	find db/cluster -name '*.vec' -exec rm {} \;
-	source $(DB_ENV)/bin/activate && cd db && ./convert_to_vec.py output/categories.json cluster
+	poetry run cd db && ./convert_to_vec.py output/categories.json cluster
 	ls -1 db/cluster/*.vec | db/extract_ids.py > db/cluster/ids.txt
 
 mddbscan:
@@ -101,7 +101,7 @@ mddbscan:
 	cd db && ./clustervec2md.sh
 
 t5bias:
-	source $(DB_ENV)/bin/activate && \
+	poetry run \
 	cd llm && \
 	python bias_processor.py --start-date $(NUMDAYS)
 
@@ -135,12 +135,12 @@ black:
 	black db/*.py
 	black ner/*.py
 entity:
-	source $(DB_ENV)/bin/activate && cd db && ./mongo2chroma.py title --start-date $(NUMDAYS) | sort -k4,4 > $(TITLEFILE)
-	source $(DB_ENV)/bin/activate && cd db &&  cat $(TITLEFILE) | grep -v thehindu | grep -v indiaexpress > output/titles_nohindu.tsv
-	source $(DB_ENV)/bin/activate && cd db && ./mongo2chroma.py dumpentity --start-date $(NUMDAYS) | egrep '(PERSON|GPE|LOC|EVENT)' > output/impentity.tsv
-	source $(DB_ENV)/bin/activate && cd db && ./mongo2chroma.py dumpentity --start-date $(NUMDAYS)  > output/entity.tsv
-	source $(DB_ENV)/bin/activate && cd db && ./mongo2chroma.py dumpentity --start-date -60  > output/entity_60days.tsv
-	source $(DB_ENV)/bin/activate && cd db && ./mongo2chroma.py dumpentity --start-date -60 | egrep '(PERSON|GPE|LOC|EVENT)' > output/impentity_60days.tsv
+	poetry run cd db && ./mongo2chroma.py title --start-date $(NUMDAYS) | sort -k4,4 > $(TITLEFILE)
+	poetry run cd db &&  cat $(TITLEFILE) | grep -v thehindu | grep -v indiaexpress > output/titles_nohindu.tsv
+	poetry run cd db && ./mongo2chroma.py dumpentity --start-date $(NUMDAYS) | egrep '(PERSON|GPE|LOC|EVENT)' > output/impentity.tsv
+	poetry run cd db && ./mongo2chroma.py dumpentity --start-date $(NUMDAYS)  > output/entity.tsv
+	poetry run cd db && ./mongo2chroma.py dumpentity --start-date -60  > output/entity_60days.tsv
+	poetry run cd db && ./mongo2chroma.py dumpentity --start-date -60 | egrep '(PERSON|GPE|LOC|EVENT)' > output/impentity_60days.tsv
 
 # build propaganda go binary
 build:
@@ -148,7 +148,7 @@ build:
 # read RSS feeds and load data into mongodb
 load:
 	cd rss && go run . ../config/big.tsv ../config/kill.tsv
-	source $(DB_ENV)/bin/activate && cd db && ./dedupe.py
+	poetry run cd db && ./dedupe.py
 #	go run main.go config/big.tsv config/kill.tsv
 # start back end before front end
 back:
@@ -161,11 +161,11 @@ dashboard:
 	cd dashboard && source .venv/bin/activate && streamlit run app.py
 # read data from mongodb and create vectors in chroma
 vector:
-	@source $(DB_ENV)/bin/activate && cd db && ./mongo2chroma.py load --start-date -2 --slack $(SLACK_VECTOR)
+	@poetry run cd db && ./mongo2chroma.py load --start-date -2 --slack $(SLACK_VECTOR)
 
 # explicitly clear the ChromaDB vector database
 clear-vector:
-	@source $(DB_ENV)/bin/activate && cd db && ./mongo2chroma.py load --force
+	@poetry run cd db && ./mongo2chroma.py load --force
 # Do NER
 ner:
 	cd ner-hub && go run . --start-date $(NUMDAYS) endpoints.tsv
@@ -174,7 +174,7 @@ ner:
 mkvec:
 	find db/output -name "*.vec" -delete
 	find db/output -name "*.ids" -delete
-	@source $(DB_ENV)/bin/activate && cd db && ./runmkvecbatch.sh
+	@poetry run cd db && ./runmkvecbatch.sh
 	cat db/output/*.ids | grep -v '#' | sort | uniq > db/ids.txt
 
 mkvecsmall:
@@ -185,18 +185,18 @@ mkvecsmall:
 	find db/output -name "*.ids" -delete
 	find db/output -name "*.cypher" -delete
 	find db/output -name "*.reporter" -delete
-	@source $(DB_ENV)/bin/activate && cd db && ./batchquery.sh './mkvec.sh' $(NUMDAYS)
+	@poetry run cd db && ./batchquery.sh './mkvec.sh' $(NUMDAYS)
 	cat db/output/*.ids | grep -v '#' | sort | uniq > db/ids.txt
 
 mkvecsmallest:
 #	find db/output -name "*.vec" -delete
 #	find db/output -name "*.ids" -delete
-	@source $(DB_ENV)/bin/activate && cd db && ./batchquerysmallest.sh './mkvec.sh' $(NUMDAYS)
+	@poetry run cd db && ./batchquerysmallest.sh './mkvec.sh' $(NUMDAYS)
 	cat db/output/*.ids | grep -v '#' | sort | uniq > db/ids.txt
 
 # output/ids.txt to run geminize.py
 bias:
-	source $(DB_ENV)/bin/activate && cd db && ./runbias.sh
+	poetry run cd db && ./runbias.sh
 
 # runseries of queries to generate db/output/*.md
 query:
@@ -205,16 +205,16 @@ query:
 #	find db/output -name "*.vec" -delete
 	find db/output -name "*.cypher" -delete
 	find db/output -name "*.reporter" -delete
-	source $(DB_ENV)/bin/activate && cd db && ./runentitybatch.sh
+	poetry run cd db && ./runentitybatch.sh
 
 cleanoutput:
 	-rm -rf db/output/*
 
 querysmall:
-	source $(DB_ENV)/bin/activate && cd db && ./batchquery.sh './report.py' $(NUMDAYS)
+	poetry run cd db && ./batchquery.sh './report.py' $(NUMDAYS)
 
 querysmallest:
-	source $(DB_ENV)/bin/activate && cd db && ./batchquerysmallest.sh './report.py' $(NUMDAYS)
+	poetry run cd db && ./batchquerysmallest.sh './report.py' $(NUMDAYS)
 
 mp3:
 	find mp3/mp3 -name "*.mp3" -delete
@@ -261,8 +261,7 @@ LORA_HOST ?= 0.0.0.0
 
 # Extract balanced training data from MongoDB
 lora-extract:
-	@source $(LORA_ENV)/bin/activate && \
-	python LoRA-train/mongo2lora.py \
+	@poetry run 	python LoRA-train/mongo2lora.py \
 		--output $(LORA_DATA) \
 		--target-samples $(LORA_TOTAL_SAMPLES) \
 		--min-samples $(LORA_MIN_SAMPLES) \
@@ -272,8 +271,7 @@ lora-extract:
 
 # Extract LEFT/RIGHT balanced training data (equal samples per side)
 lora-extract-balanced:
-	@source $(LORA_ENV)/bin/activate && \
-	python LoRA-train/mongo2lora.py \
+	@poetry run 	python LoRA-train/mongo2lora.py \
 		--output $(LORA_DATA) \
 		--min-samples 50 \
 		--start-date -60 \
@@ -283,8 +281,7 @@ lora-extract-balanced:
 
 # Extract test data (different date range)
 lora-extract-test:
-	@source $(LORA_ENV)/bin/activate && \
-	python LoRA-train/mongo2lora.py \
+	@poetry run 	python LoRA-train/mongo2lora.py \
 		--output $(LORA_TEST_DATA) \
 		--target-samples $(shell python3 -c "print(int($(LORA_TOTAL_SAMPLES) * 0.2))") \
 		--min-samples 20 \
@@ -294,8 +291,7 @@ lora-extract-test:
 
 # Train LoRA model (Llama default)
 lora-train:
-	@source $(LORA_ENV)/bin/activate && \
-	python LoRA-train/train_lora.py \
+	@poetry run 	python LoRA-train/train_lora.py \
 		--data $(LORA_DATA) \
 		--model $(LORA_MODEL) \
 		--output $(LORA_OUTPUT) \
@@ -305,8 +301,7 @@ lora-train:
 
 # Train LoRA with Gemma 4:26b
 lora-train-gemma:
-	@source $(LORA_ENV)/bin/activate && \
-	python LoRA-train/train_lora.py \
+	@poetry run 	python LoRA-train/train_lora.py \
 		--data $(LORA_DATA) \
 		--model "google/gemma-2-27b-it" \
 		--output $(LORA_OUTPUT)-gemma \
@@ -323,24 +318,21 @@ lora-train-gemma:
 
 # Test trained model
 lora-test:
-	@source $(LORA_ENV)/bin/activate && \
-	python LoRA-train/test_lora.py \
+	@poetry run 	python LoRA-train/test_lora.py \
 		--model-path $(LORA_OUTPUT) \
 		--test-data $(LORA_TEST_DATA) \
 		--output lora_test_results.json
 
 # Test Gemma trained model
 lora-test-gemma:
-	@source $(LORA_ENV)/bin/activate && \
-	python LoRA-train/test_lora.py \
+	@poetry run 	python LoRA-train/test_lora.py \
 		--model-path $(LORA_OUTPUT)-gemma \
 		--test-data $(LORA_TEST_DATA) \
 		--output lora_gemma_test_results.json
 
 # Validate training data quality
 lora-validate:
-	@source $(LORA_ENV)/bin/activate && \
-	python LoRA-train/mongo2lora.py \
+	@poetry run 	python LoRA-train/mongo2lora.py \
 		--output /tmp/lora_validate.json \
 		--target-samples 1000 \
 		--min-samples 50 \
@@ -349,8 +341,7 @@ lora-validate:
 
 # Start LoRA server
 lora-serve:
-	@source $(LORA_ENV)/bin/activate && \
-	python LoRA-server/server.py \
+	@poetry run 	python LoRA-server/server.py \
 		--model-path $(LORA_OUTPUT) \
 		--host $(LORA_HOST) \
 		--port $(LORA_PORT)
@@ -397,8 +388,7 @@ lora-quick: lora-extract lora-train lora-test
 
 # Quick test run (uses existing trained model, minimal data)
 lora-test-only:
-	@source $(LORA_ENV)/bin/activate && \
-	python LoRA-train/mongo2lora.py \
+	@poetry run 	python LoRA-train/mongo2lora.py \
 		--output /tmp/lora_quick_test.json \
 		--target-samples 10 \
 		--min-samples 2 \
