@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "propaganda-ner"
+version = "0.1.0"
+description = "Flair NER component for Propaganda pipeline"
+authors = ["CodeAKrome <dev@example.com>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+flair = "*"
+fastapi = "*"
+uvicorn = {extras = ["standard"], version = "*"}
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

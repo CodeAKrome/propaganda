@@ -1,6 +1,6 @@
 CONDA_MP3_ENV = kokoro
 DB_ENV = db/.venv
-CONDA_NER_ENV = flair
+# CONDA_NER_ENV = flair  # replaced by Poetry-managed env
 DBSCAN_ENV = dbscan/.venv
 SHELL := /bin/zsh
 TITLEFILE = output/titles.tsv
@@ -24,7 +24,7 @@ testrun: timestamp load ner t5bias vector entity cleantext cleanoutput runhybrid
 
 test2: timestamp load ner bias vector cleantext cleanoutput entity runhybrid runreport cyphertograph cleanmp3 mp3small dbscan vecdbscan mddbscan cleanclusteransi fini
 
-test3: runhybrid runreport cyphertograph
+test3: timestamp load ner bias vector cleantext cleanoutput entity runhybrid runreport
 smallthingsthatgo: timestamp load ner vector entity mkvecsmall bias mkvecsmall querysmall cleanmp3 mp3small fini
 
 # Doesn't clean db/output or mp3/mp3
@@ -38,10 +38,7 @@ thingsthatgo: load ner vector entity mkvec bias query mp3 fini
 
 # new stuff, just query
 nerserver:
-	source $$(conda info --base)/etc/profile.d/conda.sh && \
-	conda activate $(CONDA_NER_ENV) && \
-	cd ner && \
-	./ner.py
+	@cd ner && poetry run python ner.py
 cyphertograph:
 	db/cypher_to_graph.py
 iran:
